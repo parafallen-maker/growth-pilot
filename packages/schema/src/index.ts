@@ -101,6 +101,68 @@ export interface Student360AttendanceSummary {
   averageStudyMinutes: number;
 }
 
+export interface AttendanceDevice {
+  id: string;
+  campusId?: string | null;
+  serialNo: string;
+  deviceType: 'beacon' | 'tablet' | 'gate' | 'manual';
+  status: 'idle' | 'bound' | 'repair' | 'retired';
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StudentDeviceBinding {
+  id: string;
+  studentId: string;
+  deviceId: string;
+  status: 'active' | 'inactive';
+  boundAt: string;
+  unboundAt?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AttendanceEvent {
+  id: string;
+  studentId: string;
+  campusId: string;
+  deviceId?: string | null;
+  eventType: 'checkin' | 'checkout' | 'manual_checkin' | 'manual_checkout';
+  eventTime: string;
+  operatorUserId?: string | null;
+  remark?: string;
+  dedupeKey: string;
+  createdAt: string;
+}
+
+export interface HomeworkTimeSession {
+  id: string;
+  studentId: string;
+  termId?: string | null;
+  campusId?: string | null;
+  subject: string;
+  deviceId?: string | null;
+  sourceType: 'manual' | 'device';
+  startTime: string;
+  endTime: string;
+  durationMinutes: number;
+  createdBy?: string | null;
+  remark?: string;
+  createdAt: string;
+}
+
+export interface HomeworkTimeDailyStat {
+  id: string;
+  studentId: string;
+  statDate: string;
+  subject: string;
+  totalMinutes: number;
+  sessionCount: number;
+  generatedAt: string;
+}
+
 export interface Student360BillingSummary {
   activeContractCount: number;
   unpaidInvoiceCount: number;
@@ -444,8 +506,8 @@ export interface AttendanceDevice {
   id: string;
   campusId?: string | null;
   serialNo: string;
-  deviceType: string;
-  status: string;
+  deviceType: 'beacon' | 'tablet' | 'gate' | 'manual';
+  status: 'idle' | 'bound' | 'repair' | 'retired';
   note?: string;
   createdAt: string;
   updatedAt: string;
@@ -455,7 +517,7 @@ export interface StudentDeviceBinding {
   id: string;
   studentId: string;
   deviceId: string;
-  status: string;
+  status: 'active' | 'inactive';
   boundAt: string;
   unboundAt?: string | null;
   createdBy?: string | null;
@@ -468,10 +530,10 @@ export interface AttendanceEvent {
   studentId: string;
   campusId: string;
   deviceId?: string | null;
-  eventType: string;
+  eventType: 'checkin' | 'checkout' | 'manual_checkin' | 'manual_checkout';
   eventTime: string;
   operatorUserId?: string | null;
-  remark?: string | null;
+  remark?: string;
   dedupeKey: string;
   createdAt: string;
 }
@@ -481,14 +543,14 @@ export interface HomeworkTimeSession {
   studentId: string;
   termId?: string | null;
   campusId?: string | null;
-  subject?: string | null;
+  subject: string;
   deviceId?: string | null;
-  sourceType: string;
+  sourceType: 'manual' | 'device';
   startTime: string;
-  endTime?: string | null;
+  endTime: string;
   durationMinutes: number;
   createdBy?: string | null;
-  remark?: string | null;
+  remark?: string;
   createdAt: string;
 }
 
@@ -496,7 +558,7 @@ export interface HomeworkTimeDailyStat {
   id: string;
   studentId: string;
   statDate: string;
-  subject?: string | null;
+  subject: string;
   totalMinutes: number;
   sessionCount: number;
   generatedAt: string;

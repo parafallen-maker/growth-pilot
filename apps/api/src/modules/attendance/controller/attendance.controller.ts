@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Patch, Post, Query } from '@nestjs/common';
 import { ok } from '../../../common/api-response';
 import { AttendanceEventQueryDto } from '../dto/attendance-event-query.dto';
 import { CreateAttendanceEventDto } from '../dto/create-attendance-event.dto';
@@ -45,12 +45,12 @@ export class AttendanceController {
   }
 
   @Post('events')
-  createEvent(@Body() payload: CreateAttendanceEventDto) {
-    return ok(this.attendanceService.createEvent(payload));
+  createEvent(@Body() payload: CreateAttendanceEventDto, @Headers('idempotency-key') idempotencyKey?: string) {
+    return ok(this.attendanceService.createEvent(payload, idempotencyKey));
   }
 
   @Get('homework-time/daily-stats')
-  listDailyStats(@Query() query: HomeworkTimeDailyStatsQueryDto) {
-    return ok(this.attendanceService.listDailyStats(query));
+  getHomeworkTimeDailyStats(@Query() query: HomeworkTimeDailyStatsQueryDto) {
+    return ok(this.attendanceService.getHomeworkTimeDailyStats(query));
   }
 }

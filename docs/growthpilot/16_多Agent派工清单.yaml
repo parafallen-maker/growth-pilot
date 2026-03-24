@@ -526,7 +526,11 @@ agents:
       - task_id: T-A1-1
         title: 设备与绑定接口
         priority: P1
-        status: todo
+        status: done
+        notes:
+          - 已在 apps/api 新增 attendance 模块，交付 devices list/create、device bindings list/create/update，采用 controller/service/repository/dto 分层与 in-memory repository。
+          - 已实现活动绑定唯一性：同一 student / device 仅允许一个 active binding，解绑后自动回落设备状态。
+        completion_note: 已完成 attendance 设备与绑定接口首波骨架，当前绑定与历史绑定可追踪，可交给 A9 对接设备绑定页，后续由 A10 替换为真实 DB repository。
         wbs: [WBS-033]
         depends_on: [T-P0-3, T-P0-4, T-M1-2]
         input_docs:
@@ -542,7 +546,11 @@ agents:
       - task_id: T-A1-2
         title: 签到事件写入与去重
         priority: P1
-        status: todo
+        status: done
+        notes:
+          - 已实现 attendance events list/create，支持 device_id + event_time + event_type 三元组去重；若显式传入 Idempotency-Key，则优先按幂等键回放。
+          - 设备若存在 active binding，会校验 student/device 归属，避免错绑设备写到他人名下。
+        completion_note: 已完成签到事件写入与去重骨架，事件链路具备可重复调用不重复落库的最小能力，可交给 A9 对接签到流水与异常页，后续由 A10 接真实持久化与修正链路。
         wbs: [WBS-034]
         depends_on: [T-A1-1]
         input_docs:
@@ -557,7 +565,11 @@ agents:
       - task_id: T-A1-3
         title: 作业时长会话与日聚合任务
         priority: P1
-        status: todo
+        status: done
+        notes:
+          - 已补 homework time session 写入与 daily stats 查询/重算骨架，当前通过 in-memory session -> stat 聚合体现日汇总口径。
+          - 聚合函数可按 student/subject/date 重跑，便于后续替换成定时任务或消息驱动任务。
+        completion_note: 已完成作业时长会话与日聚合首波骨架，日统计查询可用，后续由 A9 接作业时长页、A10 接真实任务调度与数据库聚合。
         wbs: [WBS-035]
         depends_on: [T-A1-2]
         input_docs:
