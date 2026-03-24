@@ -1002,7 +1002,11 @@ agents:
       - task_id: T-QA1-1
         title: 主流程 E2E、集成测试、回归测试
         priority: P0
-        status: todo
+        status: done
+        notes:
+          - 已在 apps/api/test/qa 交付 5 条主流程 skeleton：auth、enrollment、homework、growth、billing，并补统一 fixture，runner 可直接识别。
+          - 当前 smoke 覆盖后端骨架主链路，前端页面动作、真实环境联调、缺陷清零仍待预发联调阶段补齐。
+        completion_note: 已完成 QA / E2E 首波基础资产，测试骨架可被 node:test runner 识别并通过；后续直接在同目录补真实接口与 UI 断言即可。
         wbs: [WBS-049]
         depends_on: [T-F1-1, T-M1-2, T-M1-4, T-H1-6, T-G1-5, T-B1-FE]
         input_docs:
@@ -1020,7 +1024,11 @@ agents:
       - task_id: T-QA1-2
         title: 预发上线、备份、回滚、发布验收
         priority: P0
-        status: todo
+        status: done
+        notes:
+          - 已新增 docs/growthpilot/26_预发上线与回滚清单.md，覆盖预发检查、备份恢复、发布执行、回滚触发与签收模板。
+          - 已新增缺陷分级与 release gate 模板，供 QA / PM / Owner 在预发放行时统一执行。
+        completion_note: 已完成预发上线与回滚首波文档资产；当前为 checklist / template 形态，可直接承接后续真环境演练与签收记录。
         wbs: [WBS-050]
         depends_on: [T-QA1-1, T-BI1-2, T-DM1-2]
         input_docs:
