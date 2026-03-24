@@ -33,4 +33,7 @@ export const queryKeys = {
   billingRenewals: (filters: QueryBase & { familyId?: string; studentId?: string; ownerId?: string } = {}) => ['billing-renewals', filters] as const,
   communicationRecords: (filters: QueryBase & { familyId?: string; studentId?: string; channel?: string; direction?: string; dateFrom?: string; dateTo?: string } = {}) => ['communication-records', filters] as const,
   communicationMessages: (filters: QueryBase & { familyId?: string; studentId?: string; channel?: string; messageStatus?: string; dateFrom?: string; dateTo?: string } = {}) => ['communication-messages', filters] as const,
+  analyticsOverview: (filters: QueryBase & { dateFrom?: string; dateTo?: string } = {}) => ['analytics-overview-page', filters] as const,
+  analyticsTeaching: (filters: QueryBase & { dateFrom?: string; dateTo?: string } = {}) => ['analytics-teaching-page', filters] as const,
+  analyticsBilling: (filters: QueryBase & { dateFrom?: string; dateTo?: string } = {}) => ['analytics-billing-page', filters] as const,
 };

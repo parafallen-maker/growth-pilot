@@ -947,7 +947,11 @@ agents:
       - task_id: T-BI1-2
         title: analytics 页面与图表联通
         priority: P1
-        status: todo
+        status: done
+        notes:
+          - 已在 apps/web 新增 /analytics/overview、/analytics/teaching、/analytics/billing 三个骨架页，并补齐 analytics service / query keys / permission guard / 导航入口。
+          - 页面统一包含校区/学期/日期筛选栏、KPI 卡、图表占位、表格/排行占位、loading/empty/error/permissionDenied；billing analytics 明确保留 VO cents -> 元展示口径。
+        completion_note: 已完成 analytics 前端骨架收口，可交 A7/T-BI1-1 对接真实聚合接口，再交 A10 做联调验收与导出联通。
         wbs: [WBS-047]
         depends_on: [T-BI1-1, T-F1-2]
         input_docs:
