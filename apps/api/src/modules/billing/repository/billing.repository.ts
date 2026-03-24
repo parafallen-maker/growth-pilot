@@ -9,6 +9,23 @@ import type {
   BillingRefund,
 } from '@growthpilot/schema/index';
 
+type BillingRenewalTask = {
+  id: string;
+  familyId: string;
+  studentId: string;
+  campusId?: string | null;
+  termId?: string | null;
+  contractId?: string | null;
+  ownerUserId?: string | null;
+  expectedEndDate?: string | null;
+  status: 'todo' | 'contacting' | 'won' | 'lost' | 'closed';
+  lastContactAt?: string | null;
+  nextFollowUpAt?: string | null;
+  note?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 interface BillingState {
   products: BillingProduct[];
   contracts: BillingContract[];
@@ -17,6 +34,7 @@ interface BillingState {
   invoiceItems: BillingInvoiceItem[];
   payments: BillingPayment[];
   refunds: BillingRefund[];
+  renewals: BillingRenewalTask[];
 }
 
 @Injectable()
@@ -100,6 +118,24 @@ export class BillingRepository {
     ],
     payments: [],
     refunds: [],
+    renewals: [
+      {
+        id: 'renewal-001',
+        familyId: 'family-001',
+        studentId: 'student-001',
+        campusId: 'campus-001',
+        termId: 'term-2026-spring',
+        contractId: 'contract-001',
+        ownerUserId: 'user-service-001',
+        expectedEndDate: '2026-06-30',
+        status: 'todo',
+        lastContactAt: null,
+        nextFollowUpAt: '2026-06-10T10:00:00+08:00',
+        note: '首轮续费跟进',
+        createdAt: '2026-03-24T10:00:00+08:00',
+        updatedAt: '2026-03-24T10:00:00+08:00',
+      },
+    ],
   };
 
   listProducts() { return [...this.state.products]; }
@@ -107,6 +143,7 @@ export class BillingRepository {
   listInvoices() { return [...this.state.invoices]; }
   listPayments() { return [...this.state.payments]; }
   listRefunds() { return [...this.state.refunds]; }
+  listRenewals() { return [...this.state.renewals]; }
 
   findContractById(contractId: string) { return this.state.contracts.find((item) => item.id === contractId); }
   findInvoiceById(invoiceId: string) { return this.state.invoices.find((item) => item.id === invoiceId); }
@@ -136,6 +173,12 @@ export class BillingRepository {
     const refund = this.findRefundById(refundId);
     if (!refund) throw new NotFoundException(`refund ${refundId} not found`);
     return refund;
+  }
+
+  getRenewalOrThrow(renewalId: string) {
+    const renewal = this.state.renewals.find((item) => item.id === renewalId);
+    if (!renewal) throw new NotFoundException(`renewal ${renewalId} not found`);
+    return renewal;
   }
 
   listContractItems(contractId: string) {
@@ -242,6 +285,24 @@ export class BillingRepository {
     const invoice = this.getInvoiceOrThrow(invoiceId);
     Object.assign(invoice, patch, { updatedAt: new Date().toISOString() });
     return invoice;
+  }
+
+  createRenewal(input: Omit<BillingRenewalTask, 'id' | 'createdAt' | 'updatedAt'>) {
+    const now = new Date().toISOString();
+    const renewal: BillingRenewalTask = {
+      ...input,
+      id: `renewal-${String(this.state.renewals.length + 1).padStart(3, '0')}`,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.state.renewals.unshift(renewal);
+    return renewal;
+  }
+
+  updateRenewal(renewalId: string, patch: Partial<BillingRenewalTask>) {
+    const renewal = this.getRenewalOrThrow(renewalId);
+    Object.assign(renewal, patch, { updatedAt: new Date().toISOString() });
+    return renewal;
   }
 
   runInTransaction<T>(runner: () => T): T {

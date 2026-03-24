@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Patch, Post, Query } from '@nestjs/common';
 import { ok } from '../../../common/api-response';
 import { BillingProductQueryDto } from '../dto/billing-product-query.dto';
 import { ContractQueryDto } from '../dto/contract-query.dto';
@@ -7,7 +7,11 @@ import { CreateContractDto } from '../dto/create-contract.dto';
 import { CreateInvoiceDto } from '../dto/create-invoice.dto';
 import { CreatePaymentDto } from '../dto/create-payment.dto';
 import { CreateRefundDto } from '../dto/create-refund.dto';
+import { CreateRenewalDto } from '../dto/create-renewal.dto';
 import { InvoiceQueryDto } from '../dto/invoice-query.dto';
+import { RenewalQueryDto } from '../dto/renewal-query.dto';
+import { UpdateRenewalFollowUpDto } from '../dto/update-renewal-follow-up.dto';
+import { UpdateRenewalStatusDto } from '../dto/update-renewal-status.dto';
 import { BillingService } from '../service/billing.service';
 
 @Controller('billing')
@@ -71,5 +75,25 @@ export class BillingController {
   @Get('refunds/:refundId')
   getRefund(@Param('refundId') refundId: string) {
     return ok(this.billingService.getRefund(refundId));
+  }
+
+  @Get('renewals')
+  listRenewals(@Query() query: RenewalQueryDto) {
+    return ok(this.billingService.listRenewals(query));
+  }
+
+  @Post('renewals')
+  createRenewal(@Body() payload: CreateRenewalDto) {
+    return ok(this.billingService.createRenewal(payload));
+  }
+
+  @Patch('renewals/:renewalId/status')
+  updateRenewalStatus(@Param('renewalId') renewalId: string, @Body() payload: UpdateRenewalStatusDto) {
+    return ok(this.billingService.updateRenewalStatus(renewalId, payload));
+  }
+
+  @Patch('renewals/:renewalId/follow-up')
+  updateRenewalFollowUp(@Param('renewalId') renewalId: string, @Body() payload: UpdateRenewalFollowUpDto) {
+    return ok(this.billingService.updateRenewalFollowUp(renewalId, payload));
   }
 }

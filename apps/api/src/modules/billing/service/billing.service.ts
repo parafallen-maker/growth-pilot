@@ -9,7 +9,11 @@ import { CreateContractDto } from '../dto/create-contract.dto';
 import { CreateInvoiceDto } from '../dto/create-invoice.dto';
 import { CreatePaymentDto } from '../dto/create-payment.dto';
 import { CreateRefundDto } from '../dto/create-refund.dto';
+import { CreateRenewalDto } from '../dto/create-renewal.dto';
 import { InvoiceQueryDto } from '../dto/invoice-query.dto';
+import { RenewalQueryDto } from '../dto/renewal-query.dto';
+import { UpdateRenewalFollowUpDto } from '../dto/update-renewal-follow-up.dto';
+import { UpdateRenewalStatusDto } from '../dto/update-renewal-status.dto';
 import { BillingRepository } from '../repository/billing.repository';
 
 @Injectable()
@@ -234,6 +238,60 @@ export class BillingService {
       payment,
       invoice: payment ? this.billingRepository.getInvoiceOrThrow(payment.invoiceId) : null,
     };
+  }
+
+  listRenewals(query: RenewalQueryDto) {
+    const { pageNo, pageSize } = normalizePage(query);
+    const filtered = this.billingRepository.listRenewals().filter((item) => {
+      if (query.campusId && item.campusId !== query.campusId) return false;
+      if (query.termId && item.termId !== query.termId) return false;
+      if (query.status && item.status !== query.status) return false;
+      if (query.ownerUserId && item.ownerUserId !== query.ownerUserId) return false;
+      if (query.familyId && item.familyId !== query.familyId) return false;
+      if (query.studentId && item.studentId !== query.studentId) return false;
+      const rangeDate = item.expectedEndDate ?? item.nextFollowUpAt?.slice(0, 10) ?? null;
+      if (query.dateFrom && (!rangeDate || rangeDate < query.dateFrom)) return false;
+      if (query.dateTo && (!rangeDate || rangeDate > query.dateTo)) return false;
+      if (query.keyword) {
+        const keyword = query.keyword.toLowerCase();
+        return [item.familyId, item.studentId, item.note, item.ownerUserId, item.contractId]
+          .filter(Boolean)
+          .some((value) => value!.toLowerCase().includes(keyword));
+      }
+      return true;
+    });
+    return this.page(filtered, pageNo, pageSize);
+  }
+
+  createRenewal(payload: CreateRenewalDto) {
+    return this.billingRepository.createRenewal({
+      familyId: payload.familyId,
+      studentId: payload.studentId,
+      campusId: payload.campusId ?? null,
+      termId: payload.termId ?? null,
+      contractId: payload.contractId ?? null,
+      ownerUserId: payload.ownerUserId ?? null,
+      expectedEndDate: payload.expectedEndDate ?? null,
+      status: payload.status ?? 'todo',
+      lastContactAt: payload.lastContactAt ?? null,
+      nextFollowUpAt: payload.nextFollowUpAt ?? null,
+      note: payload.note ?? null,
+    });
+  }
+
+  updateRenewalStatus(renewalId: string, payload: UpdateRenewalStatusDto) {
+    return this.billingRepository.updateRenewal(renewalId, {
+      status: payload.status,
+      lastContactAt: payload.lastContactAt,
+      note: payload.note,
+    });
+  }
+
+  updateRenewalFollowUp(renewalId: string, payload: UpdateRenewalFollowUpDto) {
+    return this.billingRepository.updateRenewal(renewalId, {
+      nextFollowUpAt: payload.nextFollowUpAt,
+      note: payload.note,
+    });
   }
 
   private refreshInvoiceStatus(invoiceId: string) {
