@@ -17,4 +17,10 @@ export const queryKeys = {
   homeworkSubmissionDetail: (submissionId: string) => ['homework-submission-detail', submissionId] as const,
   homeworkReviewDraft: (submissionId: string) => ['homework-review-draft', submissionId] as const,
   homeworkErrorTaxonomies: (filters: QueryBase = {}) => ['homework-error-taxonomies', filters] as const,
+  growthRubrics: (filters: QueryBase = {}) => ['growth-rubrics', filters] as const,
+  growthRubricDetail: (rubricId: string) => ['growth-rubric-detail', rubricId] as const,
+  growthObservations: (filters: QueryBase & { studentId?: string; teacherId?: string; dateFrom?: string; dateTo?: string; scene?: string; reportPublished?: string } = {}) => ['growth-observations', filters] as const,
+  growthGoals: (filters: QueryBase & { studentId?: string; teacherId?: string } = {}) => ['growth-goals', filters] as const,
+  growthGoalDetail: (goalId: string) => ['growth-goal-detail', goalId] as const,
+  growthReports: (filters: QueryBase & { reportType?: string; publishStatus?: string } = {}) => ['growth-reports', filters] as const,
 };

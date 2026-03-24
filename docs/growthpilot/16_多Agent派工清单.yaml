@@ -819,7 +819,7 @@ agents:
       - task_id: T-G1-5
         title: Rubric、观察、目标、报告页面
         priority: P0
-        status: todo
+        status: done
         wbs: [WBS-029, WBS-030, WBS-032]
         depends_on: [T-G1-1, T-G1-2, T-G1-3, T-G1-4, T-F1-2]
         input_docs:
@@ -833,7 +833,12 @@ agents:
         done_definition:
           - 动态 schema 表单可用
           - 报告预览与发布分离
-        handoff_to: [A10]
+        notes:
+          - 已在 apps/web 搭出 /growth/rubrics、/growth/observations、/growth/goals、/growth/reports 四个页面骨架，并补 growth-service、query keys、permission guard 接线、mock dynamic schema。
+          - 页面已覆盖 rubric 双栏、observations 列表/筛选/创建入口/状态块、goals 列表+详情抽屉占位+check-in 动作位、reports 三段列表+素材池/正文编辑区/发布设置三栏占位。
+          - 当前仍为 mock service / mock data；已遵守 service 分层、query key、permission code、loading/empty/error/permissionDenied 约定，待 A6 用真实接口替换。
+        completion_note: 已完成 Growth 主链路前端骨架与导航接入；本地 typecheck/test 通过，后续请 A6 对接 rubric/observation/goal/report 实际接口、jobId 与 check-in / generate / publish action。
+        handoff_to: [A6, A10]
       - task_id: T-A1-FE
         title: 出勤看板、设备绑定、作业时长页面
         priority: P1

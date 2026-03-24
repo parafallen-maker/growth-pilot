@@ -34,6 +34,15 @@ export const navSections: NavSection[] = [
     ],
   },
   {
+    title: '成长',
+    items: [
+      { label: 'Growth Rubrics', href: '/growth/rubrics', permission: 'growth:rubrics:view' },
+      { label: 'Growth Observations', href: '/growth/observations', permission: 'growth:observations:view' },
+      { label: 'Growth Goals', href: '/growth/goals', permission: 'growth:goals:view' },
+      { label: 'Growth Reports', href: '/growth/reports', permission: 'growth:reports:view' },
+    ],
+  },
+  {
     title: '系统设置',
     items: [
       { label: 'Users & Roles', href: '/settings/users', permission: 'users:view' },
@@ -43,10 +52,10 @@ export const navSections: NavSection[] = [
 ];
 
 export const rolePermissions: Record<AppRole, string[]> = {
-  super_admin: ['dashboard:view', 'teachers:view', 'students:view', 'families:view', 'homework:view', 'homework:review', 'homework:analyze', 'homework:export', 'homework:error-taxonomies:view', 'homework:error-taxonomies:manage', 'users:view', 'settings:view', 'danger:reset-password'],
-  campus_admin: ['dashboard:view', 'teachers:view', 'students:view', 'families:view', 'homework:view', 'homework:analyze', 'homework:export', 'homework:error-taxonomies:view', 'homework:error-taxonomies:manage', 'users:view', 'settings:view'],
-  growth_advisor: ['dashboard:view', 'students:view', 'families:view', 'homework:view', 'homework:review'],
-  subject_teacher: ['students:view', 'homework:view', 'homework:review'],
+  super_admin: ['dashboard:view', 'teachers:view', 'students:view', 'families:view', 'homework:view', 'homework:review', 'homework:analyze', 'homework:export', 'homework:error-taxonomies:view', 'homework:error-taxonomies:manage', 'growth:rubrics:view', 'growth:rubrics:manage', 'growth:observations:view', 'growth:observations:manage', 'growth:goals:view', 'growth:goals:manage', 'growth:reports:view', 'growth:reports:manage', 'users:view', 'settings:view', 'danger:reset-password'],
+  campus_admin: ['dashboard:view', 'teachers:view', 'students:view', 'families:view', 'homework:view', 'homework:analyze', 'homework:export', 'homework:error-taxonomies:view', 'homework:error-taxonomies:manage', 'growth:rubrics:view', 'growth:rubrics:manage', 'growth:observations:view', 'growth:observations:manage', 'growth:goals:view', 'growth:goals:manage', 'growth:reports:view', 'growth:reports:manage', 'users:view', 'settings:view'],
+  growth_advisor: ['dashboard:view', 'students:view', 'families:view', 'homework:view', 'homework:review', 'growth:observations:view', 'growth:observations:manage', 'growth:goals:view', 'growth:goals:manage', 'growth:reports:view', 'growth:reports:manage'],
+  subject_teacher: ['students:view', 'homework:view', 'homework:review', 'growth:observations:view', 'growth:observations:manage', 'growth:goals:view', 'growth:goals:manage'],
   service_staff: ['families:view'],
   finance: ['dashboard:view', 'families:view'],
 };
