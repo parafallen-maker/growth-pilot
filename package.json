@@ -15,6 +15,7 @@
     "format": "npm run format --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
+    "migration:dry-run": "node scripts/migration/run-staging-import.mjs --dry-run",
     "ci:check": "npm run lint && npm run typecheck && npm run test"
   },
   "devDependencies": {
