@@ -375,7 +375,10 @@ agents:
       - task_id: T-H1-1
         title: 作业提交接口与提交状态机
         priority: P0
-        status: todo
+        status: done
+        notes:
+          - 已在 apps/api 落 homework submission controller/service/repository/dto 骨架，路径与 OpenAPI 对齐。
+        completion_note: 已完成 in-memory 作业提交链路、submissionNo 生成、fileIds 关联与提交事件发布，供 A9 接前端列表/上传入口。
         wbs: [WBS-019]
         depends_on: [T-M1-2, T-M1-5, T-P0-4]
         input_docs:
@@ -392,7 +395,10 @@ agents:
       - task_id: T-H1-2
         title: AI 任务表、队列、去重策略
         priority: P0
-        status: todo
+        status: done
+        notes:
+          - 已补 JobsService/JobsRepository 创建、状态推进、active job 去重能力，并接入 homework analysis queue 占位实现。
+        completion_note: 已完成 mock queue + job dedupe 骨架，支持 analyze 建 job、running/success/failed 状态推进与 jobs 查询接口复用。
         wbs: [WBS-020]
         depends_on: [T-H1-1, T-M1-5]
         input_docs:
@@ -410,7 +416,10 @@ agents:
       - task_id: T-H1-3
         title: AI Adapter 与结构化结果回写
         priority: P0
-        status: todo
+        status: done
+        notes:
+          - 已新增 HomeworkAnalysisAdapter 抽象与 MockHomeworkAnalysisAdapter，实现 rawMarkdown + structuredOutput 双存。
+        completion_note: 已完成 analysis adapter 抽象、mock provider、结构化结果回写与 provider/model/prompt_version 留痕。
         wbs: [WBS-021]
         depends_on: [T-H1-2, T-H1-API]
         input_docs:
@@ -427,7 +436,10 @@ agents:
       - task_id: T-H1-6
         title: 复核正式提交事务与事件发布
         priority: P0
-        status: todo
+        status: done
+        notes:
+          - 已实现 in-memory transaction runner，review / review_error_items / submission 状态更新在同一事务骨架内完成，并发布 HomeworkReviewed 事件。
+        completion_note: 已完成教师复核正式提交流程骨架，发布/未发布两种状态可收口；后续可替换为真实 DB 事务与事件总线。
         wbs: [WBS-024]
         depends_on: [T-H1-3]
         input_docs:
