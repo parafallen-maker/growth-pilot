@@ -34,6 +34,15 @@ export const navSections: NavSection[] = [
     ],
   },
   {
+    title: '收费',
+    items: [
+      { label: 'Billing Products', href: '/billing/products', permission: 'billing:products:view' },
+      { label: 'Billing Contracts', href: '/billing/contracts', permission: 'billing:contracts:view' },
+      { label: 'Billing Invoices', href: '/billing/invoices', permission: 'billing:invoices:view' },
+      { label: 'Billing Renewals', href: '/billing/renewals', permission: 'billing:renewals:view' },
+    ],
+  },
+  {
     title: '成长',
     items: [
       { label: 'Growth Rubrics', href: '/growth/rubrics', permission: 'growth:rubrics:view' },
@@ -52,12 +61,12 @@ export const navSections: NavSection[] = [
 ];
 
 export const rolePermissions: Record<AppRole, string[]> = {
-  super_admin: ['dashboard:view', 'teachers:view', 'students:view', 'families:view', 'homework:view', 'homework:review', 'homework:analyze', 'homework:export', 'homework:error-taxonomies:view', 'homework:error-taxonomies:manage', 'growth:rubrics:view', 'growth:rubrics:manage', 'growth:observations:view', 'growth:observations:manage', 'growth:goals:view', 'growth:goals:manage', 'growth:reports:view', 'growth:reports:manage', 'users:view', 'settings:view', 'danger:reset-password'],
-  campus_admin: ['dashboard:view', 'teachers:view', 'students:view', 'families:view', 'homework:view', 'homework:analyze', 'homework:export', 'homework:error-taxonomies:view', 'homework:error-taxonomies:manage', 'growth:rubrics:view', 'growth:rubrics:manage', 'growth:observations:view', 'growth:observations:manage', 'growth:goals:view', 'growth:goals:manage', 'growth:reports:view', 'growth:reports:manage', 'users:view', 'settings:view'],
+  super_admin: ['dashboard:view', 'teachers:view', 'students:view', 'families:view', 'homework:view', 'homework:review', 'homework:analyze', 'homework:export', 'homework:error-taxonomies:view', 'homework:error-taxonomies:manage', 'growth:rubrics:view', 'growth:rubrics:manage', 'growth:observations:view', 'growth:observations:manage', 'growth:goals:view', 'growth:goals:manage', 'growth:reports:view', 'growth:reports:manage', 'billing:products:view', 'billing:products:manage', 'billing:contracts:view', 'billing:contracts:manage', 'billing:invoices:view', 'billing:payments:manage', 'billing:refunds:manage', 'billing:renewals:view', 'billing:renewals:manage', 'users:view', 'settings:view', 'danger:reset-password'],
+  campus_admin: ['dashboard:view', 'teachers:view', 'students:view', 'families:view', 'homework:view', 'homework:analyze', 'homework:export', 'homework:error-taxonomies:view', 'homework:error-taxonomies:manage', 'growth:rubrics:view', 'growth:rubrics:manage', 'growth:observations:view', 'growth:observations:manage', 'growth:goals:view', 'growth:goals:manage', 'growth:reports:view', 'growth:reports:manage', 'billing:products:view', 'billing:contracts:view', 'billing:contracts:manage', 'billing:invoices:view', 'billing:payments:manage', 'billing:refunds:manage', 'billing:renewals:view', 'billing:renewals:manage', 'users:view', 'settings:view'],
   growth_advisor: ['dashboard:view', 'students:view', 'families:view', 'homework:view', 'homework:review', 'growth:observations:view', 'growth:observations:manage', 'growth:goals:view', 'growth:goals:manage', 'growth:reports:view', 'growth:reports:manage'],
   subject_teacher: ['students:view', 'homework:view', 'homework:review', 'growth:observations:view', 'growth:observations:manage', 'growth:goals:view', 'growth:goals:manage'],
-  service_staff: ['families:view'],
-  finance: ['dashboard:view', 'families:view'],
+  service_staff: ['families:view', 'billing:contracts:view', 'billing:renewals:view'],
+  finance: ['dashboard:view', 'families:view', 'billing:products:view', 'billing:products:manage', 'billing:contracts:view', 'billing:contracts:manage', 'billing:invoices:view', 'billing:payments:manage', 'billing:refunds:manage', 'billing:renewals:view', 'billing:renewals:manage'],
 };
 
 export const mockCurrentUser = {

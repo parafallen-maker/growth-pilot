@@ -23,4 +23,8 @@ export const queryKeys = {
   growthGoals: (filters: QueryBase & { studentId?: string; teacherId?: string } = {}) => ['growth-goals', filters] as const,
   growthGoalDetail: (goalId: string) => ['growth-goal-detail', goalId] as const,
   growthReports: (filters: QueryBase & { reportType?: string; publishStatus?: string } = {}) => ['growth-reports', filters] as const,
+  billingProducts: (filters: QueryBase = {}) => ['billing-products', filters] as const,
+  billingContracts: (filters: QueryBase & { familyId?: string; studentId?: string; teacherId?: string; endDateFrom?: string; endDateTo?: string } = {}) => ['billing-contracts', filters] as const,
+  billingInvoices: (filters: QueryBase & { familyId?: string; studentId?: string; dueDateFrom?: string; dueDateTo?: string; tab?: string } = {}) => ['billing-invoices', filters] as const,
+  billingRenewals: (filters: QueryBase & { familyId?: string; studentId?: string; ownerId?: string } = {}) => ['billing-renewals', filters] as const,
 };
