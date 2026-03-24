@@ -765,7 +765,10 @@ agents:
       - task_id: T-H1-4
         title: 作业列表页
         priority: P0
-        status: todo
+        status: done
+        notes:
+          - 2026-03-24：已在 apps/web 落 homework submissions 页面骨架、query key、mock service、权限占位与 loading/empty 状态块。
+        completion_note: 已完成 /homework/submissions 页面骨架，包含筛选栏、统计卡、表格占位、行内动作占位，并按 pageNo/pageSize/sortBy/sortOrder 与 homework-submissions query key 约定接 mock service。
         wbs: [WBS-022]
         depends_on: [T-H1-1, T-F1-2]
         input_docs:
@@ -779,7 +782,10 @@ agents:
       - task_id: T-H1-5
         title: 作业复核工作台
         priority: P0
-        status: todo
+        status: done
+        notes:
+          - 2026-03-24：已补 review workbench 三栏布局、rawMarkdown/structured JSON 双视图、review schema/defaultValues、未保存提醒占位。
+        completion_note: 已完成 /homework/review/[submissionId] 工作台骨架，包含原图附件区、AI 结果双视图、教师复核表单占位、Zod schema/defaultValues、review draft store 占位与上一条/下一条/保存草稿/正式提交动作位。
         wbs: [WBS-023]
         depends_on: [T-H1-3, T-F1-2]
         input_docs:
@@ -796,7 +802,10 @@ agents:
       - task_id: T-H1-7
         title: 错因词典页
         priority: P1
-        status: todo
+        status: done
+        notes:
+          - 2026-03-24：已落错因词典页骨架、mock taxonomyQuery、启停/编辑/排序维护动作占位。
+        completion_note: 已完成 /homework/error-taxonomies 页面骨架，包含筛选栏、字典表格、维护动作区与 error 状态块，后续可直接接 FormDialog 与实际启停/排序 API。
         wbs: [WBS-025]
         depends_on: [T-H1-6, T-F1-2]
         input_docs:

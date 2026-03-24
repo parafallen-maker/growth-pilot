@@ -13,4 +13,8 @@ export const queryKeys = {
   studentDetail: (studentId: string) => ['student-detail', studentId] as const,
   families: (filters: QueryBase = {}) => ['families', filters] as const,
   familyDetail: (familyId: string) => ['family-detail', familyId] as const,
+  homeworkSubmissions: (filters: QueryBase & { subject?: string; teacherId?: string; aiStatus?: string; reviewStatus?: string; dateFrom?: string; dateTo?: string } = {}) => ['homework-submissions', filters] as const,
+  homeworkSubmissionDetail: (submissionId: string) => ['homework-submission-detail', submissionId] as const,
+  homeworkReviewDraft: (submissionId: string) => ['homework-review-draft', submissionId] as const,
+  homeworkErrorTaxonomies: (filters: QueryBase = {}) => ['homework-error-taxonomies', filters] as const,
 };

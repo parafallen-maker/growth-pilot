@@ -27,6 +27,13 @@ export const navSections: NavSection[] = [
     ],
   },
   {
+    title: '作业',
+    items: [
+      { label: 'Homework Submissions', href: '/homework/submissions', permission: 'homework:view' },
+      { label: 'Error Taxonomies', href: '/homework/error-taxonomies', permission: 'homework:error-taxonomies:view' },
+    ],
+  },
+  {
     title: '系统设置',
     items: [
       { label: 'Users & Roles', href: '/settings/users', permission: 'users:view' },
@@ -36,10 +43,10 @@ export const navSections: NavSection[] = [
 ];
 
 export const rolePermissions: Record<AppRole, string[]> = {
-  super_admin: ['dashboard:view', 'teachers:view', 'students:view', 'families:view', 'users:view', 'settings:view', 'danger:reset-password'],
-  campus_admin: ['dashboard:view', 'teachers:view', 'students:view', 'families:view', 'users:view', 'settings:view'],
-  growth_advisor: ['dashboard:view', 'students:view', 'families:view'],
-  subject_teacher: ['students:view'],
+  super_admin: ['dashboard:view', 'teachers:view', 'students:view', 'families:view', 'homework:view', 'homework:review', 'homework:analyze', 'homework:export', 'homework:error-taxonomies:view', 'homework:error-taxonomies:manage', 'users:view', 'settings:view', 'danger:reset-password'],
+  campus_admin: ['dashboard:view', 'teachers:view', 'students:view', 'families:view', 'homework:view', 'homework:analyze', 'homework:export', 'homework:error-taxonomies:view', 'homework:error-taxonomies:manage', 'users:view', 'settings:view'],
+  growth_advisor: ['dashboard:view', 'students:view', 'families:view', 'homework:view', 'homework:review'],
+  subject_teacher: ['students:view', 'homework:view', 'homework:review'],
   service_staff: ['families:view'],
   finance: ['dashboard:view', 'families:view'],
 };
