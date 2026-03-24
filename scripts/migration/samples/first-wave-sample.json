@@ -1,0 +1,76 @@
+[
+  {
+    "targetDomain": "students",
+    "sourceSheet": "2026上半学年学生信息表",
+    "sourcePk": "student-row-101",
+    "studentNo": "S-101",
+    "studentName": "陈晨",
+    "gradeLabel": "一年级",
+    "primaryTeacherName": "胡忠芸",
+    "familyPhone": "13800000011",
+    "familyStructureRaw": "否",
+    "enrollDateRaw": 46083
+  },
+  {
+    "targetDomain": "students",
+    "sourceSheet": "2026上半学年学生信息表",
+    "sourcePk": "student-row-102",
+    "studentNo": "S-001",
+    "studentName": "李四",
+    "gradeLabel": "二年级",
+    "primaryTeacherName": "肖顺英",
+    "familyPhone": "13800000002",
+    "familyStructureRaw": "是",
+    "enrollDateRaw": 46084
+  },
+  {
+    "targetDomain": "homework",
+    "sourceSheet": "2026上半学年每日作业完成质量表",
+    "sourcePk": "hw-row-101",
+    "studentNo": "S-101",
+    "studentName": "陈晨",
+    "subjectRaw": "数学",
+    "homeworkDateRaw": 46104,
+    "accuracyRaw": "92%",
+    "errorTaxonomyRaw": "计算失误",
+    "teacherName": "胡忠芸"
+  },
+  {
+    "targetDomain": "homework",
+    "sourceSheet": "2026上半学年每日作业完成质量表",
+    "sourcePk": "hw-row-404",
+    "studentNo": "S-404",
+    "studentName": "王五",
+    "subjectRaw": "物理",
+    "homeworkDateRaw": 46104,
+    "accuracyRaw": "85%",
+    "errorTaxonomyRaw": "神秘错误",
+    "teacherName": "不存在老师"
+  },
+  {
+    "targetDomain": "billing",
+    "sourceSheet": "历史账单表",
+    "sourcePk": "invoice-row-101",
+    "contractNo": "C-101",
+    "invoiceNo": "I-101",
+    "totalAmountCents": 12000,
+    "discountAmountCents": 2000,
+    "payableAmountCents": 10000,
+    "invoiceItemsAmountCents": 12000,
+    "paymentsAmountCents": 10000,
+    "refundsAmountCents": 0
+  },
+  {
+    "targetDomain": "billing",
+    "sourceSheet": "历史账单表",
+    "sourcePk": "invoice-row-001",
+    "contractNo": "C-001",
+    "invoiceNo": "I-001",
+    "totalAmountCents": 10000,
+    "discountAmountCents": 1000,
+    "payableAmountCents": 9500,
+    "invoiceItemsAmountCents": 10000,
+    "paymentsAmountCents": 6000,
+    "refundsAmountCents": 7000
+  }
+]

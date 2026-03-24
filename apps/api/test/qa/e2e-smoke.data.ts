@@ -1,0 +1,95 @@
+export const qaActors = {
+  teacherUserId: 'user-teacher-001',
+  teacherId: 'teacher-001',
+  studentId: 'student-001',
+  campusId: 'campus-001',
+  termId: 'term-2026-spring',
+};
+
+export const homeworkSmokeFixture = {
+  upload: {
+    fileName: 'qa-homework-math-01.jpg',
+    mimeType: 'image/jpeg',
+    sizeBytes: 128000,
+    checksum: 'sha256:qa-homework-01',
+    purpose: 'homework',
+    sourceType: 'qa_e2e',
+    uploadedBy: qaActors.teacherUserId,
+  },
+  submission: {
+    studentId: qaActors.studentId,
+    campusId: qaActors.campusId,
+    termId: qaActors.termId,
+    teacherId: qaActors.teacherId,
+    subject: 'math',
+    homeworkDate: '2026-03-25',
+    remark: 'Smoke fixture: homework review main flow',
+  },
+  analysis: {
+    provider: 'mock-provider',
+    modelName: 'mock-vision-v1',
+    promptVersion: 'homework-review-v3',
+    idempotencyKey: 'qa-homework-analysis-001',
+  },
+  review: {
+    reviewerTeacherId: qaActors.teacherId,
+    reviewResult: 'adjusted' as const,
+    finalAccuracyPct: 91,
+    finalErrorSummary: '计算较稳，仍需二次审题。',
+    finalSuggestion: '继续先圈关键词再验算。',
+    publishToFamily: true,
+    finalErrorItems: [{ errorTaxonomyId: 'error-taxonomy-001', weight: 2, note: '审题偏差仍存在' }],
+  },
+};
+
+export const growthSmokeFixture = {
+  rubric: {
+    campusId: qaActors.campusId,
+    termId: qaActors.termId,
+    name: 'QA Rubric - Homework Habit',
+    stageScope: 'grade-1',
+    status: 'active' as const,
+    description: 'Smoke fixture for growth report flow',
+    dimensions: [
+      { code: 'focus', name: '专注度', weight: 1, scoreMin: 1, scoreMax: 5, sortOrder: 10 },
+      { code: 'habit', name: '学习习惯', weight: 1, scoreMin: 1, scoreMax: 5, sortOrder: 20 },
+    ],
+  },
+  observation: {
+    studentId: qaActors.studentId,
+    termId: qaActors.termId,
+    teacherId: qaActors.teacherId,
+    observationDate: '2026-03-25',
+    scene: 'after_class_homework',
+    strengths: '能主动订正',
+    improvementNotes: '先独立完成再求助',
+    publishToFamily: false,
+  },
+  goal: {
+    studentId: qaActors.studentId,
+    termId: qaActors.termId,
+    goalType: 'habit' as const,
+    title: '连续 5 天先独立思考 3 分钟',
+    description: 'QA growth smoke path',
+    ownerRole: 'teacher' as const,
+    metricType: 'count' as const,
+    baselineValue: 1,
+    targetValue: 5,
+    currentValue: 1,
+    startDate: '2026-03-25',
+    dueDate: '2026-03-31',
+    status: 'active' as const,
+  },
+  checkin: {
+    checkinDate: '2026-03-26',
+    progressValue: 2,
+    progressNote: '今天先自己列式',
+    nextAction: '继续坚持',
+  },
+  report: {
+    reportType: 'weekly' as const,
+    periodKey: '2026-W13',
+    studentIds: [qaActors.studentId],
+    termId: qaActors.termId,
+  },
+};

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import { createHash } from 'node:crypto';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
 
 const dictionaryMaps = {
   subject: new Map([
@@ -30,17 +32,32 @@ const dictionaryMaps = {
 const args = parseArgs(process.argv.slice(2));
 const dryRun = Boolean(args['dry-run']);
 const batchId = args.batchId ?? `BATCH-${new Date().toISOString().slice(0, 10)}`;
-const sourceSystem = args.sourceSystem ?? 'excel';
-const sourceFile = args.sourceFile ?? 'mock-history.xlsx';
+const inputPath = args.input ? path.resolve(process.cwd(), String(args.input)) : null;
+const sourceSystem = args.sourceSystem ?? inferSourceSystem(inputPath) ?? 'excel';
+const sourceFile = args.sourceFile ?? (inputPath ? path.basename(inputPath) : 'mock-history.xlsx');
+const artifactDir = args.artifactDir
+  ? path.resolve(process.cwd(), String(args.artifactDir))
+  : path.resolve(process.cwd(), 'artifacts', 'migration', batchId);
 
-const sourceRows = buildMockSourceRows();
+const sourceRows = inputPath ? loadRowsFromInput(inputPath) : buildMockSourceRows();
 const rawRows = sourceRows.map((row, index) => toRawRow(row, index + 2, batchId, sourceSystem, sourceFile));
 const normalizedRows = rawRows.map((row) => normalizeRow(row));
 const rejects = normalizedRows.flatMap((row) => row.rejects);
 const finalLoadPlan = buildFinalLoadPlan(normalizedRows);
-const summary = buildSummary({ batchId, sourceSystem, sourceFile, dryRun, rawRows, normalizedRows, rejects, finalLoadPlan });
+const summary = buildSummary({
+  batchId,
+  sourceSystem,
+  sourceFile,
+  inputPath,
+  dryRun,
+  rawRows,
+  normalizedRows,
+  rejects,
+  finalLoadPlan,
+});
+const artifacts = writeArtifacts({ artifactDir, summary, normalizedRows, rejects });
 
-console.log(JSON.stringify(summary, null, 2));
+console.log(JSON.stringify({ ...summary, artifacts }, null, 2));
 
 function parseArgs(argv) {
   const parsed = {};
@@ -61,6 +78,50 @@ function parseArgs(argv) {
     index += 1;
   }
   return parsed;
+}
+
+function inferSourceSystem(inputPathValue) {
+  if (!inputPathValue) return null;
+  const ext = path.extname(inputPathValue).toLowerCase();
+  if (ext === '.csv') return 'csv';
+  if (ext === '.json') return 'json';
+  return null;
+}
+
+function loadRowsFromInput(inputPathValue) {
+  const ext = path.extname(inputPathValue).toLowerCase();
+  const content = readFileSync(inputPathValue, 'utf8');
+  if (ext === '.json') {
+    const parsed = JSON.parse(content);
+    if (!Array.isArray(parsed)) {
+      throw new Error('JSON input must be an array of row objects');
+    }
+    return parsed.map((row, index) => normalizeImportedRow(row, index + 2));
+  }
+  if (ext === '.csv') {
+    return parseCsv(content).map((row, index) => normalizeImportedRow(row, index + 2));
+  }
+  throw new Error(`Unsupported input extension: ${ext || '<none>'}. Use .json or .csv`);
+}
+
+function normalizeImportedRow(row, sourceRowNo) {
+  const payload = { ...row };
+  if (!payload.sourcePk) {
+    payload.sourcePk = `row-${sourceRowNo}`;
+  }
+  if (!payload.sourceSheet) {
+    payload.sourceSheet = 'imported';
+  }
+  if (!payload.targetDomain) {
+    payload.targetDomain = inferTargetDomain(payload);
+  }
+  return payload;
+}
+
+function inferTargetDomain(payload) {
+  if (payload.invoiceNo || payload.contractNo) return 'billing';
+  if (payload.subjectRaw || payload.homeworkDateRaw || payload.errorTaxonomyRaw) return 'homework';
+  return 'students';
 }
 
 function buildMockSourceRows() {
@@ -151,12 +212,12 @@ function normalizeRow(rawRow) {
       ? {
           contractNo: payload.contractNo,
           invoiceNo: payload.invoiceNo,
-          totalAmountCents: payload.totalAmountCents,
-          discountAmountCents: payload.discountAmountCents,
-          payableAmountCents: payload.payableAmountCents,
-          invoiceItemsAmountCents: payload.invoiceItemsAmountCents,
-          paymentsAmountCents: payload.paymentsAmountCents,
-          refundsAmountCents: payload.refundsAmountCents,
+          totalAmountCents: normalizeInt(payload.totalAmountCents),
+          discountAmountCents: normalizeInt(payload.discountAmountCents),
+          payableAmountCents: normalizeInt(payload.payableAmountCents),
+          invoiceItemsAmountCents: normalizeInt(payload.invoiceItemsAmountCents),
+          paymentsAmountCents: normalizeInt(payload.paymentsAmountCents),
+          refundsAmountCents: normalizeInt(payload.refundsAmountCents),
         }
       : null,
   };
@@ -250,7 +311,8 @@ function buildSummary(context) {
     batchId: context.batchId,
     sourceSystem: context.sourceSystem,
     sourceFile: context.sourceFile,
-    mode: context.dryRun ? 'dry-run' : 'plan-only',
+    inputPath: context.inputPath,
+    mode: context.dryRun ? 'dry-run' : 'validation-artifact',
     plan: {
       strategy: ['raw staging', 'normalized staging', 'final load'],
       rawRows: context.rawRows.length,
@@ -322,6 +384,14 @@ function normalizePercent(rawValue) {
   return Number.isFinite(value) ? Number(value.toFixed(2)) : null;
 }
 
+function normalizeInt(rawValue) {
+  if (rawValue === undefined || rawValue === null || rawValue === '') {
+    return 0;
+  }
+  const value = Number(rawValue);
+  return Number.isFinite(value) ? Math.trunc(value) : 0;
+}
+
 function excelSerialToIso(rawValue) {
   if (rawValue === undefined || rawValue === null || rawValue === '') {
     return null;
@@ -348,4 +418,174 @@ function countBy(items, key) {
     accumulator[value] = (accumulator[value] ?? 0) + 1;
     return accumulator;
   }, {});
+}
+
+function parseCsv(content) {
+  const lines = content.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  if (lines.length === 0) return [];
+  const headers = parseCsvLine(lines[0]);
+  return lines.slice(1).map((line) => {
+    const cells = parseCsvLine(line);
+    return headers.reduce((row, header, index) => {
+      row[header] = cells[index] ?? '';
+      return row;
+    }, {});
+  });
+}
+
+function parseCsvLine(line) {
+  const cells = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const next = line[index + 1];
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        current += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (char === ',' && !inQuotes) {
+      cells.push(current);
+      current = '';
+      continue;
+    }
+    current += char;
+  }
+
+  cells.push(current);
+  return cells;
+}
+
+function writeArtifacts({ artifactDir, summary, normalizedRows, rejects }) {
+  mkdirSync(artifactDir, { recursive: true });
+  const summaryPath = path.join(artifactDir, 'summary.json');
+  const rejectReportPath = path.join(artifactDir, 'reject-report.csv');
+  const validationReportPath = path.join(artifactDir, 'validation-report.md');
+  const readyRowsPath = path.join(artifactDir, 'ready-to-load.json');
+
+  writeFileSync(summaryPath, JSON.stringify(summary, null, 2));
+  writeFileSync(rejectReportPath, renderRejectCsv(rejects));
+  writeFileSync(validationReportPath, renderValidationMarkdown(summary));
+  writeFileSync(
+    readyRowsPath,
+    JSON.stringify(
+      normalizedRows
+        .filter((row) => row.importStatus === 'ready_to_load')
+        .map((row) => ({
+          sourceRowRef: `${row.sourceSheet}#${row.sourceRowNo}`,
+          businessKey: row.normalizedPayload.businessKey,
+          targetDomain: row.normalizedPayload.targetDomain,
+          normalizedPayload: row.normalizedPayload,
+        })),
+      null,
+      2,
+    ),
+  );
+
+  return {
+    artifactDir,
+    summaryPath,
+    rejectReportPath,
+    validationReportPath,
+    readyRowsPath,
+  };
+}
+
+function renderRejectCsv(rejects) {
+  const headers = [
+    'batch_id',
+    'source_file',
+    'source_sheet',
+    'source_row_no',
+    'target_domain',
+    'reject_code',
+    'reject_reason',
+    'source_pk',
+    'business_key',
+    'field_name',
+    'raw_value',
+    'expected_rule',
+    'suggested_action',
+    'owner',
+    'status',
+  ];
+  const rows = rejects.map((item) => [
+    item.batchId,
+    item.sourceFile,
+    item.sourceSheet,
+    item.sourceRowNo,
+    item.targetDomain,
+    item.rejectCode,
+    item.rejectReason,
+    item.sourcePk,
+    item.businessKey,
+    item.fieldName,
+    item.rawValue,
+    item.expectedRule,
+    item.suggestedAction,
+    item.owner,
+    item.status,
+  ]);
+  return [headers, ...rows].map((row) => row.map(csvEscape).join(',')).join('\n');
+}
+
+function csvEscape(value) {
+  const text = value === undefined || value === null ? '' : String(value);
+  if (!/[",\n]/.test(text)) return text;
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function renderValidationMarkdown(summary) {
+  const rejectLines = Object.entries(summary.rejectsByCode)
+    .map(([code, count]) => `- ${code}: ${count}`)
+    .join('\n') || '- 无 reject';
+  const readyKeys = summary.finalLoadPlan.readyBusinessKeys.map((key) => `- ${key}`).join('\n') || '- 无';
+  const samples = summary.rejectSamples.slice(0, 5).map((item) => [
+    `### ${item.rejectCode}`,
+    `- 来源：${item.sourceSheet}#${item.sourceRowNo}`,
+    `- 业务键：${item.businessKey}`,
+    `- 字段：${item.fieldName}`,
+    `- 原因：${item.rejectReason}`,
+    `- 建议：${item.suggestedAction}`,
+    `- Owner：${item.owner}`,
+  ].join('\n')).join('\n\n') || '### 无\n- 本批次无 reject';
+
+  return [
+    '# Migration Validation Report',
+    '',
+    `- batchId: ${summary.batchId}`,
+    `- sourceSystem: ${summary.sourceSystem}`,
+    `- sourceFile: ${summary.sourceFile}`,
+    `- mode: ${summary.mode}`,
+    `- inputPath: ${summary.inputPath ?? '(built-in mock batch)'}`,
+    '',
+    '## Plan 摘要',
+    `- rawRows: ${summary.plan.rawRows}`,
+    `- normalizedRows: ${summary.plan.normalizedRows}`,
+    `- readyToLoadRows: ${summary.plan.readyToLoadRows}`,
+    `- rejectedRows: ${summary.plan.rejectedRows}`,
+    '',
+    '## Ready To Load Business Keys',
+    readyKeys,
+    '',
+    '## Reject 分类统计',
+    rejectLines,
+    '',
+    '## Reject 样例',
+    samples,
+    '',
+    '## Final Load Order',
+    ...summary.finalLoadPlan.loadOrder.map((item, index) => `${index + 1}. ${item}`),
+    '',
+    '## 结论',
+    summary.plan.rejectedRows > 0
+      ? '- 本批次存在 reject，建议先修源数据/映射，再回放 final load。'
+      : '- 本批次已满足 ready_to_load，可进入 final load/upsert 对接阶段。',
+  ].join('\n');
 }
