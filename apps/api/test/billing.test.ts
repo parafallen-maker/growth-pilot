@@ -1,10 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { BillingRepository } from '../src/modules/billing/repository/billing.repository';
 import { BillingService } from '../src/modules/billing/service/billing.service';
 
 function createFixture() {
-  const repository = new BillingRepository();
+  const dir = mkdtempSync(join(tmpdir(), 'growthpilot-billing-'));
+  const repository = new BillingRepository(join(dir, 'billing.json'));
   const service = new BillingService(repository);
   return { repository, service };
 }

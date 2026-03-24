@@ -1,14 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { AnalyticsRepository } from '../src/modules/analytics/repository/analytics.repository';
 import { AnalyticsService } from '../src/modules/analytics/service/analytics.service';
+import { AttendanceRepository } from '../src/modules/attendance/repository/attendance.repository';
 import { BillingRepository } from '../src/modules/billing/repository/billing.repository';
 import { BillingService } from '../src/modules/billing/service/billing.service';
+import { CommunicationRepository } from '../src/modules/communication/repository/communication.repository';
+import { HomeworkRepository } from '../src/modules/homework/repository/homework.repository';
 
 function createFixture() {
-  const billingRepository = new BillingRepository();
+  const dir = mkdtempSync(join(tmpdir(), 'growthpilot-analytics-'));
+  const billingRepository = new BillingRepository(join(dir, 'billing.json'));
+  const communicationRepository = new CommunicationRepository(join(dir, 'communication.json'));
+  const attendanceRepository = new AttendanceRepository();
+  const homeworkRepository = new HomeworkRepository();
   const billingService = new BillingService(billingRepository);
-  const analyticsService = new AnalyticsService(new AnalyticsRepository(billingRepository));
+  const analyticsService = new AnalyticsService(
+    new AnalyticsRepository(billingRepository, communicationRepository, attendanceRepository, homeworkRepository),
+  );
   return { billingService, analyticsService };
 }
 
@@ -54,7 +66,7 @@ test('renewals skeleton supports list/create/status/follow-up with scoped filter
   assert.equal(filtered.list[0]?.id, created.id);
 });
 
-test('analytics skeleton aggregates billing scope consistently', () => {
+test('analytics aggregates billing + homework + communication + attendance from repositories', () => {
   const { billingService, analyticsService } = createFixture();
 
   const invoice = billingService.createInvoice({
@@ -84,14 +96,19 @@ test('analytics skeleton aggregates billing scope consistently', () => {
   const overview = analyticsService.getOverview(scope);
   assert.equal(overview.receivableCents, 410000);
   assert.equal(overview.receivedCents, 30000);
+  assert.equal(overview.pendingHomeworkCount, 0);
+  assert.ok(overview.trend.communicationTouchCount >= 1);
 
   const billing = analyticsService.getBilling(scope);
   assert.equal(billing.contractCount, 1);
   assert.equal(billing.filtersApplied.campusId, 'campus-001');
   assert.ok(billing.receivableTrend.some((item) => item.date === '2026-03-25' && item.amountCents === 50000));
   assert.ok(billing.renewalFunnel.some((item) => item.status === 'todo'));
+  assert.ok(billing.communicationTouchCount >= 1);
 
   const teaching = analyticsService.getTeaching({ ...scope, teacherId: 'teacher-001' });
   assert.equal(teaching.filtersApplied.termId, 'term-2026-spring');
   assert.equal(teaching.teacherWorkloads[0]?.teacherId, 'teacher-001');
+  assert.ok(teaching.subjectAccuracy.some((item) => item.subject === 'math'));
+  assert.equal(teaching.dataSource.mode, 'repository-aggregated');
 });

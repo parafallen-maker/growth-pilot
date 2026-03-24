@@ -8,6 +8,7 @@ import type {
   BillingProduct,
   BillingRefund,
 } from '@growthpilot/schema/index';
+import { PersistentJsonStore } from '../../../common/persistent-json.store';
 
 type BillingRenewalTask = {
   id: string;
@@ -39,7 +40,10 @@ interface BillingState {
 
 @Injectable()
 export class BillingRepository {
-  private state: BillingState = {
+  private readonly store: PersistentJsonStore<BillingState>;
+
+  constructor(filePath = '.data/billing.json') {
+    this.store = new PersistentJsonStore<BillingState>(filePath, () => ({
     products: [
       {
         id: 'product-001',
@@ -136,7 +140,10 @@ export class BillingRepository {
         updatedAt: '2026-03-24T10:00:00+08:00',
       },
     ],
-  };
+  }));
+  }
+
+  private get state() { return this.store.get(); }
 
   listProducts() { return [...this.state.products]; }
   listContracts() { return [...this.state.contracts]; }
@@ -181,143 +188,118 @@ export class BillingRepository {
     return renewal;
   }
 
-  listContractItems(contractId: string) {
-    return this.state.contractItems.filter((item) => item.contractId === contractId);
-  }
-
-  listInvoiceItems(invoiceId: string) {
-    return this.state.invoiceItems.filter((item) => item.invoiceId === invoiceId);
-  }
-
-  listPaymentsByInvoice(invoiceId: string) {
-    return this.state.payments.filter((item) => item.invoiceId === invoiceId);
-  }
-
-  listRefundsByPayment(paymentId: string) {
-    return this.state.refunds.filter((item) => item.paymentId === paymentId);
-  }
+  listContractItems(contractId: string) { return this.state.contractItems.filter((item) => item.contractId === contractId); }
+  listInvoiceItems(invoiceId: string) { return this.state.invoiceItems.filter((item) => item.invoiceId === invoiceId); }
+  listPaymentsByInvoice(invoiceId: string) { return this.state.payments.filter((item) => item.invoiceId === invoiceId); }
+  listRefundsByPayment(paymentId: string) { return this.state.refunds.filter((item) => item.paymentId === paymentId); }
 
   createProduct(input: Omit<BillingProduct, 'id' | 'createdAt' | 'updatedAt'>) {
-    this.ensureUnique('product code', this.state.products.some((item) => item.code === input.code));
-    const now = new Date().toISOString();
-    const product: BillingProduct = {
-      ...input,
-      id: `product-${String(this.state.products.length + 1).padStart(3, '0')}`,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.state.products.unshift(product);
-    return product;
+    let created!: BillingProduct;
+    this.store.update((state) => {
+      this.ensureUnique('product code', state.products.some((item) => item.code === input.code));
+      const now = new Date().toISOString();
+      created = { ...input, id: `product-${String(state.products.length + 1).padStart(3, '0')}`, createdAt: now, updatedAt: now };
+      state.products.unshift(created);
+    });
+    return created;
   }
 
-  createContract(
-    input: Omit<BillingContract, 'id' | 'createdAt' | 'updatedAt'>,
-    items: Array<Omit<BillingContractItem, 'id' | 'contractId' | 'createdAt'>>,
-  ) {
-    this.ensureUnique('contractNo', this.state.contracts.some((item) => item.contractNo === input.contractNo));
-    const now = new Date().toISOString();
-    const contractId = `contract-${String(this.state.contracts.length + 1).padStart(3, '0')}`;
-    const contract: BillingContract = { ...input, id: contractId, createdAt: now, updatedAt: now };
-    const contractItems = items.map((item, index) => ({
-      ...item,
-      id: `contract-item-${String(this.state.contractItems.length + index + 1).padStart(3, '0')}`,
-      contractId,
-      createdAt: now,
-    } satisfies BillingContractItem));
-    this.state.contracts.unshift(contract);
-    this.state.contractItems.unshift(...contractItems);
-    return { contract, items: contractItems };
+  createContract(input: Omit<BillingContract, 'id' | 'createdAt' | 'updatedAt'>, items: Array<Omit<BillingContractItem, 'id' | 'contractId' | 'createdAt'>>) {
+    let created!: { contract: BillingContract; items: BillingContractItem[] };
+    this.store.update((state) => {
+      this.ensureUnique('contractNo', state.contracts.some((item) => item.contractNo === input.contractNo));
+      const now = new Date().toISOString();
+      const contractId = `contract-${String(state.contracts.length + 1).padStart(3, '0')}`;
+      const contract: BillingContract = { ...input, id: contractId, createdAt: now, updatedAt: now };
+      const contractItems = items.map((item, index) => ({ ...item, id: `contract-item-${String(state.contractItems.length + index + 1).padStart(3, '0')}`, contractId, createdAt: now } satisfies BillingContractItem));
+      state.contracts.unshift(contract);
+      state.contractItems.unshift(...contractItems);
+      created = { contract, items: contractItems };
+    });
+    return created;
   }
 
-  createInvoice(
-    input: Omit<BillingInvoice, 'id' | 'createdAt' | 'updatedAt'>,
-    items: Array<Omit<BillingInvoiceItem, 'id' | 'invoiceId' | 'createdAt'>>,
-  ) {
-    this.ensureUnique('invoiceNo', this.state.invoices.some((item) => item.invoiceNo === input.invoiceNo));
-    const now = new Date().toISOString();
-    const invoiceId = `invoice-${String(this.state.invoices.length + 1).padStart(3, '0')}`;
-    const invoice: BillingInvoice = { ...input, id: invoiceId, createdAt: now, updatedAt: now };
-    const invoiceItems = items.map((item, index) => ({
-      ...item,
-      id: `invoice-item-${String(this.state.invoiceItems.length + index + 1).padStart(3, '0')}`,
-      invoiceId,
-      createdAt: now,
-    } satisfies BillingInvoiceItem));
-    this.state.invoices.unshift(invoice);
-    this.state.invoiceItems.unshift(...invoiceItems);
-    return { invoice, items: invoiceItems };
+  createInvoice(input: Omit<BillingInvoice, 'id' | 'createdAt' | 'updatedAt'>, items: Array<Omit<BillingInvoiceItem, 'id' | 'invoiceId' | 'createdAt'>>) {
+    let created!: { invoice: BillingInvoice; items: BillingInvoiceItem[] };
+    this.store.update((state) => {
+      this.ensureUnique('invoiceNo', state.invoices.some((item) => item.invoiceNo === input.invoiceNo));
+      const now = new Date().toISOString();
+      const invoiceId = `invoice-${String(state.invoices.length + 1).padStart(3, '0')}`;
+      const invoice: BillingInvoice = { ...input, id: invoiceId, createdAt: now, updatedAt: now };
+      const invoiceItems = items.map((item, index) => ({ ...item, id: `invoice-item-${String(state.invoiceItems.length + index + 1).padStart(3, '0')}`, invoiceId, createdAt: now } satisfies BillingInvoiceItem));
+      state.invoices.unshift(invoice);
+      state.invoiceItems.unshift(...invoiceItems);
+      created = { invoice, items: invoiceItems };
+    });
+    return created;
   }
 
   createPayment(input: Omit<BillingPayment, 'id' | 'createdAt' | 'updatedAt'>) {
-    this.ensureUnique('paymentNo', this.state.payments.some((item) => item.paymentNo === input.paymentNo));
-    if (input.idempotencyKey) {
-      this.ensureUnique(
-        'idempotencyKey',
-        this.state.payments.some((item) => item.idempotencyKey === input.idempotencyKey),
-        'PAY_409',
-      );
-    }
-    const now = new Date().toISOString();
-    const payment: BillingPayment = {
-      ...input,
-      id: `payment-${String(this.state.payments.length + 1).padStart(3, '0')}`,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.state.payments.unshift(payment);
-    return payment;
+    let created!: BillingPayment;
+    this.store.update((state) => {
+      this.ensureUnique('paymentNo', state.payments.some((item) => item.paymentNo === input.paymentNo));
+      if (input.idempotencyKey) this.ensureUnique('idempotencyKey', state.payments.some((item) => item.idempotencyKey === input.idempotencyKey), 'PAY_409');
+      const now = new Date().toISOString();
+      created = { ...input, id: `payment-${String(state.payments.length + 1).padStart(3, '0')}`, createdAt: now, updatedAt: now };
+      state.payments.unshift(created);
+    });
+    return created;
   }
 
   createRefund(input: Omit<BillingRefund, 'id' | 'createdAt' | 'updatedAt'>) {
-    this.ensureUnique('refundNo', this.state.refunds.some((item) => item.refundNo === input.refundNo));
-    const now = new Date().toISOString();
-    const refund: BillingRefund = {
-      ...input,
-      id: `refund-${String(this.state.refunds.length + 1).padStart(3, '0')}`,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.state.refunds.unshift(refund);
-    return refund;
+    let created!: BillingRefund;
+    this.store.update((state) => {
+      this.ensureUnique('refundNo', state.refunds.some((item) => item.refundNo === input.refundNo));
+      const now = new Date().toISOString();
+      created = { ...input, id: `refund-${String(state.refunds.length + 1).padStart(3, '0')}`, createdAt: now, updatedAt: now };
+      state.refunds.unshift(created);
+    });
+    return created;
   }
 
   updateInvoice(invoiceId: string, patch: Partial<BillingInvoice>) {
-    const invoice = this.getInvoiceOrThrow(invoiceId);
-    Object.assign(invoice, patch, { updatedAt: new Date().toISOString() });
-    return invoice;
+    let updated!: BillingInvoice;
+    this.store.update((state) => {
+      const invoice = state.invoices.find((item) => item.id === invoiceId);
+      if (!invoice) throw new NotFoundException(`invoice ${invoiceId} not found`);
+      Object.assign(invoice, patch, { updatedAt: new Date().toISOString() });
+      updated = invoice;
+    });
+    return updated;
   }
 
   createRenewal(input: Omit<BillingRenewalTask, 'id' | 'createdAt' | 'updatedAt'>) {
-    const now = new Date().toISOString();
-    const renewal: BillingRenewalTask = {
-      ...input,
-      id: `renewal-${String(this.state.renewals.length + 1).padStart(3, '0')}`,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.state.renewals.unshift(renewal);
-    return renewal;
+    let created!: BillingRenewalTask;
+    this.store.update((state) => {
+      const now = new Date().toISOString();
+      created = { ...input, id: `renewal-${String(state.renewals.length + 1).padStart(3, '0')}`, createdAt: now, updatedAt: now };
+      state.renewals.unshift(created);
+    });
+    return created;
   }
 
   updateRenewal(renewalId: string, patch: Partial<BillingRenewalTask>) {
-    const renewal = this.getRenewalOrThrow(renewalId);
-    Object.assign(renewal, patch, { updatedAt: new Date().toISOString() });
-    return renewal;
+    let updated!: BillingRenewalTask;
+    this.store.update((state) => {
+      const renewal = state.renewals.find((item) => item.id === renewalId);
+      if (!renewal) throw new NotFoundException(`renewal ${renewalId} not found`);
+      Object.assign(renewal, patch, { updatedAt: new Date().toISOString() });
+      updated = renewal;
+    });
+    return updated;
   }
 
   runInTransaction<T>(runner: () => T): T {
-    const snapshot: BillingState = JSON.parse(JSON.stringify(this.state));
+    const snapshot = this.store.snapshot();
     try {
       return runner();
     } catch (error) {
-      this.state = snapshot;
+      this.store.replace(snapshot);
       throw error;
     }
   }
 
   private ensureUnique(field: string, exists: boolean, errorCode = 'DATA_409') {
-    if (exists) {
-      throw new ConflictException({ code: errorCode, message: `${field} already exists` });
-    }
+    if (exists) throw new ConflictException({ code: errorCode, message: `${field} already exists` });
   }
 }

@@ -1,10 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { CommunicationRepository } from '../src/modules/communication/repository/communication.repository';
 import { CommunicationService } from '../src/modules/communication/service/communication.service';
 
 function createFixture() {
-  const repository = new CommunicationRepository();
+  const dir = mkdtempSync(join(tmpdir(), 'growthpilot-communication-'));
+  const repository = new CommunicationRepository(join(dir, 'communication.json'));
   const service = new CommunicationService(repository);
   return { repository, service };
 }

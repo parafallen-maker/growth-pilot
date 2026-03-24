@@ -3,15 +3,7 @@ import { AnalyticsQueryDto } from '../dto/analytics-query.dto';
 import { AnalyticsRepository } from '../repository/analytics.repository';
 
 type RenewalStatus = 'todo' | 'contacting' | 'won' | 'lost' | 'closed';
-
-type RenewalRecord = {
-  id: string;
-  campusId?: string | null;
-  termId?: string | null;
-  status: RenewalStatus;
-  expectedEndDate?: string | null;
-  nextFollowUpAt?: string | null;
-};
+type RenewalRecord = { id: string; campusId?: string | null; termId?: string | null; status: RenewalStatus; expectedEndDate?: string | null; nextFollowUpAt?: string | null };
 
 @Injectable()
 export class AnalyticsService {
@@ -21,39 +13,87 @@ export class AnalyticsService {
     const contracts = this.filterContractsByScope(query);
     const invoices = this.filterInvoicesByScope(query);
     const payments = this.filterPaymentsByScope(query);
+    const homework = this.filterHomeworkSubmissionsByScope(query);
+    const attendanceEvents = this.filterAttendanceEventsByScope(query);
+    const communicationRecords = this.filterCommunicationRecordsByScope(query);
+    const messageTasks = this.filterMessageTasksByScope(query);
     const renewals = this.filterRenewalsByScope(query);
 
     const receivableCents = invoices.reduce((sum, item) => sum + item.amountCents, 0);
-    const receivedCents = payments.reduce((sum, item) => sum + item.paidAmountCents, 0);
+    const receivedCents = payments.filter((item) => item.status === 'success').reduce((sum, item) => sum + item.paidAmountCents, 0);
+    const publishedHomeworkCount = homework.filter((item) => item.reviewStatus === 'reviewed' || item.reviewStatus === 'published').length;
 
     return {
       activeStudentCount: new Set(contracts.filter((item) => item.status === 'active').map((item) => item.studentId)).size,
-      pendingHomeworkCount: 0,
-      reportPublishRate: 0,
+      pendingHomeworkCount: homework.filter((item) => item.reviewStatus === 'unreviewed' || item.reviewStatus === 'reviewing').length,
+      reportPublishRate: homework.length ? Number((publishedHomeworkCount / homework.length).toFixed(4)) : 0,
       receivableCents,
       receivedCents,
-      todayAttendanceAnomalyCount: 0,
+      todayAttendanceAnomalyCount: this.countAttendanceAnomalies(attendanceEvents),
       trend: {
         receivableCents,
         receivedCents,
         renewalTodoCount: renewals.filter((item) => item.status === 'todo').length,
+        communicationTouchCount: communicationRecords.length,
+        messageFailureCount: messageTasks.filter((item) => item.status === 'failed').length,
       },
     };
   }
 
   getTeaching(query: AnalyticsQueryDto) {
-    const renewals = this.filterRenewalsByScope(query);
+    const homework = this.filterHomeworkSubmissionsByScope(query);
+    const homeworkDailyStats = this.filterHomeworkDailyStatsByScope(query);
+    const communicationRecords = this.filterCommunicationRecordsByScope(query);
+
+    const teacherIds = new Set(homework.map((item) => item.teacherId).filter(Boolean) as string[]);
+    if (query.teacherId) teacherIds.add(query.teacherId);
+
+    const teacherWorkloads = [...teacherIds].map((teacherId) => {
+      const teacherHomework = homework.filter((item) => item.teacherId === teacherId);
+      return {
+        teacherId,
+        teacherName: teacherId,
+        pendingReviewCount: teacherHomework.filter((item) => item.reviewStatus === 'unreviewed' || item.reviewStatus === 'reviewing').length,
+        activeStudentCount: new Set(teacherHomework.map((item) => item.studentId)).size,
+        communicationCount: communicationRecords.filter((item) => item.studentId && teacherHomework.some((submission) => submission.studentId === item.studentId)).length,
+      };
+    });
+
+    const subjectAccuracyMap = new Map<string, { total: number; count: number }>();
+    for (const item of homework) {
+      if (typeof item.finalAccuracyPct !== 'number') continue;
+      const acc = subjectAccuracyMap.get(item.subject) ?? { total: 0, count: 0 };
+      acc.total += item.finalAccuracyPct;
+      acc.count += 1;
+      subjectAccuracyMap.set(item.subject, acc);
+    }
+
+    const errorCounter = new Map<string, number>();
+    for (const item of homework) {
+      for (const token of (item.finalErrorSummary ?? '').split(/[、,，\s]+/).map((part) => part.trim()).filter(Boolean)) {
+        errorCounter.set(token, (errorCounter.get(token) ?? 0) + 1);
+      }
+    }
+
+    const growthCoverageMap = new Map<string, { totalMinutes: number; sessionCount: number }>();
+    for (const stat of homeworkDailyStats) {
+      const current = growthCoverageMap.get(stat.subject) ?? { totalMinutes: 0, sessionCount: 0 };
+      current.totalMinutes += stat.totalMinutes;
+      current.sessionCount += stat.sessionCount;
+      growthCoverageMap.set(stat.subject, current);
+    }
+
     return {
-      teacherWorkloads: query.teacherId
-        ? [{ teacherId: query.teacherId, teacherName: 'mock-teacher', pendingReviewCount: 0, activeStudentCount: 0 }]
-        : [],
-      subjectAccuracy: [],
-      topErrors: [],
-      growthCoverage: [],
+      teacherWorkloads,
+      subjectAccuracy: [...subjectAccuracyMap.entries()].map(([subject, data]) => ({ subject, avgAccuracyPct: Number((data.total / data.count).toFixed(2)), sampleCount: data.count })),
+      topErrors: [...errorCounter.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([label, count]) => ({ label, count })),
+      growthCoverage: [...growthCoverageMap.entries()].map(([subject, data]) => ({ subject, totalMinutes: data.totalMinutes, sessionCount: data.sessionCount })),
       filtersApplied: this.scope(query),
       dataSource: {
-        renewalsInScope: renewals.length,
-        mode: 'mock-in-memory-skeleton',
+        homeworkSubmissionCount: homework.length,
+        communicationRecordCount: communicationRecords.length,
+        homeworkDailyStatCount: homeworkDailyStats.length,
+        mode: 'repository-aggregated',
       },
     };
   }
@@ -64,20 +104,23 @@ export class AnalyticsService {
     const payments = this.filterPaymentsByScope(query);
     const refunds = this.filterRefundsByScope(query);
     const renewals = this.filterRenewalsByScope(query);
+    const records = this.filterCommunicationRecordsByScope(query);
+    const tasks = this.filterMessageTasksByScope(query);
 
+    const paymentById = new Map(payments.map((item) => [item.id, item]));
     const receivedByInvoiceId = new Map<string, number>();
     for (const payment of payments) {
       receivedByInvoiceId.set(payment.invoiceId, (receivedByInvoiceId.get(payment.invoiceId) ?? 0) + payment.paidAmountCents);
     }
     for (const refund of refunds) {
-      const payment = this.analyticsRepository.listPayments().find((item) => item.id === refund.paymentId);
+      const payment = paymentById.get(refund.paymentId);
       if (!payment) continue;
       receivedByInvoiceId.set(payment.invoiceId, (receivedByInvoiceId.get(payment.invoiceId) ?? 0) - refund.refundAmountCents);
     }
 
     return {
       receivableTrend: this.groupAmountByDate(invoices.map((item) => ({ date: item.issueDate, amountCents: item.amountCents }))),
-      receivedTrend: this.groupAmountByDate(payments.map((item) => ({ date: item.paymentTime.slice(0, 10), amountCents: item.paidAmountCents }))),
+      receivedTrend: this.groupAmountByDate(payments.filter((item) => item.status === 'success').map((item) => ({ date: item.paymentTime.slice(0, 10), amountCents: item.paidAmountCents }))),
       agingSummary: [
         {
           bucket: 'current',
@@ -88,27 +131,21 @@ export class AnalyticsService {
       renewalFunnel: this.countRenewalStatuses(renewals),
       filtersApplied: this.scope(query),
       contractCount: contracts.length,
+      communicationTouchCount: records.length,
+      messageTaskCount: tasks.length,
     };
   }
 
   private filterPaymentsByScope(query: AnalyticsQueryDto) {
     const invoices = this.filterInvoicesByScope(query);
     const invoiceIds = new Set(invoices.map((item) => item.id));
-    return this.analyticsRepository.listPayments().filter((item) => {
-      if (!invoiceIds.has(item.invoiceId)) return false;
-      const date = item.paymentTime.slice(0, 10);
-      return this.matchDate(date, query.dateFrom, query.dateTo);
-    });
+    return this.analyticsRepository.listPayments().filter((item) => invoiceIds.has(item.invoiceId) && this.matchDate(item.paymentTime.slice(0, 10), query.dateFrom, query.dateTo));
   }
 
   private filterRefundsByScope(query: AnalyticsQueryDto) {
     const payments = this.filterPaymentsByScope(query);
     const paymentIds = new Set(payments.map((item) => item.id));
-    return this.analyticsRepository.listRefunds().filter((item) => {
-      if (!paymentIds.has(item.paymentId)) return false;
-      const date = item.refundTime.slice(0, 10);
-      return this.matchDate(date, query.dateFrom, query.dateTo);
-    });
+    return this.analyticsRepository.listRefunds().filter((item) => paymentIds.has(item.paymentId) && this.matchDate(item.refundTime.slice(0, 10), query.dateFrom, query.dateTo));
   }
 
   private filterRenewalsByScope(query: AnalyticsQueryDto): RenewalRecord[] {
@@ -129,16 +166,56 @@ export class AnalyticsService {
   }
 
   private filterInvoicesByScope(query: AnalyticsQueryDto) {
-    const contracts = this.analyticsRepository.listContracts();
-    const contractById = new Map(contracts.map((item) => [item.id, item]));
+    const contractById = new Map(this.analyticsRepository.listContracts().map((item) => [item.id, item]));
     return this.analyticsRepository.listInvoices().filter((item) => {
       const contract = item.contractId ? contractById.get(item.contractId) : undefined;
-      const campusId = contract?.campusId ?? null;
-      const termId = contract?.termId ?? null;
-      if (query.campusId && campusId !== query.campusId) return false;
-      if (query.termId && termId !== query.termId) return false;
+      if (query.campusId && contract?.campusId !== query.campusId) return false;
+      if (query.termId && contract?.termId !== query.termId) return false;
       return this.matchDate(item.issueDate, query.dateFrom, query.dateTo);
     });
+  }
+
+  private filterHomeworkSubmissionsByScope(query: AnalyticsQueryDto) {
+    const contractStudents = new Set(this.filterContractsByScope(query).map((item) => item.studentId));
+    return this.analyticsRepository.listHomeworkSubmissions().filter((item) => {
+      if (contractStudents.size && !contractStudents.has(item.studentId)) return false;
+      return this.matchDate(item.homeworkDate, query.dateFrom, query.dateTo) && (!query.teacherId || item.teacherId === query.teacherId);
+    });
+  }
+
+  private filterAttendanceEventsByScope(query: AnalyticsQueryDto) {
+    const contractStudents = new Set(this.filterContractsByScope(query).map((item) => item.studentId));
+    return this.analyticsRepository.listAttendanceEvents().filter((item) => {
+      if (query.campusId && item.campusId !== query.campusId) return false;
+      if (contractStudents.size && !contractStudents.has(item.studentId)) return false;
+      return this.matchDate(item.eventTime.slice(0, 10), query.dateFrom, query.dateTo);
+    });
+  }
+
+  private filterHomeworkDailyStatsByScope(query: AnalyticsQueryDto) {
+    const contractStudents = new Set(this.filterContractsByScope(query).map((item) => item.studentId));
+    return this.analyticsRepository.listHomeworkDailyStats().filter((item) => (!contractStudents.size || contractStudents.has(item.studentId)) && this.matchDate(item.statDate, query.dateFrom, query.dateTo));
+  }
+
+  private filterCommunicationRecordsByScope(query: AnalyticsQueryDto) {
+    const contractStudents = new Set(this.filterContractsByScope(query).map((item) => item.studentId));
+    return this.analyticsRepository.listCommunicationRecords().filter((item) => (!item.studentId || !contractStudents.size || contractStudents.has(item.studentId)) && this.matchDate(item.createdAt.slice(0, 10), query.dateFrom, query.dateTo));
+  }
+
+  private filterMessageTasksByScope(query: AnalyticsQueryDto) {
+    const contractStudents = new Set(this.filterContractsByScope(query).map((item) => item.studentId));
+    return this.analyticsRepository.listMessageTasks().filter((item) => (!item.studentId || !contractStudents.size || contractStudents.has(item.studentId)) && this.matchDate((item.sentAt ?? item.scheduledAt ?? item.createdAt).slice(0, 10), query.dateFrom, query.dateTo));
+  }
+
+  private countAttendanceAnomalies(events: ReturnType<AnalyticsRepository['listAttendanceEvents']>) {
+    const grouped = new Map<string, Set<string>>();
+    for (const event of events) {
+      const key = `${event.studentId}|${event.eventTime.slice(0, 10)}`;
+      const set = grouped.get(key) ?? new Set<string>();
+      set.add(event.eventType);
+      grouped.set(key, set);
+    }
+    return [...grouped.values()].filter((types) => !(types.has('checkin') && types.has('checkout'))).length;
   }
 
   private matchDate(date: string | null | undefined, dateFrom?: string, dateTo?: string) {
@@ -151,9 +228,7 @@ export class AnalyticsService {
 
   private groupAmountByDate(items: Array<{ date: string; amountCents: number }>) {
     const grouped = new Map<string, number>();
-    for (const item of items) {
-      grouped.set(item.date, (grouped.get(item.date) ?? 0) + item.amountCents);
-    }
+    for (const item of items) grouped.set(item.date, (grouped.get(item.date) ?? 0) + item.amountCents);
     return [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, amountCents]) => ({ date, amountCents }));
   }
 
@@ -163,11 +238,6 @@ export class AnalyticsService {
   }
 
   private scope(query: AnalyticsQueryDto) {
-    return {
-      campusId: query.campusId ?? null,
-      termId: query.termId ?? null,
-      dateFrom: query.dateFrom ?? null,
-      dateTo: query.dateTo ?? null,
-    };
+    return { campusId: query.campusId ?? null, termId: query.termId ?? null, dateFrom: query.dateFrom ?? null, dateTo: query.dateTo ?? null };
   }
 }
