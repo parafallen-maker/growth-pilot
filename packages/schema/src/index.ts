@@ -38,6 +38,19 @@ export interface Enrollment {
   status: string;
 }
 
+
+export interface FileAsset {
+  id: string;
+  storageProvider: string;
+  bucketName: string;
+  objectKey: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  checksum?: string | null;
+  uploadedBy?: string | null;
+  createdAt: string;
+}
 export interface Family {
   id: string;
   familyCode: string;
@@ -56,6 +69,65 @@ export interface Guardian {
   mobile?: string;
   isPrimary: boolean;
   isEmergency: boolean;
+}
+
+export interface Student360HomeworkSummary {
+  latestSubmissionId?: string | null;
+  latestHomeworkDate?: string | null;
+  reviewedCount: number;
+  pendingReviewCount: number;
+  averageAccuracyPct?: number | null;
+  latestFeedback?: string | null;
+  trend: Array<{
+    date: string;
+    accuracyPct: number;
+  }>;
+}
+
+export interface Student360GrowthSummary {
+  latestObservationDate?: string | null;
+  observationCount: number;
+  activeGoalCount: number;
+  latestReportPeriod?: string | null;
+  latestStrengths?: string | null;
+  latestImprovementNotes?: string | null;
+}
+
+export interface Student360AttendanceSummary {
+  lastAttendanceDate?: string | null;
+  presentDays: number;
+  absentDays: number;
+  lateCount: number;
+  averageStudyMinutes: number;
+}
+
+export interface Student360BillingSummary {
+  activeContractCount: number;
+  unpaidInvoiceCount: number;
+  outstandingAmount: number;
+  balanceAmount: number;
+  latestPaymentDate?: string | null;
+}
+
+export interface Student360TimelineItem {
+  id: string;
+  type: string;
+  title: string;
+  occurredAt: string;
+  status?: string;
+  summary?: string;
+}
+
+export interface Student360Aggregate {
+  student: Student;
+  currentEnrollment: Enrollment | null;
+  family: Family | null;
+  guardians: Guardian[];
+  homeworkSummary: Student360HomeworkSummary;
+  growthSummary: Student360GrowthSummary;
+  attendanceSummary: Student360AttendanceSummary;
+  billingSummary: Student360BillingSummary;
+  recentTimeline: Student360TimelineItem[];
 }
 
 export type HomeworkAiStatus = 'pending' | 'running' | 'ready' | 'failed' | 'skipped';

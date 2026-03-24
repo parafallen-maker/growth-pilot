@@ -331,7 +331,11 @@ agents:
       - task_id: T-M1-3
         title: 学生 360 聚合接口
         priority: P0
-        status: todo
+        status: done
+        notes:
+          - 已在 apps/api students 模块补齐 GET /students/{studentId}/360 的内存聚合实现；返回 student/currentEnrollment/family/guardians/homeworkSummary/growthSummary/attendanceSummary/billingSummary/recentTimeline，前端无需再自行拼装多接口。
+          - 已在 packages/schema 新增 Student360Aggregate 及各 summary/timeline 类型；当前 attendance/billing 使用 mock 汇总骨架，后续由 A6/A7 在真实模块落地后替换为仓储聚合。
+        completion_note: 已完成 Student 360 聚合骨架与最小契约，对齐 PRD/OpenAPI/页面原型，前端可直接接 GET /students/{studentId}/360 渲染概览页；下一棒交给 A8 做学生 360 页面联调，A6/A7 后续将作业/成长/出勤/收费摘要替换成真实数据源。
         wbs: [WBS-014]
         depends_on: [T-M1-2]
         input_docs:
@@ -870,7 +874,11 @@ agents:
       - task_id: T-B1-FE
         title: 产品、合同、账单支付、续费页面
         priority: P0
-        status: todo
+        status: done
+        notes:
+          - 已在 apps/web 新增 billing products/contracts/invoices/renewals 四页骨架，包含统一 family/student 过滤器占位、列表/详情抽屉或标签页骨架、合同/账单/支付/退款动作位。
+          - 已新增 billing service/mock data、billing query keys、billing 权限与导航接入；金额通过 VO 层 mock mapper 统一按元展示。
+        completion_note: 已交付 T-B1-FE 首波前端骨架，可直接与 A7 的 billing backend skeleton 对齐联调，并交给 A10 纳入收费主流程 E2E。
         wbs: [WBS-039, WBS-040]
         depends_on: [T-B1-1, T-B1-2, T-B1-3, T-F1-2]
         input_docs:

@@ -14,6 +14,11 @@ export class StudentsController {
     return ok(this.studentsService.list(query));
   }
 
+  @Get(':studentId/360')
+  detail360(@Param('studentId') studentId: string) {
+    return ok(this.studentsService.detail360(studentId));
+  }
+
   @Get(':studentId')
   detail(@Param('studentId') studentId: string) {
     return ok(this.studentsService.detail(studentId));
