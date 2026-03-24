@@ -916,7 +916,11 @@ agents:
       - task_id: T-C1-FE
         title: 沟通记录与消息中心页面
         priority: P1
-        status: todo
+        status: done
+        notes:
+          - 已在 apps/web 落地 /communication/records 与 /communication/messages 页面骨架，包含筛选栏、时间线/列表、模板/草稿/待发/已发/失败状态区块、动作位，以及 communication service/query keys/permission guard 接入。
+          - 已补 communication 常量、导航权限与 mock service 数据；页面继续沿用统一 loading/empty/error 状态组件，便于后续接 A7 的真实接口。
+        completion_note: 已完成沟通记录与消息中心前端骨架；typecheck/test 均通过，交 A10 做联调验收，后续可由 A7 用真实 communication DTO 替换当前 mock service。
         wbs: [WBS-044]
         depends_on: [T-C1-1, T-F1-2]
         input_docs:
