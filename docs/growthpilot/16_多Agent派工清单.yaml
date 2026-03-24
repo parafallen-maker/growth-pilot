@@ -281,7 +281,10 @@ agents:
       - task_id: T-M1-1
         title: 教师主表 CRUD 与详情聚合
         priority: P0
-        status: todo
+        status: done
+        notes:
+          - 已在 apps/api 搭建 teachers module/controller/service/dto 骨架，交付 GET /teachers、GET /teachers/{teacherId}、POST /teachers 的内存版可运行接口，字段对齐 OpenAPI Teacher/CreateTeacher。
+        completion_note: 已完成 Wave 1 教师主数据最小后端骨架；列表/详情/创建可跑通，详情聚合预留 subjects/shifts/developmentRecords，待 A8 接前端联调、A10 接真实持久层与迁移数据。
         wbs: [WBS-009]
         depends_on: [T-P0-2, T-P0-3, T-P0-4]
         input_docs:
@@ -298,7 +301,10 @@ agents:
       - task_id: T-M1-2
         title: 学生主档、在读档、学生列表接口
         priority: P0
-        status: todo
+        status: done
+        notes:
+          - 已在 apps/api 搭建 students module/controller/service/dto 骨架，交付 GET /students、GET /students/{studentId}、POST /students、POST /students/{studentId}/enrollments 的内存版接口，并按 OpenAPI 对齐 Student/CreateStudentRequest/CreateEnrollmentRequest 字段命名。
+        completion_note: 已完成学生主档与 enrollment 最小接口，分页筛选已接 pageNo/pageSize/keyword/campusId/termId/status/teacherId/grade；后续由 A8 接列表页与详情页联调，由 A10/A2 接事务落库与导入口径。
         wbs: [WBS-011, WBS-012]
         depends_on: [T-P0-2, T-P0-3, T-P0-4]
         input_docs:
@@ -334,7 +340,10 @@ agents:
       - task_id: T-M1-4
         title: 家庭、监护人、家庭详情接口
         priority: P0
-        status: todo
+        status: done
+        notes:
+          - 已在 apps/api 搭建 families module/controller/service/dto 骨架，交付 GET /families、GET /families/{familyId}、POST /families、POST /families/{familyId}/guardians 的内存版接口；家庭详情已预留 guardians/students/billingSummary/tasks/communications 摘要位。
+        completion_note: 已完成家庭与监护人最小后端骨架；核心字段对齐 OpenAPI Family/Guardian/CreateFamilyRequest/CreateGuardianRequest，后续由 A8 接详情页聚合展示、A10 接真实 families/guardians/students 关联数据与迁移。
         wbs: [WBS-016]
         depends_on: [T-P0-2, T-P0-3, T-P0-4]
         input_docs:
