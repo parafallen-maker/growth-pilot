@@ -101,8 +101,7 @@ CREATE TABLE user_roles (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
   campus_id UUID REFERENCES campuses(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (user_id, role_id, campus_id)
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE file_assets (
@@ -398,8 +397,7 @@ CREATE TABLE attendance_events (
   event_time TIMESTAMPTZ NOT NULL,
   operator_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   remark TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (student_id, event_type, event_time)
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE homework_time_sessions (
@@ -524,7 +522,8 @@ CREATE TABLE homework_review_error_items (
   error_taxonomy_id UUID NOT NULL REFERENCES error_taxonomies(id) ON DELETE RESTRICT,
   weight NUMERIC(8, 2) NOT NULL DEFAULT 1,
   note TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (review_id, error_taxonomy_id)
 );
 
 -- =========================================================
@@ -919,8 +918,11 @@ CREATE TABLE message_deliveries (
 
 CREATE INDEX idx_school_terms_campus ON school_terms(campus_id);
 CREATE INDEX idx_user_roles_user ON user_roles(user_id);
+CREATE UNIQUE INDEX uq_user_roles_global ON user_roles(user_id, role_id) WHERE campus_id IS NULL;
+CREATE UNIQUE INDEX uq_user_roles_by_campus ON user_roles(user_id, role_id, campus_id) WHERE campus_id IS NOT NULL;
 CREATE INDEX idx_ai_jobs_biz ON ai_jobs(biz_type, biz_id);
 CREATE INDEX idx_ai_jobs_status ON ai_jobs(status, job_type);
+CREATE UNIQUE INDEX uq_ai_jobs_active_dedupe ON ai_jobs(job_type, biz_type, biz_id) WHERE status IN ('queued', 'running');
 CREATE INDEX idx_operation_logs_biz ON operation_logs(biz_type, biz_id);
 CREATE INDEX idx_operation_logs_user ON operation_logs(user_id, created_at DESC);
 CREATE INDEX idx_teachers_campus_status ON teachers(campus_id, status);
@@ -929,6 +931,7 @@ CREATE INDEX idx_teacher_shifts_teacher_term ON teacher_shifts(teacher_id, term_
 CREATE INDEX idx_teacher_dev_teacher_time ON teacher_development_records(teacher_id, occurred_at DESC);
 CREATE INDEX idx_groups_term_campus ON teaching_groups(term_id, campus_id);
 CREATE INDEX idx_guardians_family ON guardians(family_id);
+CREATE UNIQUE INDEX uq_guardians_primary_per_family ON guardians(family_id) WHERE is_primary = TRUE;
 CREATE INDEX idx_students_family ON students(family_id);
 CREATE INDEX idx_students_name ON students(name);
 CREATE INDEX idx_students_campus_status ON students(home_campus_id, status);
@@ -940,8 +943,11 @@ CREATE INDEX idx_student_tags_student ON student_tags(student_id);
 CREATE INDEX idx_pickup_contacts_student ON pickup_contacts(student_id);
 CREATE INDEX idx_device_bindings_student ON student_device_bindings(student_id, status);
 CREATE INDEX idx_device_bindings_device ON student_device_bindings(device_id, status);
+CREATE UNIQUE INDEX uq_device_bindings_active_student ON student_device_bindings(student_id) WHERE status = 'active';
+CREATE UNIQUE INDEX uq_device_bindings_active_device ON student_device_bindings(device_id) WHERE status = 'active';
 CREATE INDEX idx_attendance_student_time ON attendance_events(student_id, event_time DESC);
 CREATE INDEX idx_attendance_campus_time ON attendance_events(campus_id, event_time DESC);
+CREATE UNIQUE INDEX uq_attendance_events_device_time_type ON attendance_events(device_id, event_time, event_type) WHERE device_id IS NOT NULL;
 CREATE INDEX idx_hw_time_sessions_student_time ON homework_time_sessions(student_id, start_time DESC);
 CREATE INDEX idx_hw_time_daily_student_date ON homework_time_daily_stats(student_id, stat_date DESC);
 CREATE INDEX idx_error_taxonomies_scope ON error_taxonomies(subject_scope, active);
@@ -972,6 +978,7 @@ CREATE INDEX idx_invoices_student_status ON invoices(student_id, status);
 CREATE INDEX idx_invoices_due_date ON invoices(due_date);
 CREATE INDEX idx_invoice_items_invoice ON invoice_items(invoice_id);
 CREATE INDEX idx_payments_invoice_time ON payments(invoice_id, payment_time DESC);
+CREATE UNIQUE INDEX uq_payments_idempotency_key ON payments(idempotency_key) WHERE idempotency_key IS NOT NULL;
 CREATE INDEX idx_payments_status ON payments(status, payment_time DESC);
 CREATE INDEX idx_refunds_payment_time ON refunds(payment_id, refund_time DESC);
 CREATE INDEX idx_adjustments_contract ON billing_adjustments(contract_id);

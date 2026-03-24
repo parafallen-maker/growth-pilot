@@ -74,7 +74,7 @@ agents:
       - task_id: T-P0-1
         title: 冻结模块边界、命名规范、MVP 范围
         priority: P0
-        status: todo
+        status: done
         wbs: [WBS-001]
         input_docs:
           - docs/growthpilot/01_系统架构.md
@@ -90,6 +90,9 @@ agents:
           - 模块边界、P0/P1 范围无冲突
           - WBS 与模块映射稳定
           - 发布阻塞项可直接给 QA 使用
+        completion_note:
+          - 已产出 docs/growthpilot/19_Wave0范围冻结结论.md
+          - 已冻结 MVP / P0 / P1 / 发布阻塞项 / Wave 1 启动条件
         handoff_to: [A2, A4, A10]
 
   - id: A2
@@ -100,7 +103,7 @@ agents:
       - task_id: T-P0-3
         title: 校核 DDL、约束、索引、迁移机制
         priority: P0
-        status: todo
+        status: done
         wbs: [WBS-003]
         depends_on: [T-P0-1]
         input_docs:
@@ -116,6 +119,9 @@ agents:
           - DDL 可执行
           - 主键/外键/唯一约束与 PRD 一致
           - 导入顺序与 staging 策略明确
+        completion_note:
+          - 已产出 docs/growthpilot/20_DDL与迁移校核报告.md
+          - 已修 user_roles / attendance_events / homework_review_error_items / guardians / student_device_bindings / ai_jobs / payments 关键约束
         handoff_to: [A3, A4, A5, A6, A7, A10]
       - task_id: T-META-1
         title: 横向守门字段一致性与状态机一致性
@@ -142,7 +148,7 @@ agents:
       - task_id: T-P0-4
         title: 基于 OpenAPI 生成协议基线与 DTO 约束
         priority: P0
-        status: todo
+        status: done
         wbs: [WBS-004]
         depends_on: [T-P0-1, T-P0-3]
         input_docs:
@@ -158,6 +164,9 @@ agents:
           - 前后端可共享类型
           - 错误码/分页/筛选结构统一
           - 变更流程明确
+        completion_note:
+          - 已产出 docs/growthpilot/21_API协议基线与类型生成规范.md
+          - 已修 OpenAPI version 与 JobStatus.jobId 对齐问题
         handoff_to: [A4, A5, A6, A7, A8, A9]
       - task_id: T-H1-API
         title: 作业与成长链路接口守门

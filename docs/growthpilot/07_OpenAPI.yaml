@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 洪基托管成长中心后台系统 API
-  version: v2.0.0-vibe-pack
+  version: v1.0.0
   description: 移除法律合规和心理筛查后的核心后台 API 设计稿。
 servers:
 - url: https://api.hongji-growth.local/api/v1
@@ -1019,7 +1019,7 @@ components:
     JobStatus:
       type: object
       properties:
-        id:
+        jobId:
           type: string
           format: uuid
         jobType:
