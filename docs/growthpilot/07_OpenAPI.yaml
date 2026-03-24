@@ -1,0 +1,3179 @@
+openapi: 3.1.0
+info:
+  title: 洪基托管成长中心后台系统 API
+  version: v2.0.0-vibe-pack
+  description: 移除法律合规和心理筛查后的核心后台 API 设计稿。
+servers:
+- url: https://api.hongji-growth.local/api/v1
+  description: Design Server
+tags:
+- name: auth
+  description: 认证
+- name: settings
+  description: 校区、学期、字典
+- name: users
+  description: 用户与角色
+- name: teachers
+  description: 教师管理
+- name: students
+  description: 学生主档与在读档
+- name: families
+  description: 家庭与监护人
+- name: homework
+  description: 作业上传、AI、教师复核
+- name: growth
+  description: 成长观察、目标、报告
+- name: attendance
+  description: 签到、设备、作业时长
+- name: billing
+  description: 产品、合同、账单、支付
+- name: communication
+  description: 沟通记录与消息
+- name: analytics
+  description: 看板分析
+- name: jobs
+  description: 异步任务
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    studentId:
+      name: studentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    familyId:
+      name: familyId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    teacherId:
+      name: teacherId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    submissionId:
+      name: submissionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    goalId:
+      name: goalId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    invoiceId:
+      name: invoiceId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    paymentId:
+      name: paymentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    jobId:
+      name: jobId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    pageNo:
+      name: pageNo
+      in: query
+      schema:
+        type: integer
+        default: 1
+    pageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        default: 20
+    keyword:
+      name: keyword
+      in: query
+      schema:
+        type: string
+    campusId:
+      name: campusId
+      in: query
+      schema:
+        type: string
+        format: uuid
+    termId:
+      name: termId
+      in: query
+      schema:
+        type: string
+        format: uuid
+    status:
+      name: status
+      in: query
+      schema:
+        type: string
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: success
+        data: {}
+        traceId:
+          type: string
+    PageResultMeta:
+      type: object
+      properties:
+        pageNo:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+    PageResultOfAny:
+      type: object
+      properties:
+        list:
+          type: array
+          items: {}
+        page:
+          $ref: '#/components/schemas/PageResultMeta'
+    LoginRequest:
+      type: object
+      required:
+      - username
+      - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    LoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        displayName:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        campusIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+    Campus:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+    Term:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        campusId:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        status:
+          type: string
+    Teacher:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        campusId:
+          type: string
+          format: uuid
+        employeeNo:
+          type: string
+        name:
+          type: string
+        mobile:
+          type: string
+        leadSubject:
+          type: string
+        status:
+          type: string
+    Student:
+      type: object
+      required:
+      - studentNo
+      - name
+      - gradeLabel
+      properties:
+        id:
+          type: string
+          format: uuid
+        studentNo:
+          type: string
+        name:
+          type: string
+        gender:
+          type: string
+        birthDate:
+          type: string
+          format: date
+          nullable: true
+        schoolName:
+          type: string
+        gradeLabel:
+          type: string
+        className:
+          type: string
+        familyId:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+    CreateStudentRequest:
+      type: object
+      required:
+      - studentNo
+      - name
+      - gradeLabel
+      properties:
+        studentNo:
+          type: string
+        name:
+          type: string
+        gender:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        schoolName:
+          type: string
+        gradeLabel:
+          type: string
+        className:
+          type: string
+        familyId:
+          type: string
+          format: uuid
+        photoFileId:
+          type: string
+          format: uuid
+        profileNotes:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        outsideCourses:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalCourse'
+    ExternalCourse:
+      type: object
+      properties:
+        subject:
+          type: string
+        institutionName:
+          type: string
+        scheduleNote:
+          type: string
+    Enrollment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        campusId:
+          type: string
+          format: uuid
+        termId:
+          type: string
+          format: uuid
+        primaryTeacherId:
+          type: string
+          format: uuid
+          nullable: true
+        groupId:
+          type: string
+          format: uuid
+          nullable: true
+        enrollDate:
+          type: string
+          format: date
+        leaveDate:
+          type: string
+          format: date
+          nullable: true
+        status:
+          type: string
+    CreateEnrollmentRequest:
+      type: object
+      required:
+      - campusId
+      - termId
+      - enrollDate
+      properties:
+        campusId:
+          type: string
+          format: uuid
+        termId:
+          type: string
+          format: uuid
+        primaryTeacherId:
+          type: string
+          format: uuid
+        groupId:
+          type: string
+          format: uuid
+        enrollDate:
+          type: string
+          format: date
+        leaveDate:
+          type: string
+          format: date
+        leaveReason:
+          type: string
+        status:
+          type: string
+          default: active
+    Family:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        familyCode:
+          type: string
+        familyName:
+          type: string
+        primaryContactName:
+          type: string
+        primaryMobile:
+          type: string
+        familyStructure:
+          type: string
+        status:
+          type: string
+    CreateFamilyRequest:
+      type: object
+      properties:
+        familyCode:
+          type: string
+        familyName:
+          type: string
+        primaryContactName:
+          type: string
+        primaryMobile:
+          type: string
+        secondaryMobile:
+          type: string
+        familyStructure:
+          type: string
+        address:
+          type: string
+        communicationPreference:
+          type: string
+        notes:
+          type: string
+    Guardian:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        familyId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        relation:
+          type: string
+        mobile:
+          type: string
+        isPrimary:
+          type: boolean
+        isEmergency:
+          type: boolean
+    CreateGuardianRequest:
+      type: object
+      required:
+      - name
+      - relation
+      properties:
+        name:
+          type: string
+        relation:
+          type: string
+        mobile:
+          type: string
+        wechatId:
+          type: string
+        email:
+          type: string
+        occupation:
+          type: string
+        isPrimary:
+          type: boolean
+        isEmergency:
+          type: boolean
+        notes:
+          type: string
+    HomeworkSubmission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        submissionNo:
+          type: string
+        studentId:
+          type: string
+          format: uuid
+        subject:
+          type: string
+        homeworkDate:
+          type: string
+          format: date
+        aiStatus:
+          type: string
+        reviewStatus:
+          type: string
+        finalAccuracyPct:
+          type: number
+          format: double
+          nullable: true
+        finalErrorSummary:
+          type: string
+          nullable: true
+    CreateHomeworkSubmissionRequest:
+      type: object
+      required:
+      - studentId
+      - subject
+      - homeworkDate
+      - fileIds
+      properties:
+        studentId:
+          type: string
+          format: uuid
+        campusId:
+          type: string
+          format: uuid
+        termId:
+          type: string
+          format: uuid
+        teacherId:
+          type: string
+          format: uuid
+        subject:
+          type: string
+        homeworkDate:
+          type: string
+          format: date
+        fileIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        sourceType:
+          type: string
+          default: teacher_upload
+        remark:
+          type: string
+    TriggerAnalysisRequest:
+      type: object
+      properties:
+        force:
+          type: boolean
+          default: false
+        provider:
+          type: string
+        modelName:
+          type: string
+        promptVersion:
+          type: string
+    HomeworkReviewRequest:
+      type: object
+      required:
+      - reviewResult
+      properties:
+        reviewResult:
+          type: string
+          enum:
+          - approved
+          - adjusted
+          - rejected
+        finalAccuracyPct:
+          type: number
+          format: double
+        finalErrorItems:
+          type: array
+          items:
+            type: object
+            properties:
+              errorTaxonomyId:
+                type: string
+                format: uuid
+              weight:
+                type: number
+                format: double
+              note:
+                type: string
+        finalErrorSummary:
+          type: string
+        finalSuggestion:
+          type: string
+        publishToFamily:
+          type: boolean
+    GrowthObservationRequest:
+      type: object
+      required:
+      - studentId
+      - observationDate
+      - templateId
+      - scores
+      properties:
+        studentId:
+          type: string
+          format: uuid
+        termId:
+          type: string
+          format: uuid
+        teacherId:
+          type: string
+          format: uuid
+        templateId:
+          type: string
+          format: uuid
+        observationDate:
+          type: string
+          format: date
+        scene:
+          type: string
+        scores:
+          type: array
+          items:
+            type: object
+            properties:
+              dimensionId:
+                type: string
+                format: uuid
+              score:
+                type: number
+                format: double
+              note:
+                type: string
+        strengths:
+          type: string
+        improvementNotes:
+          type: string
+        publishToFamily:
+          type: boolean
+    GrowthGoal:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        goalType:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+        targetValue:
+          type: number
+          format: double
+          nullable: true
+        currentValue:
+          type: number
+          format: double
+          nullable: true
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+    CreateGrowthGoalRequest:
+      type: object
+      required:
+      - studentId
+      - goalType
+      - title
+      properties:
+        studentId:
+          type: string
+          format: uuid
+        termId:
+          type: string
+          format: uuid
+        goalType:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        ownerRole:
+          type: string
+        metricType:
+          type: string
+        baselineValue:
+          type: number
+          format: double
+        targetValue:
+          type: number
+          format: double
+        currentValue:
+          type: number
+          format: double
+        startDate:
+          type: string
+          format: date
+        dueDate:
+          type: string
+          format: date
+        status:
+          type: string
+          default: draft
+    GoalCheckinRequest:
+      type: object
+      required:
+      - checkinDate
+      properties:
+        checkinDate:
+          type: string
+          format: date
+        progressValue:
+          type: number
+          format: double
+        progressNote:
+          type: string
+        nextAction:
+          type: string
+    GrowthReport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        reportType:
+          type: string
+        periodKey:
+          type: string
+        status:
+          type: string
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+    GenerateReportRequest:
+      type: object
+      required:
+      - reportType
+      - periodKey
+      - studentIds
+      properties:
+        reportType:
+          type: string
+          enum:
+          - weekly
+          - monthly
+        periodKey:
+          type: string
+        studentIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        termId:
+          type: string
+          format: uuid
+        campusId:
+          type: string
+          format: uuid
+    AttendanceEventRequest:
+      type: object
+      required:
+      - studentId
+      - campusId
+      - eventType
+      - eventTime
+      properties:
+        studentId:
+          type: string
+          format: uuid
+        campusId:
+          type: string
+          format: uuid
+        deviceId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+        eventTime:
+          type: string
+          format: date-time
+        remark:
+          type: string
+    DeviceBindingRequest:
+      type: object
+      required:
+      - studentId
+      - deviceId
+      properties:
+        studentId:
+          type: string
+          format: uuid
+        deviceId:
+          type: string
+          format: uuid
+    BillingProduct:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        billingMode:
+          type: string
+        priceCents:
+          type: integer
+        status:
+          type: string
+    CreateBillingProductRequest:
+      type: object
+      required:
+      - code
+      - name
+      - category
+      - billingMode
+      - priceCents
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        billingMode:
+          type: string
+        priceCents:
+          type: integer
+        unit:
+          type: string
+        description:
+          type: string
+    CreateContractRequest:
+      type: object
+      required:
+      - contractNo
+      - familyId
+      - studentId
+      - signDate
+      - startDate
+      - endDate
+      - items
+      properties:
+        contractNo:
+          type: string
+        campusId:
+          type: string
+          format: uuid
+        termId:
+          type: string
+          format: uuid
+        familyId:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        signDate:
+          type: string
+          format: date
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        discountAmountCents:
+          type: integer
+        remark:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: string
+                format: uuid
+              itemName:
+                type: string
+              unitPriceCents:
+                type: integer
+              quantity:
+                type: number
+                format: double
+    CreateInvoiceRequest:
+      type: object
+      required:
+      - invoiceNo
+      - familyId
+      - studentId
+      - issueDate
+      - amountCents
+      properties:
+        invoiceNo:
+          type: string
+        contractId:
+          type: string
+          format: uuid
+        familyId:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        billingPeriod:
+          type: string
+        issueDate:
+          type: string
+          format: date
+        dueDate:
+          type: string
+          format: date
+        amountCents:
+          type: integer
+        note:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              itemName:
+                type: string
+              productId:
+                type: string
+                format: uuid
+              quantity:
+                type: number
+                format: double
+              unitPriceCents:
+                type: integer
+              amountCents:
+                type: integer
+    PaymentRequest:
+      type: object
+      required:
+      - paymentNo
+      - paidAmountCents
+      - paymentTime
+      - channel
+      properties:
+        paymentNo:
+          type: string
+        paidAmountCents:
+          type: integer
+        paymentTime:
+          type: string
+          format: date-time
+        channel:
+          type: string
+        transactionNo:
+          type: string
+        remark:
+          type: string
+    RefundRequest:
+      type: object
+      required:
+      - refundNo
+      - refundAmountCents
+      - refundTime
+      properties:
+        refundNo:
+          type: string
+        refundAmountCents:
+          type: integer
+        refundTime:
+          type: string
+          format: date-time
+        reason:
+          type: string
+    CommunicationRecordRequest:
+      type: object
+      required:
+      - familyId
+      - channel
+      - direction
+      - summary
+      properties:
+        familyId:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        channel:
+          type: string
+        direction:
+          type: string
+        topic:
+          type: string
+        summary:
+          type: string
+        nextAction:
+          type: string
+    MessageRequest:
+      type: object
+      required:
+      - familyId
+      - channel
+      - body
+      properties:
+        templateId:
+          type: string
+          format: uuid
+        familyId:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        channel:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+        scheduledAt:
+          type: string
+          format: date-time
+    JobStatus:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        jobType:
+          type: string
+        bizType:
+          type: string
+        bizId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        progress:
+          type: integer
+        result:
+          type: object
+          additionalProperties: true
+        errorMessage:
+          type: string
+          nullable: true
+security:
+- bearerAuth: []
+paths:
+  /auth/login:
+    post:
+      tags:
+      - auth
+      summary: 登录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LoginResponse'
+  /auth/refresh:
+    post:
+      tags:
+      - auth
+      summary: 刷新 token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+              required:
+              - refreshToken
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        accessToken:
+                          type: string
+  /settings/campuses:
+    get:
+      tags:
+      - settings
+      summary: 校区列表
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Campus'
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+  /settings/terms:
+    get:
+      tags:
+      - settings
+      summary: 学期列表
+      parameters:
+      - $ref: '#/components/parameters/campusId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Term'
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+  /settings/dictionaries:
+    get:
+      tags:
+      - settings
+      summary: 字典列表
+      parameters:
+      - name: dictType
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              dictType:
+                                type: string
+                              code:
+                                type: string
+                              label:
+                                type: string
+                              value:
+                                type: string
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+  /users:
+    get:
+      tags:
+      - users
+      summary: 用户列表
+      parameters:
+      - $ref: '#/components/parameters/keyword'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/User'
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - users
+      summary: 创建用户
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - username
+              - password
+              - displayName
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                displayName:
+                  type: string
+                mobile:
+                  type: string
+                email:
+                  type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/User'
+  /users/{userId}/roles:
+    post:
+      tags:
+      - users
+      summary: 绑定角色
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - roleIds
+              properties:
+                roleIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                campusId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        success:
+                          type: boolean
+  /teachers:
+    get:
+      tags:
+      - teachers
+      summary: 教师列表
+      parameters:
+      - $ref: '#/components/parameters/keyword'
+      - $ref: '#/components/parameters/campusId'
+      - name: subject
+        in: query
+        schema:
+          type: string
+      - $ref: '#/components/parameters/status'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Teacher'
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - teachers
+      summary: 创建教师
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - campusId
+              - employeeNo
+              - name
+              properties:
+                campusId:
+                  type: string
+                  format: uuid
+                employeeNo:
+                  type: string
+                name:
+                  type: string
+                mobile:
+                  type: string
+                email:
+                  type: string
+                hireDate:
+                  type: string
+                  format: date
+                leadSubject:
+                  type: string
+                status:
+                  type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/Teacher'
+  /teachers/{teacherId}:
+    get:
+      tags:
+      - teachers
+      summary: 教师详情
+      parameters:
+      - $ref: '#/components/parameters/teacherId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        teacher:
+                          $ref: '#/components/schemas/Teacher'
+                        subjects:
+                          type: array
+                          items:
+                            type: object
+                        shifts:
+                          type: array
+                          items:
+                            type: object
+                        developmentRecords:
+                          type: array
+                          items:
+                            type: object
+  /teachers/{teacherId}/development-records:
+    post:
+      tags:
+      - teachers
+      summary: 新增教师发展记录
+      parameters:
+      - $ref: '#/components/parameters/teacherId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - recordType
+              - title
+              properties:
+                recordType:
+                  type: string
+                title:
+                  type: string
+                occurredAt:
+                  type: string
+                  format: date-time
+                strengths:
+                  type: string
+                improvements:
+                  type: string
+                actionItems:
+                  type: string
+                dueDate:
+                  type: string
+                  format: date
+                status:
+                  type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+  /students:
+    get:
+      tags:
+      - students
+      summary: 学生列表
+      parameters:
+      - $ref: '#/components/parameters/keyword'
+      - $ref: '#/components/parameters/campusId'
+      - $ref: '#/components/parameters/termId'
+      - name: teacherId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: grade
+        in: query
+        schema:
+          type: string
+      - $ref: '#/components/parameters/status'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Student'
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - students
+      summary: 创建学生主档
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStudentRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/Student'
+  /students/{studentId}:
+    get:
+      tags:
+      - students
+      summary: 学生详情
+      parameters:
+      - $ref: '#/components/parameters/studentId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/Student'
+  /students/{studentId}/360:
+    get:
+      tags:
+      - students
+      summary: 学生360
+      parameters:
+      - $ref: '#/components/parameters/studentId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        student:
+                          $ref: '#/components/schemas/Student'
+                        currentEnrollment:
+                          $ref: '#/components/schemas/Enrollment'
+                        family:
+                          $ref: '#/components/schemas/Family'
+                        guardians:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Guardian'
+                        homeworkSummary:
+                          type: object
+                          additionalProperties: true
+                        growthSummary:
+                          type: object
+                          additionalProperties: true
+                        attendanceSummary:
+                          type: object
+                          additionalProperties: true
+                        billingSummary:
+                          type: object
+                          additionalProperties: true
+                        recentTimeline:
+                          type: array
+                          items:
+                            type: object
+                            additionalProperties: true
+  /students/{studentId}/enrollments:
+    post:
+      tags:
+      - students
+      summary: 创建在读档
+      parameters:
+      - $ref: '#/components/parameters/studentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEnrollmentRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/Enrollment'
+  /students/import:
+    post:
+      tags:
+      - students
+      summary: 创建导入任务
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - fileId
+              properties:
+                fileId:
+                  type: string
+                  format: uuid
+                importType:
+                  type: string
+                  default: students
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        jobId:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+  /families:
+    get:
+      tags:
+      - families
+      summary: 家庭列表
+      parameters:
+      - $ref: '#/components/parameters/keyword'
+      - $ref: '#/components/parameters/campusId'
+      - $ref: '#/components/parameters/status'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Family'
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - families
+      summary: 创建家庭
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFamilyRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/Family'
+  /families/{familyId}:
+    get:
+      tags:
+      - families
+      summary: 家庭详情
+      parameters:
+      - $ref: '#/components/parameters/familyId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        family:
+                          $ref: '#/components/schemas/Family'
+                        guardians:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Guardian'
+                        students:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Student'
+                        billingSummary:
+                          type: object
+                          additionalProperties: true
+                        tasks:
+                          type: array
+                          items:
+                            type: object
+                        communications:
+                          type: array
+                          items:
+                            type: object
+  /families/{familyId}/guardians:
+    post:
+      tags:
+      - families
+      summary: 创建监护人
+      parameters:
+      - $ref: '#/components/parameters/familyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGuardianRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/Guardian'
+  /families/{familyId}/tasks:
+    post:
+      tags:
+      - families
+      summary: 创建家庭任务
+      parameters:
+      - $ref: '#/components/parameters/familyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - title
+              properties:
+                studentId:
+                  type: string
+                  format: uuid
+                sourceType:
+                  type: string
+                sourceId:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                description:
+                  type: string
+                frequency:
+                  type: string
+                assigneeGuardianId:
+                  type: string
+                  format: uuid
+                startDate:
+                  type: string
+                  format: date
+                dueDate:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+  /homework/submissions:
+    get:
+      tags:
+      - homework
+      summary: 作业列表
+      parameters:
+      - $ref: '#/components/parameters/keyword'
+      - $ref: '#/components/parameters/campusId'
+      - $ref: '#/components/parameters/termId'
+      - name: teacherId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: subject
+        in: query
+        schema:
+          type: string
+      - name: aiStatus
+        in: query
+        schema:
+          type: string
+      - name: reviewStatus
+        in: query
+        schema:
+          type: string
+      - name: dateFrom
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: dateTo
+        in: query
+        schema:
+          type: string
+          format: date
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/HomeworkSubmission'
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - homework
+      summary: 上传作业
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHomeworkSubmissionRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/HomeworkSubmission'
+  /homework/submissions/{submissionId}:
+    get:
+      tags:
+      - homework
+      summary: 作业详情
+      parameters:
+      - $ref: '#/components/parameters/submissionId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        submission:
+                          $ref: '#/components/schemas/HomeworkSubmission'
+                        files:
+                          type: array
+                          items:
+                            type: object
+                        latestAiAnalysis:
+                          type: object
+                          additionalProperties: true
+                        review:
+                          type: object
+                          additionalProperties: true
+  /homework/submissions/{submissionId}/analyze:
+    post:
+      tags:
+      - homework
+      summary: 触发 AI 分析
+      parameters:
+      - $ref: '#/components/parameters/submissionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriggerAnalysisRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        jobId:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+  /homework/submissions/{submissionId}/review:
+    post:
+      tags:
+      - homework
+      summary: 提交教师复核
+      parameters:
+      - $ref: '#/components/parameters/submissionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HomeworkReviewRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        reviewId:
+                          type: string
+                          format: uuid
+                        reviewStatus:
+                          type: string
+  /homework/error-taxonomies:
+    get:
+      tags:
+      - homework
+      summary: 错因词典
+      parameters:
+      - name: subjectScope
+        in: query
+        schema:
+          type: string
+      - $ref: '#/components/parameters/status'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              code:
+                                type: string
+                              name:
+                                type: string
+                              category:
+                                type: string
+                              subjectScope:
+                                type: string
+                              active:
+                                type: boolean
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+  /growth/observations:
+    get:
+      tags:
+      - growth
+      summary: 成长观察列表
+      parameters:
+      - name: studentId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: teacherId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/termId'
+      - name: scene
+        in: query
+        schema:
+          type: string
+      - name: dateFrom
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: dateTo
+        in: query
+        schema:
+          type: string
+          format: date
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              studentId:
+                                type: string
+                                format: uuid
+                              teacherId:
+                                type: string
+                                format: uuid
+                              observationDate:
+                                type: string
+                                format: date
+                              scene:
+                                type: string
+                              totalScore:
+                                type: number
+                                format: double
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - growth
+      summary: 新建成长观察
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrowthObservationRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+  /growth/goals:
+    get:
+      tags:
+      - growth
+      summary: 成长目标列表
+      parameters:
+      - name: studentId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/termId'
+      - name: goalType
+        in: query
+        schema:
+          type: string
+      - $ref: '#/components/parameters/status'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/GrowthGoal'
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - growth
+      summary: 新建成长目标
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGrowthGoalRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/GrowthGoal'
+  /growth/goals/{goalId}/checkins:
+    post:
+      tags:
+      - growth
+      summary: 目标跟进
+      parameters:
+      - $ref: '#/components/parameters/goalId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalCheckinRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+  /growth/reports:
+    get:
+      tags:
+      - growth
+      summary: 成长报告列表
+      parameters:
+      - name: studentId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/termId'
+      - name: reportType
+        in: query
+        schema:
+          type: string
+      - name: periodKey
+        in: query
+        schema:
+          type: string
+      - $ref: '#/components/parameters/status'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/GrowthReport'
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+  /growth/reports/generate:
+    post:
+      tags:
+      - growth
+      summary: 生成报告草稿
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateReportRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        jobId:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+  /attendance/events:
+    get:
+      tags:
+      - attendance
+      summary: 签到事件列表
+      parameters:
+      - name: studentId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/campusId'
+      - name: eventType
+        in: query
+        schema:
+          type: string
+      - name: dateFrom
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: dateTo
+        in: query
+        schema:
+          type: string
+          format: date
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              studentId:
+                                type: string
+                                format: uuid
+                              campusId:
+                                type: string
+                                format: uuid
+                              eventType:
+                                type: string
+                              eventTime:
+                                type: string
+                                format: date-time
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - attendance
+      summary: 写入签到事件
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceEventRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+  /attendance/devices:
+    get:
+      tags:
+      - attendance
+      summary: 设备列表
+      parameters:
+      - $ref: '#/components/parameters/campusId'
+      - $ref: '#/components/parameters/status'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              serialNo:
+                                type: string
+                              deviceType:
+                                type: string
+                              status:
+                                type: string
+                              campusId:
+                                type: string
+                                format: uuid
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+  /attendance/devices/bindings:
+    post:
+      tags:
+      - attendance
+      summary: 绑定设备
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceBindingRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+  /attendance/homework-time/daily-stats:
+    get:
+      tags:
+      - attendance
+      summary: 作业时长日统计
+      parameters:
+      - name: studentId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: subject
+        in: query
+        schema:
+          type: string
+      - name: dateFrom
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: dateTo
+        in: query
+        schema:
+          type: string
+          format: date
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              studentId:
+                                type: string
+                                format: uuid
+                              statDate:
+                                type: string
+                                format: date
+                              subject:
+                                type: string
+                              totalMinutes:
+                                type: integer
+                              sessionCount:
+                                type: integer
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+  /billing/products:
+    get:
+      tags:
+      - billing
+      summary: 收费产品列表
+      parameters:
+      - name: category
+        in: query
+        schema:
+          type: string
+      - $ref: '#/components/parameters/status'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/BillingProduct'
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - billing
+      summary: 创建收费产品
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBillingProductRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/BillingProduct'
+  /billing/contracts:
+    get:
+      tags:
+      - billing
+      summary: 合同列表
+      parameters:
+      - $ref: '#/components/parameters/keyword'
+      - $ref: '#/components/parameters/campusId'
+      - $ref: '#/components/parameters/termId'
+      - $ref: '#/components/parameters/status'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              contractNo:
+                                type: string
+                              familyId:
+                                type: string
+                                format: uuid
+                              studentId:
+                                type: string
+                                format: uuid
+                              startDate:
+                                type: string
+                                format: date
+                              endDate:
+                                type: string
+                                format: date
+                              payableAmountCents:
+                                type: integer
+                              status:
+                                type: string
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - billing
+      summary: 创建合同
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateContractRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        contractNo:
+                          type: string
+  /billing/invoices:
+    get:
+      tags:
+      - billing
+      summary: 账单列表
+      parameters:
+      - $ref: '#/components/parameters/keyword'
+      - $ref: '#/components/parameters/campusId'
+      - $ref: '#/components/parameters/status'
+      - name: dateFrom
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: dateTo
+        in: query
+        schema:
+          type: string
+          format: date
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              invoiceNo:
+                                type: string
+                              familyId:
+                                type: string
+                                format: uuid
+                              studentId:
+                                type: string
+                                format: uuid
+                              amountCents:
+                                type: integer
+                              dueDate:
+                                type: string
+                                format: date
+                              status:
+                                type: string
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - billing
+      summary: 创建账单
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInvoiceRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        invoiceNo:
+                          type: string
+  /billing/invoices/{invoiceId}/payments:
+    post:
+      tags:
+      - billing
+      summary: 记录支付
+      parameters:
+      - $ref: '#/components/parameters/invoiceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        paymentId:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+  /billing/payments/{paymentId}/refunds:
+    post:
+      tags:
+      - billing
+      summary: 记录退款
+      parameters:
+      - $ref: '#/components/parameters/paymentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        refundId:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+  /billing/renewals:
+    get:
+      tags:
+      - billing
+      summary: 续费任务列表
+      parameters:
+      - $ref: '#/components/parameters/keyword'
+      - $ref: '#/components/parameters/status'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              familyId:
+                                type: string
+                                format: uuid
+                              studentId:
+                                type: string
+                                format: uuid
+                              status:
+                                type: string
+                              nextFollowUpAt:
+                                type: string
+                                format: date-time
+                                nullable: true
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+  /communication/records:
+    get:
+      tags:
+      - communication
+      summary: 沟通记录列表
+      parameters:
+      - $ref: '#/components/parameters/keyword'
+      - name: familyId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: studentId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: channel
+        in: query
+        schema:
+          type: string
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              familyId:
+                                type: string
+                                format: uuid
+                              studentId:
+                                type: string
+                                format: uuid
+                                nullable: true
+                              channel:
+                                type: string
+                              direction:
+                                type: string
+                              topic:
+                                type: string
+                              summary:
+                                type: string
+                              createdAt:
+                                type: string
+                                format: date-time
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - communication
+      summary: 创建沟通记录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommunicationRecordRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+  /communication/messages:
+    get:
+      tags:
+      - communication
+      summary: 外发消息列表
+      parameters:
+      - $ref: '#/components/parameters/keyword'
+      - name: familyId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: studentId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/status'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              familyId:
+                                type: string
+                                format: uuid
+                              studentId:
+                                type: string
+                                format: uuid
+                                nullable: true
+                              channel:
+                                type: string
+                              status:
+                                type: string
+                              scheduledAt:
+                                type: string
+                                format: date-time
+                                nullable: true
+                              sentAt:
+                                type: string
+                                format: date-time
+                                nullable: true
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - communication
+      summary: 创建外发消息
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+  /analytics/overview:
+    get:
+      tags:
+      - analytics
+      summary: 校区总览
+      parameters:
+      - $ref: '#/components/parameters/campusId'
+      - $ref: '#/components/parameters/termId'
+      - name: dateFrom
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: dateTo
+        in: query
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        activeStudentCount:
+                          type: integer
+                        pendingHomeworkCount:
+                          type: integer
+                        reportPublishRate:
+                          type: number
+                          format: double
+                        receivableCents:
+                          type: integer
+                        receivedCents:
+                          type: integer
+                        todayAttendanceAnomalyCount:
+                          type: integer
+                        trend:
+                          type: object
+                          additionalProperties: true
+  /analytics/teaching:
+    get:
+      tags:
+      - analytics
+      summary: 教学看板
+      parameters:
+      - $ref: '#/components/parameters/campusId'
+      - $ref: '#/components/parameters/termId'
+      - name: teacherId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        teacherWorkloads:
+                          type: array
+                          items:
+                            type: object
+                        subjectAccuracy:
+                          type: array
+                          items:
+                            type: object
+                        topErrors:
+                          type: array
+                          items:
+                            type: object
+                        growthCoverage:
+                          type: array
+                          items:
+                            type: object
+  /analytics/billing:
+    get:
+      tags:
+      - analytics
+      summary: 收费看板
+      parameters:
+      - $ref: '#/components/parameters/campusId'
+      - $ref: '#/components/parameters/termId'
+      - name: dateFrom
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: dateTo
+        in: query
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        receivableTrend:
+                          type: array
+                          items:
+                            type: object
+                        receivedTrend:
+                          type: array
+                          items:
+                            type: object
+                        agingSummary:
+                          type: array
+                          items:
+                            type: object
+                        renewalFunnel:
+                          type: array
+                          items:
+                            type: object
+  /jobs/{jobId}:
+    get:
+      tags:
+      - jobs
+      summary: 查询异步任务
+      parameters:
+      - $ref: '#/components/parameters/jobId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/JobStatus'

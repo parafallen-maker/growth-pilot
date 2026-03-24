@@ -1,0 +1,920 @@
+project:
+  name: growth-pilot
+  repo: https://github.com/parafallen-maker/growth-pilot.git
+  control_doc: docs/growthpilot/15_多Agent协作任务总文件.md
+  source_of_truth:
+    - docs/growthpilot/05_数据库DDL.sql
+    - docs/growthpilot/07_OpenAPI.yaml
+    - docs/growthpilot/06_API文档.md
+    - docs/growthpilot/08_页面原型清单.md
+    - docs/growthpilot/09_前端开发规格.md
+    - docs/growthpilot/10_后端开发规格.md
+  execution_policy:
+    mode: autonomous-default
+    description: 任务类文件进入仓库后默认自动执行，不逐条回头确认；仅在外部动作、不可逆破坏、额外付费、权限/合规不明、范围变更时暂停。
+    pause_conditions:
+      - external_send
+      - destructive_irreversible_action
+      - paid_resource_or_budget_change
+      - scope_change_beyond_task_file
+      - unclear_permission_or_compliance
+  branch_policy:
+    trunk: main
+    agent_branch_pattern: agent/<agent-id>/<task-id>
+    integration_branch_pattern: int/<wave>
+  status_values: [todo, doing, blocked, review, done]
+  priority_values: [P0, P1, P2]
+
+shared_contract:
+  handoff_template:
+    required_fields:
+      - agent
+      - module
+      - task_id
+      - wbs
+      - input_docs
+      - changed_files
+      - output
+      - self_check
+      - risks
+      - next_handoff_to
+  done_definition_global:
+    - lint_pass
+    - type_check_pass
+    - docs_aligned
+    - no_field_name_drift
+    - handoff_written
+
+waves:
+  - id: wave-0
+    name: 基础定版
+    tasks: [T-P0-1, T-P0-2, T-P0-3, T-P0-4]
+  - id: wave-1
+    name: 基础系统
+    tasks: [T-F1-1, T-F1-2, T-F1-3, T-F1-4]
+  - id: wave-2
+    name: 主数据系统
+    tasks: [T-M1-1, T-M1-2, T-M1-3, T-M1-4, T-M1-5]
+  - id: wave-3
+    name: 作业与成长
+    tasks: [T-H1-1, T-H1-2, T-H1-3, T-H1-4, T-H1-5, T-H1-6, T-H1-7, T-G1-1, T-G1-2, T-G1-3, T-G1-4, T-G1-5]
+  - id: wave-4
+    name: 出勤收费沟通
+    tasks: [T-A1-1, T-A1-2, T-A1-3, T-B1-1, T-B1-2, T-B1-3, T-C1-1, T-C1-2]
+  - id: wave-5
+    name: 分析迁移验收上线
+    tasks: [T-BI1-1, T-BI1-2, T-DM1-1, T-DM1-2, T-QA1-1, T-QA1-2]
+
+agents:
+  - id: A1
+    name: Product Architect Agent
+    role: 范围冻结 / 验收口径 / 发布边界
+    default_owner: product
+    tasks:
+      - task_id: T-P0-1
+        title: 冻结模块边界、命名规范、MVP 范围
+        priority: P0
+        status: todo
+        wbs: [WBS-001]
+        input_docs:
+          - docs/growthpilot/01_系统架构.md
+          - docs/growthpilot/02_PRD.md
+          - docs/growthpilot/11_Agent团队设计.md
+          - docs/growthpilot/12_开发任务Todo.md
+          - docs/growthpilot/15_多Agent协作任务总文件.md
+        deliverables:
+          - mvp_boundary_note
+          - module_boundary_matrix
+          - p0_release_gate_summary
+        done_definition:
+          - 模块边界、P0/P1 范围无冲突
+          - WBS 与模块映射稳定
+          - 发布阻塞项可直接给 QA 使用
+        handoff_to: [A2, A4, A10]
+
+  - id: A2
+    name: Domain Model Agent
+    role: DDL / 领域实体 / 状态机 / 迁移口径
+    default_owner: backend-architecture
+    tasks:
+      - task_id: T-P0-3
+        title: 校核 DDL、约束、索引、迁移机制
+        priority: P0
+        status: todo
+        wbs: [WBS-003]
+        depends_on: [T-P0-1]
+        input_docs:
+          - docs/growthpilot/03_领域模型与信息架构.md
+          - docs/growthpilot/04_数据库字典.md
+          - docs/growthpilot/05_数据库DDL.sql
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - ddl_review_report
+          - migration_strategy_note
+          - field_conflict_list
+        done_definition:
+          - DDL 可执行
+          - 主键/外键/唯一约束与 PRD 一致
+          - 导入顺序与 staging 策略明确
+        handoff_to: [A3, A4, A5, A6, A7, A10]
+      - task_id: T-META-1
+        title: 横向守门字段一致性与状态机一致性
+        priority: P0
+        status: todo
+        wbs: [WBS-003, WBS-004]
+        input_docs:
+          - docs/growthpilot/05_数据库DDL.sql
+          - docs/growthpilot/07_OpenAPI.yaml
+          - docs/growthpilot/08_页面原型清单.md
+        deliverables:
+          - field_diff_report
+          - state_machine_checklist
+        done_definition:
+          - 不允许同义异名字段漂移
+          - 关键状态机命名统一
+        handoff_to: [A3, A8, A9]
+
+  - id: A3
+    name: API Steward Agent
+    role: OpenAPI / DTO / 错误码 / 前后端协议统一
+    default_owner: api
+    tasks:
+      - task_id: T-P0-4
+        title: 基于 OpenAPI 生成协议基线与 DTO 约束
+        priority: P0
+        status: todo
+        wbs: [WBS-004]
+        depends_on: [T-P0-1, T-P0-3]
+        input_docs:
+          - docs/growthpilot/06_API文档.md
+          - docs/growthpilot/07_OpenAPI.yaml
+          - docs/growthpilot/09_前端开发规格.md
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - api_contract_baseline
+          - dto_generation_rule
+          - error_response_convention
+        done_definition:
+          - 前后端可共享类型
+          - 错误码/分页/筛选结构统一
+          - 变更流程明确
+        handoff_to: [A4, A5, A6, A7, A8, A9]
+      - task_id: T-H1-API
+        title: 作业与成长链路接口守门
+        priority: P0
+        status: todo
+        wbs: [WBS-019, WBS-021, WBS-024, WBS-027, WBS-028, WBS-031]
+        depends_on: [T-P0-4]
+        input_docs:
+          - docs/growthpilot/06_API文档.md
+          - docs/growthpilot/07_OpenAPI.yaml
+          - docs/growthpilot/11_Agent团队设计.md
+        deliverables:
+          - homework_api_review
+          - growth_api_review
+        done_definition:
+          - AI 输入输出 schema 清晰
+          - 复核与报告发布接口无字段歧义
+        handoff_to: [A6, A9, A10]
+
+  - id: A4
+    name: Backend Builder Agent-Foundation
+    role: auth / users / settings / files / jobs / 工程骨架
+    default_owner: backend-foundation
+    tasks:
+      - task_id: T-P0-2
+        title: 建立 monorepo、CI、lint、format、基础工程骨架
+        priority: P0
+        status: todo
+        wbs: [WBS-002]
+        depends_on: [T-P0-1]
+        input_docs:
+          - docs/growthpilot/01_系统架构.md
+          - docs/growthpilot/09_前端开发规格.md
+          - docs/growthpilot/10_后端开发规格.md
+          - docs/growthpilot/15_多Agent协作任务总文件.md
+        deliverables:
+          - monorepo_scaffold
+          - ci_pipeline
+          - lint_and_format_config
+          - package_workspace_layout
+        done_definition:
+          - apps/web apps/api packages 可启动
+          - CI 能跑 lint/typecheck/test 基础任务
+          - 目录符合文档约定
+        handoff_to: [A5, A6, A7, A8, A9, A10]
+      - task_id: T-F1-1
+        title: 登录、refresh token、current user、logout
+        priority: P0
+        status: todo
+        wbs: [WBS-005]
+        depends_on: [T-P0-2, T-P0-4]
+        input_docs:
+          - docs/growthpilot/06_API文档.md
+          - docs/growthpilot/07_OpenAPI.yaml
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - auth_module
+          - jwt_refresh_flow
+          - auth_integration_tests
+        done_definition:
+          - 登录链路可跑通
+          - 401/403 语义明确
+          - current user 返回权限上下文
+        handoff_to: [A8, A9, A10]
+      - task_id: T-F1-3
+        title: 校区、学期、字典、任务中心接口
+        priority: P0
+        status: todo
+        wbs: [WBS-007]
+        depends_on: [T-P0-2, T-P0-3, T-P0-4]
+        input_docs:
+          - docs/growthpilot/02_PRD.md
+          - docs/growthpilot/06_API文档.md
+          - docs/growthpilot/08_页面原型清单.md
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - settings_module
+          - jobs_query_api
+        done_definition:
+          - campuses/terms/dictionaries CRUD 可用
+          - AI 任务中心可查询任务状态
+        handoff_to: [A8, A9, A10]
+      - task_id: T-M1-5
+        title: 文件上传模块与 fileId 回传能力
+        priority: P0
+        status: todo
+        wbs: [WBS-018]
+        depends_on: [T-P0-2, T-P0-3]
+        input_docs:
+          - docs/growthpilot/01_系统架构.md
+          - docs/growthpilot/06_API文档.md
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - files_module
+          - object_storage_adapter
+          - upload_api
+        done_definition:
+          - 多文件上传可回传 fileId
+          - 文件不直接落数据库
+          - 错误处理和元数据落库清晰
+        handoff_to: [A6, A8, A9, A10]
+
+  - id: A5
+    name: Backend Builder Agent-Core
+    role: teachers / students / families
+    default_owner: backend-core
+    tasks:
+      - task_id: T-M1-1
+        title: 教师主表 CRUD 与详情聚合
+        priority: P0
+        status: todo
+        wbs: [WBS-009]
+        depends_on: [T-P0-2, T-P0-3, T-P0-4]
+        input_docs:
+          - docs/growthpilot/02_PRD.md
+          - docs/growthpilot/07_OpenAPI.yaml
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - teachers_module
+          - teacher_crud_api
+        done_definition:
+          - 教师列表/详情接口可测
+          - 与带学生、待复核数量预留聚合能力
+        handoff_to: [A8, A10]
+      - task_id: T-M1-2
+        title: 学生主档、在读档、学生列表接口
+        priority: P0
+        status: todo
+        wbs: [WBS-011, WBS-012]
+        depends_on: [T-P0-2, T-P0-3, T-P0-4]
+        input_docs:
+          - docs/growthpilot/02_PRD.md
+          - docs/growthpilot/07_OpenAPI.yaml
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - students_module
+          - student_crud_api
+          - enrollment_api
+        done_definition:
+          - 一人一档落地
+          - 服务端分页与筛选稳定
+          - 创建学生与在读档事务可测
+        handoff_to: [A8, A6, A7, A10]
+      - task_id: T-M1-3
+        title: 学生 360 聚合接口
+        priority: P0
+        status: todo
+        wbs: [WBS-014]
+        depends_on: [T-M1-2]
+        input_docs:
+          - docs/growthpilot/02_PRD.md
+          - docs/growthpilot/08_页面原型清单.md
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - student_360_query
+          - student_summary_contract
+        done_definition:
+          - 聚合接口不依赖前端手拼
+          - 预留 homework/growth/billing/communication 摘要位
+        handoff_to: [A8, A9, A10]
+      - task_id: T-M1-4
+        title: 家庭、监护人、家庭详情接口
+        priority: P0
+        status: todo
+        wbs: [WBS-016]
+        depends_on: [T-P0-2, T-P0-3, T-P0-4]
+        input_docs:
+          - docs/growthpilot/02_PRD.md
+          - docs/growthpilot/07_OpenAPI.yaml
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - families_module
+          - guardians_api
+          - family_detail_query
+        done_definition:
+          - 家庭可挂多个学生、多个监护人
+          - 家庭详情页所需摘要字段齐全
+        handoff_to: [A8, A7, A10]
+
+  - id: A6
+    name: Backend Builder Agent-Biz
+    role: homework / growth / attendance
+    default_owner: backend-biz
+    tasks:
+      - task_id: T-H1-1
+        title: 作业提交接口与提交状态机
+        priority: P0
+        status: todo
+        wbs: [WBS-019]
+        depends_on: [T-M1-2, T-M1-5, T-P0-4]
+        input_docs:
+          - docs/growthpilot/02_PRD.md
+          - docs/growthpilot/07_OpenAPI.yaml
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - homework_submission_api
+          - submission_status_model
+        done_definition:
+          - 提交成功可关联 fileId 与 studentId
+          - 幂等与重复提交控制清晰
+        handoff_to: [A9, A10]
+      - task_id: T-H1-2
+        title: AI 任务表、队列、去重策略
+        priority: P0
+        status: todo
+        wbs: [WBS-020]
+        depends_on: [T-H1-1, T-M1-5]
+        input_docs:
+          - docs/growthpilot/01_系统架构.md
+          - docs/growthpilot/10_后端开发规格.md
+          - docs/growthpilot/11_Agent团队设计.md
+        deliverables:
+          - ai_jobs_table
+          - queue_processor_base
+          - dedupe_rule
+        done_definition:
+          - pending/running 期间禁止重复建同类 job
+          - 失败原因可追踪
+        handoff_to: [A3, A9, A10]
+      - task_id: T-H1-3
+        title: AI Adapter 与结构化结果回写
+        priority: P0
+        status: todo
+        wbs: [WBS-021]
+        depends_on: [T-H1-2, T-H1-API]
+        input_docs:
+          - docs/growthpilot/07_OpenAPI.yaml
+          - docs/growthpilot/10_后端开发规格.md
+          - docs/growthpilot/11_Agent团队设计.md
+        deliverables:
+          - homework_analysis_adapter
+          - ai_result_persistence
+        done_definition:
+          - rawMarkdown 与 structured 双存
+          - provider/model/prompt_version 留痕完整
+        handoff_to: [A9, A10]
+      - task_id: T-H1-6
+        title: 复核正式提交事务与事件发布
+        priority: P0
+        status: todo
+        wbs: [WBS-024]
+        depends_on: [T-H1-3]
+        input_docs:
+          - docs/growthpilot/10_后端开发规格.md
+          - docs/growthpilot/11_Agent团队设计.md
+        deliverables:
+          - review_transaction
+          - homework_review_event
+        done_definition:
+          - review 成功后状态、错因、趋势写入一致
+          - 事务与幂等可测
+        handoff_to: [A7, A9, A10]
+      - task_id: T-G1-1
+        title: Rubric 模板接口
+        priority: P0
+        status: todo
+        wbs: [WBS-026]
+        depends_on: [T-P0-3, T-P0-4]
+        input_docs:
+          - docs/growthpilot/02_PRD.md
+          - docs/growthpilot/07_OpenAPI.yaml
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - rubric_api
+        done_definition:
+          - 模板/维度 CRUD 可用
+          - 动态表单 schema 可被前端消费
+        handoff_to: [A9, A10]
+      - task_id: T-G1-2
+        title: 成长观察接口
+        priority: P0
+        status: todo
+        wbs: [WBS-027]
+        depends_on: [T-G1-1, T-M1-2]
+        input_docs:
+          - docs/growthpilot/07_OpenAPI.yaml
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - growth_observation_api
+        done_definition:
+          - 观察记录能关联模板、维度、学生、老师
+          - 可进入报告素材池
+        handoff_to: [A9, A10]
+      - task_id: T-G1-3
+        title: 成长目标与 check-in 接口
+        priority: P0
+        status: todo
+        wbs: [WBS-028]
+        depends_on: [T-G1-2]
+        input_docs:
+          - docs/growthpilot/07_OpenAPI.yaml
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - growth_goal_api
+          - goal_checkin_api
+        done_definition:
+          - 目标生命周期完整
+          - 可关联观察与家庭任务
+        handoff_to: [A9, A10]
+      - task_id: T-G1-4
+        title: 周报/月报草稿生成 job
+        priority: P1
+        status: todo
+        wbs: [WBS-031]
+        depends_on: [T-G1-2, T-G1-3]
+        input_docs:
+          - docs/growthpilot/11_Agent团队设计.md
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - report_draft_job
+          - report_material_assembler
+        done_definition:
+          - 草稿生成可追踪
+          - draft 与 publish 分离
+        handoff_to: [A9, A10]
+      - task_id: T-A1-1
+        title: 设备与绑定接口
+        priority: P1
+        status: todo
+        wbs: [WBS-033]
+        depends_on: [T-P0-3, T-P0-4, T-M1-2]
+        input_docs:
+          - docs/growthpilot/02_PRD.md
+          - docs/growthpilot/07_OpenAPI.yaml
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - device_api
+          - device_binding_api
+        done_definition:
+          - 当前绑定与历史绑定可追踪
+        handoff_to: [A9, A10]
+      - task_id: T-A1-2
+        title: 签到事件写入与去重
+        priority: P1
+        status: todo
+        wbs: [WBS-034]
+        depends_on: [T-A1-1]
+        input_docs:
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - attendance_event_api
+          - idempotent_capture_rule
+        done_definition:
+          - 设备事件可按三元组去重
+          - 异常记录可修正
+        handoff_to: [A9, A10]
+      - task_id: T-A1-3
+        title: 作业时长会话与日聚合任务
+        priority: P1
+        status: todo
+        wbs: [WBS-035]
+        depends_on: [T-A1-2]
+        input_docs:
+          - docs/growthpilot/02_PRD.md
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - homework_time_aggregation
+          - daily_stats_query
+        done_definition:
+          - 日统计可查
+          - 聚合任务可重跑
+        handoff_to: [A9, A10]
+
+  - id: A7
+    name: Backend Builder Agent-Finance
+    role: billing / communication / analytics
+    default_owner: backend-finance
+    tasks:
+      - task_id: T-B1-1
+        title: 产品、合同接口与合同生命周期
+        priority: P0
+        status: todo
+        wbs: [WBS-037]
+        depends_on: [T-M1-2, T-M1-4, T-P0-3, T-P0-4]
+        input_docs:
+          - docs/growthpilot/02_PRD.md
+          - docs/growthpilot/07_OpenAPI.yaml
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - billing_products_api
+          - contracts_api
+        done_definition:
+          - 产品/合同 CRUD 可用
+          - 合同与家庭/学生关系可追踪
+        handoff_to: [A9, A10]
+      - task_id: T-B1-2
+        title: 账单、支付、退款事务链路
+        priority: P0
+        status: todo
+        wbs: [WBS-038]
+        depends_on: [T-B1-1]
+        input_docs:
+          - docs/growthpilot/07_OpenAPI.yaml
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - invoices_api
+          - payments_api
+          - refunds_api
+        done_definition:
+          - payment_no/refund_no 唯一
+          - 支付/退款事务与派生状态一致
+        handoff_to: [A9, A10]
+      - task_id: T-B1-3
+        title: 续费任务接口
+        priority: P1
+        status: todo
+        wbs: [WBS-041]
+        depends_on: [T-B1-2]
+        input_docs:
+          - docs/growthpilot/02_PRD.md
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - renewals_api
+        done_definition:
+          - 临期合同可自动进入跟进池
+          - 负责人、状态、下次跟进时间可维护
+        handoff_to: [A9, A10]
+      - task_id: T-C1-1
+        title: 沟通记录、会谈、模板接口
+        priority: P1
+        status: todo
+        wbs: [WBS-042, WBS-043]
+        depends_on: [T-M1-4, T-P0-4]
+        input_docs:
+          - docs/growthpilot/02_PRD.md
+          - docs/growthpilot/07_OpenAPI.yaml
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - communication_records_api
+          - message_templates_api
+          - message_tasks_api
+        done_definition:
+          - 沟通记录 CRUD 可用
+          - 消息草稿/待发/已发/失败状态可追踪
+        handoff_to: [A9, A10]
+      - task_id: T-BI1-1
+        title: overview / teaching / billing 聚合查询
+        priority: P1
+        status: todo
+        wbs: [WBS-045, WBS-046]
+        depends_on: [T-H1-6, T-G1-3, T-A1-3, T-B1-2]
+        input_docs:
+          - docs/growthpilot/03_领域模型与信息架构.md
+          - docs/growthpilot/08_页面原型清单.md
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - analytics_overview_query
+          - analytics_teaching_query
+          - analytics_billing_query
+        done_definition:
+          - 指标口径统一
+          - 支持校区/学期/日期筛选
+        handoff_to: [A9, A10]
+
+  - id: A8
+    name: Frontend Builder Agent-Core
+    role: login / dashboard / students / families / teachers
+    default_owner: frontend-core
+    tasks:
+      - task_id: T-F1-2
+        title: 菜单裁剪、按钮权限、权限上下文接入
+        priority: P0
+        status: todo
+        wbs: [WBS-006]
+        depends_on: [T-F1-1, T-P0-4]
+        input_docs:
+          - docs/growthpilot/08_页面原型清单.md
+          - docs/growthpilot/09_前端开发规格.md
+        deliverables:
+          - permission_guard_layer
+          - menu_pruning_logic
+        done_definition:
+          - 菜单/按钮权限生效
+          - 403 展示明确
+        handoff_to: [A10]
+      - task_id: T-F1-4
+        title: 用户与角色页面、系统设置页面骨架
+        priority: P1
+        status: todo
+        wbs: [WBS-008]
+        depends_on: [T-F1-3, T-F1-2]
+        input_docs:
+          - docs/growthpilot/08_页面原型清单.md
+          - docs/growthpilot/09_前端开发规格.md
+        deliverables:
+          - settings_users_page
+          - settings_system_page
+        done_definition:
+          - 页面 Skeleton / empty / error / permissionDenied 完整
+        handoff_to: [A10]
+      - task_id: T-M1-FE-1
+        title: 教师列表/详情页
+        priority: P0
+        status: todo
+        wbs: [WBS-010]
+        depends_on: [T-M1-1, T-F1-2]
+        input_docs:
+          - docs/growthpilot/08_页面原型清单.md
+          - docs/growthpilot/09_前端开发规格.md
+        deliverables:
+          - teachers_list_page
+          - teacher_detail_page
+        done_definition:
+          - 列表页与详情页联通
+          - 过滤与空状态完善
+        handoff_to: [A10]
+      - task_id: T-M1-FE-2
+        title: 学生列表页与导入中心页
+        priority: P0
+        status: todo
+        wbs: [WBS-013]
+        depends_on: [T-M1-2, T-F1-2]
+        input_docs:
+          - docs/growthpilot/08_页面原型清单.md
+          - docs/growthpilot/09_前端开发规格.md
+        deliverables:
+          - students_list_page
+          - students_import_page
+        done_definition:
+          - 服务端分页联通
+          - 筛选项与 URL query 同步
+        handoff_to: [A10]
+      - task_id: T-M1-FE-3
+        title: 学生 360 页面
+        priority: P0
+        status: todo
+        wbs: [WBS-015]
+        depends_on: [T-M1-3, T-F1-2]
+        input_docs:
+          - docs/growthpilot/08_页面原型清单.md
+          - docs/growthpilot/09_前端开发规格.md
+        deliverables:
+          - student_360_page
+        done_definition:
+          - 顶部摘要与各 tab 独立请求
+          - 不在前端手算聚合
+        handoff_to: [A10]
+      - task_id: T-M1-FE-4
+        title: 家庭列表/详情页
+        priority: P0
+        status: todo
+        wbs: [WBS-017]
+        depends_on: [T-M1-4, T-F1-2]
+        input_docs:
+          - docs/growthpilot/08_页面原型清单.md
+          - docs/growthpilot/09_前端开发规格.md
+        deliverables:
+          - families_list_page
+          - family_detail_page
+        done_definition:
+          - 家庭摘要、监护人、学生、时间线可展示
+        handoff_to: [A10]
+
+  - id: A9
+    name: Frontend Builder Agent-Biz
+    role: homework / growth / attendance / billing / communication / analytics / settings
+    default_owner: frontend-biz
+    tasks:
+      - task_id: T-H1-4
+        title: 作业列表页
+        priority: P0
+        status: todo
+        wbs: [WBS-022]
+        depends_on: [T-H1-1, T-F1-2]
+        input_docs:
+          - docs/growthpilot/08_页面原型清单.md
+          - docs/growthpilot/09_前端开发规格.md
+        deliverables:
+          - homework_submissions_page
+        done_definition:
+          - 筛选、导出、行动作完整
+        handoff_to: [A10]
+      - task_id: T-H1-5
+        title: 作业复核工作台
+        priority: P0
+        status: todo
+        wbs: [WBS-023]
+        depends_on: [T-H1-3, T-F1-2]
+        input_docs:
+          - docs/growthpilot/08_页面原型清单.md
+          - docs/growthpilot/09_前端开发规格.md
+        deliverables:
+          - review_workbench_page
+          - review_form_schema
+        done_definition:
+          - 三栏布局完整
+          - Markdown + structured JSON 双视图
+          - 未保存提醒可用
+        handoff_to: [A10]
+      - task_id: T-H1-7
+        title: 错因词典页
+        priority: P1
+        status: todo
+        wbs: [WBS-025]
+        depends_on: [T-H1-6, T-F1-2]
+        input_docs:
+          - docs/growthpilot/08_页面原型清单.md
+          - docs/growthpilot/09_前端开发规格.md
+        deliverables:
+          - error_taxonomies_page
+        done_definition:
+          - 启停、编辑、排序可操作
+        handoff_to: [A10]
+      - task_id: T-G1-5
+        title: Rubric、观察、目标、报告页面
+        priority: P0
+        status: todo
+        wbs: [WBS-029, WBS-030, WBS-032]
+        depends_on: [T-G1-1, T-G1-2, T-G1-3, T-G1-4, T-F1-2]
+        input_docs:
+          - docs/growthpilot/08_页面原型清单.md
+          - docs/growthpilot/09_前端开发规格.md
+        deliverables:
+          - growth_observations_page
+          - growth_goals_page
+          - growth_reports_page
+          - rubric_page
+        done_definition:
+          - 动态 schema 表单可用
+          - 报告预览与发布分离
+        handoff_to: [A10]
+      - task_id: T-A1-FE
+        title: 出勤看板、设备绑定、作业时长页面
+        priority: P1
+        status: todo
+        wbs: [WBS-036]
+        depends_on: [T-A1-1, T-A1-2, T-A1-3, T-F1-2]
+        input_docs:
+          - docs/growthpilot/08_页面原型清单.md
+          - docs/growthpilot/09_前端开发规格.md
+        deliverables:
+          - attendance_board_page
+          - devices_binding_page
+          - homework_time_page
+        done_definition:
+          - 看板、列表、趋势图联通
+        handoff_to: [A10]
+      - task_id: T-B1-FE
+        title: 产品、合同、账单支付、续费页面
+        priority: P0
+        status: todo
+        wbs: [WBS-039, WBS-040]
+        depends_on: [T-B1-1, T-B1-2, T-B1-3, T-F1-2]
+        input_docs:
+          - docs/growthpilot/08_页面原型清单.md
+          - docs/growthpilot/09_前端开发规格.md
+        deliverables:
+          - billing_products_page
+          - contracts_page
+          - invoices_payments_page
+          - renewals_page
+        done_definition:
+          - 金额显示按元，接口按 cents
+          - family/student 统一过滤器可复用
+        handoff_to: [A10]
+      - task_id: T-C1-FE
+        title: 沟通记录与消息中心页面
+        priority: P1
+        status: todo
+        wbs: [WBS-044]
+        depends_on: [T-C1-1, T-F1-2]
+        input_docs:
+          - docs/growthpilot/08_页面原型清单.md
+          - docs/growthpilot/09_前端开发规格.md
+        deliverables:
+          - communication_records_page
+          - communication_messages_page
+        done_definition:
+          - 草稿/待发/已发/失败状态清晰可见
+        handoff_to: [A10]
+      - task_id: T-BI1-2
+        title: analytics 页面与图表联通
+        priority: P1
+        status: todo
+        wbs: [WBS-047]
+        depends_on: [T-BI1-1, T-F1-2]
+        input_docs:
+          - docs/growthpilot/08_页面原型清单.md
+          - docs/growthpilot/09_前端开发规格.md
+        deliverables:
+          - analytics_overview_page
+          - analytics_teaching_page
+          - analytics_billing_page
+        done_definition:
+          - 筛选、图表、导出联通
+          - 无数据不渲染空图
+        handoff_to: [A10]
+
+  - id: A10
+    name: QA + Data Migration + BI Agent
+    role: migration / QA / release gate
+    default_owner: qa-migration
+    tasks:
+      - task_id: T-DM1-1
+        title: staging 导入脚本与清洗规则
+        priority: P0
+        status: todo
+        wbs: [WBS-048]
+        depends_on: [T-P0-3]
+        input_docs:
+          - docs/growthpilot/05_数据库DDL.sql
+          - docs/growthpilot/13_历史表迁移映射.md
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - staging_import_scripts
+          - mapping_rules
+        done_definition:
+          - 历史表先入 staging
+          - 清洗、去重、映射规则可复用
+        handoff_to: [A2, A5, A6, A7]
+      - task_id: T-DM1-2
+        title: 首批样本导入与校验报告
+        priority: P0
+        status: todo
+        wbs: [WBS-048]
+        depends_on: [T-DM1-1, T-M1-2, T-M1-4, T-H1-6, T-B1-2]
+        input_docs:
+          - docs/growthpilot/13_历史表迁移映射.md
+        deliverables:
+          - import_validation_report
+          - data_exception_list
+        done_definition:
+          - 首批样本入库通过
+          - 异常可追溯到源表与字段
+        handoff_to: [A1, A2]
+      - task_id: T-QA1-1
+        title: 主流程 E2E、集成测试、回归测试
+        priority: P0
+        status: todo
+        wbs: [WBS-049]
+        depends_on: [T-F1-1, T-M1-2, T-M1-4, T-H1-6, T-G1-5, T-B1-FE]
+        input_docs:
+          - docs/growthpilot/17_联调与验收清单.md
+          - docs/growthpilot/09_前端开发规格.md
+          - docs/growthpilot/10_后端开发规格.md
+        deliverables:
+          - e2e_suite
+          - defect_list
+          - regression_summary
+        done_definition:
+          - 登录、建档、作业复核、观察报告、收费主流程通过
+          - P0/P1 缺陷清零
+        handoff_to: [A1]
+      - task_id: T-QA1-2
+        title: 预发上线、备份、回滚、发布验收
+        priority: P0
+        status: todo
+        wbs: [WBS-050]
+        depends_on: [T-QA1-1, T-BI1-2, T-DM1-2]
+        input_docs:
+          - docs/growthpilot/17_联调与验收清单.md
+          - docs/growthpilot/18_分支与提交规范.md
+        deliverables:
+          - release_checklist
+          - backup_restore_plan
+          - go_live_signoff
+        done_definition:
+          - 可上线可回滚
+          - 发布前签收记录完整
+        handoff_to: [A1, A4, A7]
