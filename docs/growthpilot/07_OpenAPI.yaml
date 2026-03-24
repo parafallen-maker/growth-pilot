@@ -589,6 +589,74 @@ components:
           type: string
         publishToFamily:
           type: boolean
+    RubricDimension:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        templateId:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        weight:
+          type: number
+        scoreMin:
+          type: integer
+        scoreMax:
+          type: integer
+        description:
+          type: string
+        sortOrder:
+          type: integer
+    RubricTemplate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        campusId:
+          type: string
+          format: uuid
+        termId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        stageScope:
+          type: string
+        status:
+          type: string
+        description:
+          type: string
+        dimensions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RubricDimension'
+    CreateRubricRequest:
+      type: object
+      required:
+      - name
+      properties:
+        campusId:
+          type: string
+          format: uuid
+        termId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        stageScope:
+          type: string
+        description:
+          type: string
+        dimensions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RubricDimension'
     GrowthObservationRequest:
       type: object
       required:
@@ -1914,6 +1982,8 @@ paths:
           format: date
       - $ref: '#/components/parameters/pageNo'
       - $ref: '#/components/parameters/pageSize'
+      - $ref: '#/components/parameters/sortBy'
+      - $ref: '#/components/parameters/sortOrder'
       responses:
         '200':
           description: success
@@ -2093,6 +2163,84 @@ paths:
                                 type: boolean
                         page:
                           $ref: '#/components/schemas/PageResultMeta'
+  /growth/rubrics:
+    get:
+      tags:
+      - growth
+      summary: Rubric 模板列表
+      parameters:
+      - $ref: '#/components/parameters/campusId'
+      - $ref: '#/components/parameters/termId'
+      - $ref: '#/components/parameters/status'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      - $ref: '#/components/parameters/sortBy'
+      - $ref: '#/components/parameters/sortOrder'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/RubricTemplate'
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - growth
+      summary: 新建 Rubric 模板
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRubricRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/RubricTemplate'
+  /growth/rubrics/{rubricId}:
+    get:
+      tags:
+      - growth
+      summary: Rubric 模板详情
+      parameters:
+      - name: rubricId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/RubricTemplate'
   /growth/observations:
     get:
       tags:
@@ -2126,6 +2274,8 @@ paths:
           format: date
       - $ref: '#/components/parameters/pageNo'
       - $ref: '#/components/parameters/pageSize'
+      - $ref: '#/components/parameters/sortBy'
+      - $ref: '#/components/parameters/sortOrder'
       responses:
         '200':
           description: success
@@ -2208,6 +2358,8 @@ paths:
       - $ref: '#/components/parameters/status'
       - $ref: '#/components/parameters/pageNo'
       - $ref: '#/components/parameters/pageSize'
+      - $ref: '#/components/parameters/sortBy'
+      - $ref: '#/components/parameters/sortOrder'
       responses:
         '200':
           description: success
@@ -2301,6 +2453,8 @@ paths:
       - $ref: '#/components/parameters/status'
       - $ref: '#/components/parameters/pageNo'
       - $ref: '#/components/parameters/pageSize'
+      - $ref: '#/components/parameters/sortBy'
+      - $ref: '#/components/parameters/sortOrder'
       responses:
         '200':
           description: success

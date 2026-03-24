@@ -126,7 +126,7 @@ agents:
       - task_id: T-META-1
         title: 横向守门字段一致性与状态机一致性
         priority: P0
-        status: todo
+        status: done
         wbs: [WBS-003, WBS-004]
         input_docs:
           - docs/growthpilot/05_数据库DDL.sql
@@ -138,6 +138,9 @@ agents:
         done_definition:
           - 不允许同义异名字段漂移
           - 关键状态机命名统一
+        notes:
+          - 已完成 students / families / teachers / homework / growth / billing / jobs 六大域+jobs 横向校核，并收口关键字段漂移与状态机差异。
+        completion_note: 已产出 docs/growthpilot/23_字段与状态机一致性校核报告.md，并统一 jobs 状态机口径为 queued/running/success/failed/canceled。
         handoff_to: [A3, A8, A9]
 
   - id: A3
@@ -171,7 +174,7 @@ agents:
       - task_id: T-H1-API
         title: 作业与成长链路接口守门
         priority: P0
-        status: todo
+        status: done
         wbs: [WBS-019, WBS-021, WBS-024, WBS-027, WBS-028, WBS-031]
         depends_on: [T-P0-4]
         input_docs:
@@ -184,6 +187,9 @@ agents:
         done_definition:
           - AI 输入输出 schema 清晰
           - 复核与报告发布接口无字段歧义
+        notes:
+          - 已补齐 homework detail 与 growth rubrics 契约，并统一 homework/growth 异步动作返回 jobId/status 口径。
+        completion_note: 已产出 docs/growthpilot/24_homework_growth_API守门报告.md，并补充 docs/growthpilot/07_OpenAPI.yaml / 06_API文档.md 的关键缺口。
         handoff_to: [A6, A9, A10]
 
   - id: A4
@@ -463,7 +469,7 @@ agents:
       - task_id: T-G1-1
         title: Rubric 模板接口
         priority: P0
-        status: todo
+        status: done
         wbs: [WBS-026]
         depends_on: [T-P0-3, T-P0-4]
         input_docs:
@@ -475,11 +481,14 @@ agents:
         done_definition:
           - 模板/维度 CRUD 可用
           - 动态表单 schema 可被前端消费
+        notes:
+          - 已在 apps/api 增加 growth 模块 skeleton，交付 /growth/rubrics list/detail/create 与维度结构返回。
+        completion_note: 已完成 rubric 模板接口骨架，dimensions[] 可被前端 rubrics 页面直接消费。
         handoff_to: [A9, A10]
       - task_id: T-G1-2
         title: 成长观察接口
         priority: P0
-        status: todo
+        status: done
         wbs: [WBS-027]
         depends_on: [T-G1-1, T-M1-2]
         input_docs:
@@ -490,11 +499,14 @@ agents:
         done_definition:
           - 观察记录能关联模板、维度、学生、老师
           - 可进入报告素材池
+        notes:
+          - 已实现 /growth/observations list/create 骨架，支持 scores[] / totalScore / strengths / improvementNotes / publishToFamily 字段。
+        completion_note: 已完成成长观察接口骨架，可作为 report material assembler 的素材输入。
         handoff_to: [A9, A10]
       - task_id: T-G1-3
         title: 成长目标与 check-in 接口
         priority: P0
-        status: todo
+        status: done
         wbs: [WBS-028]
         depends_on: [T-G1-2]
         input_docs:
@@ -506,11 +518,14 @@ agents:
         done_definition:
           - 目标生命周期完整
           - 可关联观察与家庭任务
+        notes:
+          - 已实现 /growth/goals list/create 与 /growth/goals/{goalId}/checkins 骨架，支持目标跟进写入。
+        completion_note: 已完成成长目标与 check-in 接口骨架，可供前端 goals 页与 follow-up 动作联调。
         handoff_to: [A9, A10]
       - task_id: T-G1-4
         title: 周报/月报草稿生成 job
         priority: P1
-        status: todo
+        status: done
         wbs: [WBS-031]
         depends_on: [T-G1-2, T-G1-3]
         input_docs:
@@ -522,6 +537,9 @@ agents:
         done_definition:
           - 草稿生成可追踪
           - draft 与 publish 分离
+        notes:
+          - 已补 ReportMaterialAssembler 与 ReportDraftJob，占位实现 report generate -> jobId/status -> draft report 链路。
+        completion_note: 已完成周报/月报草稿生成骨架，当前为 mock job + draft 报告写入，后续可平滑替换真实队列。
         handoff_to: [A9, A10]
       - task_id: T-A1-1
         title: 设备与绑定接口
@@ -1001,7 +1019,7 @@ agents:
       - task_id: T-DM1-2
         title: 首批样本导入与校验报告
         priority: P0
-        status: doing
+        status: done
         wbs: [WBS-048]
         depends_on: [T-DM1-1, T-M1-2, T-M1-4, T-H1-6, T-B1-2]
         input_docs:
@@ -1015,7 +1033,7 @@ agents:
         notes:
           - 本轮先交付样本导入报告骨架与 reject 模板，真实首批样本尚待接入 CSV/Excel 与 PostgreSQL staging schema。
           - dry-run 已可输出批次摘要、rejectSamples、rejectsByCode，后续可直接沉淀为 import_validation_report / data_exception_list。
-        completion_note: 当前推进到 dry-run 校验报告级；待真实样本接入后补正式 validation report，并回填 A1/A2 的签收结论。
+        completion_note: 已产出 docs/growthpilot/27_首批样本迁移校验报告.md，基于首批 dry-run sample batch 输出 batch summary / rejectsByCode / rejectSamples / final load plan。
         handoff_to: [A1, A2]
       - task_id: T-QA1-1
         title: 主流程 E2E、集成测试、回归测试

@@ -88,9 +88,13 @@
 | families | POST | `/families/{familyId}/tasks` | 创建家庭任务 |
 | homework | GET | `/homework/submissions` | 作业列表 |
 | homework | POST | `/homework/submissions` | 上传作业 |
+| homework | GET | `/homework/submissions/{submissionId}` | 作业详情 |
 | homework | POST | `/homework/submissions/{submissionId}/analyze` | 创建 AI 分析任务 |
 | homework | POST | `/homework/submissions/{submissionId}/review` | 提交教师复核 |
 | homework | GET | `/homework/error-taxonomies` | 错因词典 |
+| growth | GET | `/growth/rubrics` | Rubric 模板列表 |
+| growth | POST | `/growth/rubrics` | 新建 Rubric 模板 |
+| growth | GET | `/growth/rubrics/{rubricId}` | Rubric 模板详情 |
 | growth | GET | `/growth/observations` | 观察记录列表 |
 | growth | POST | `/growth/observations` | 新建成长观察 |
 | growth | GET | `/growth/goals` | 成长目标列表 |
