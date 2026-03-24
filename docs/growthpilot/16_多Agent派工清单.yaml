@@ -654,7 +654,7 @@ agents:
         notes:
           - 已在 apps/web 落地 AppShell + permission guard 占位，导航按权限裁剪，设置页接入 403 fallback。
           - 统一页面状态组件已覆盖 loading / empty / error / permissionDenied 骨架。
-        completion_note: Wave 1 前端壳已接住权限上下文入口；待 A4 真 current user / permission code 接口后改为动态态。
+        completion_note: Wave 1 前端壳已接住权限上下文入口；已落静态 mock 权限裁剪与 403 页面，待 A4 真 current user / permission code 接口后改为动态态。
         wbs: [WBS-006]
         depends_on: [T-F1-1, T-P0-4]
         input_docs:
