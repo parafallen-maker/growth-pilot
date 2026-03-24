@@ -185,7 +185,7 @@ agents:
       - task_id: T-P0-2
         title: 建立 monorepo、CI、lint、format、基础工程骨架
         priority: P0
-        status: todo
+        status: done
         wbs: [WBS-002]
         depends_on: [T-P0-1]
         input_docs:
@@ -202,6 +202,10 @@ agents:
           - apps/web apps/api packages 可启动
           - CI 能跑 lint/typecheck/test 基础任务
           - 目录符合文档约定
+        notes:
+          - 2026-03-24 A4 已完成基础脚手架：apps/web(Next.js 15) / apps/api(NestJS 11) / packages(ui schema config)
+          - 已补 root workspace scripts、README、tsconfig.base、GitHub Actions CI 与占位 lint/format/typecheck/test 脚本
+          - 当前为 Wave 0 最小可运行骨架；业务模块与 OpenAPI/DDL 细化待 A3/A2/Wave 1 接续
         handoff_to: [A5, A6, A7, A8, A9, A10]
       - task_id: T-F1-1
         title: 登录、refresh token、current user、logout

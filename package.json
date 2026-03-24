@@ -1,0 +1,23 @@
+{
+  "name": "growth-pilot",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "npm@10.9.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace @growthpilot/web",
+    "dev:api": "npm run start:dev --workspace @growthpilot/api",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "format": "npm run format --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "ci:check": "npm run lint && npm run typecheck && npm run test"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}

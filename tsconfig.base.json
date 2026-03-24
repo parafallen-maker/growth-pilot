@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@growthpilot/config/*": ["packages/config/src/*"],
+      "@growthpilot/schema/*": ["packages/schema/src/*"],
+      "@growthpilot/ui/*": ["packages/ui/src/*"]
+    }
+  }
+}
