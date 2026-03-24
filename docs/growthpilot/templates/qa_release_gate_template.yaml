@@ -1,0 +1,35 @@
+release_gate:
+  release_wave: wave-5
+  release_commit: <fill-me>
+  qa_owner: A10
+  pm_owner: <fill-me>
+  tech_owner: <fill-me>
+  environment: preprod
+  smoke_checks:
+    auth: pending
+    enrollment: pending
+    homework: pending
+    growth: pending
+    billing: pending
+  defect_gate:
+    p0_open: 0
+    p1_open: 0
+    p2_open: 0
+    p3_open: 0
+    conditional_notes: []
+  backup:
+    database: pending
+    object_storage: pending
+    config_snapshot: pending
+    restore_drill: pending
+  rollback:
+    app_rollback_ready: pending
+    data_restore_ready: pending
+    rollback_owner: <fill-me>
+  signoff:
+    qa: pending
+    pm: pending
+    owner: pending
+    final_decision: pending
+  notes:
+    - 填表时要求写清 commit、风险、观察窗口与回滚负责人

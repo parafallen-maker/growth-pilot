@@ -1,0 +1,72 @@
+import { AuthService } from '../../src/modules/auth/service/auth.service';
+import { BillingRepository } from '../../src/modules/billing/repository/billing.repository';
+import { BillingService } from '../../src/modules/billing/service/billing.service';
+import { FamiliesService } from '../../src/modules/families/families.service';
+import { MockObjectStorageAdapter } from '../../src/modules/files/adapter/mock-object-storage.adapter';
+import { FileAssetRepository } from '../../src/modules/files/repository/file-asset.repository';
+import { FilesService } from '../../src/modules/files/service/files.service';
+import { GrowthRepository } from '../../src/modules/growth/repository/growth.repository';
+import { ReportDraftJob } from '../../src/modules/growth/job/report-draft.job';
+import { ReportMaterialAssembler } from '../../src/modules/growth/job/report-material-assembler';
+import { GrowthService } from '../../src/modules/growth/service/growth.service';
+import { MockHomeworkAnalysisAdapter } from '../../src/modules/homework/adapter/mock-homework-analysis.adapter';
+import { HomeworkEventPublisher } from '../../src/modules/homework/event/homework-event.publisher';
+import { HomeworkAnalysisQueue } from '../../src/modules/homework/job/homework-analysis.queue';
+import { HomeworkRepository } from '../../src/modules/homework/repository/homework.repository';
+import { HomeworkService } from '../../src/modules/homework/service/homework.service';
+import { JobsRepository } from '../../src/modules/jobs/repository/jobs.repository';
+import { JobsService } from '../../src/modules/jobs/service/jobs.service';
+import { StudentsService } from '../../src/modules/students/students.service';
+import { UsersRepository } from '../../src/modules/users/repository/users.repository';
+import { UsersService } from '../../src/modules/users/service/users.service';
+
+export function createQaFixture() {
+  const usersRepository = new UsersRepository();
+  const usersService = new UsersService(usersRepository);
+  const authService = new AuthService(usersService);
+
+  const fileAssetRepository = new FileAssetRepository();
+  const filesService = new FilesService(fileAssetRepository, new MockObjectStorageAdapter());
+
+  const jobsRepository = new JobsRepository();
+  const jobsService = new JobsService(jobsRepository);
+
+  const homeworkRepository = new HomeworkRepository();
+  const homeworkEventPublisher = new HomeworkEventPublisher();
+  const homeworkAnalysisQueue = new HomeworkAnalysisQueue(
+    jobsService,
+    homeworkRepository,
+    filesService,
+    new MockHomeworkAnalysisAdapter(),
+  );
+  const homeworkService = new HomeworkService(
+    homeworkRepository,
+    homeworkAnalysisQueue,
+    homeworkEventPublisher,
+    filesService,
+  );
+
+  const growthRepository = new GrowthRepository();
+  const reportMaterialAssembler = new ReportMaterialAssembler(growthRepository);
+  const reportDraftJob = new ReportDraftJob(growthRepository, reportMaterialAssembler);
+  const growthService = new GrowthService(growthRepository, reportDraftJob);
+
+  const studentsService = new StudentsService();
+  const familiesService = new FamiliesService();
+  const billingService = new BillingService(new BillingRepository());
+
+  return {
+    authService,
+    usersService,
+    filesService,
+    jobsService,
+    homeworkService,
+    homeworkRepository,
+    homeworkEventPublisher,
+    growthService,
+    growthRepository,
+    studentsService,
+    familiesService,
+    billingService,
+  };
+}
