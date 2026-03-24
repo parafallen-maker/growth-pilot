@@ -179,6 +179,15 @@ components:
           type: string
         user:
           $ref: '#/components/schemas/User'
+    CurrentUserResponse:
+      allOf:
+      - $ref: '#/components/schemas/User'
+      - type: object
+        properties:
+          permissions:
+            type: array
+            items:
+              type: string
     User:
       type: object
       properties:
@@ -1096,6 +1105,49 @@ paths:
                       properties:
                         accessToken:
                           type: string
+  /auth/me:
+    get:
+      tags:
+      - auth
+      summary: 当前用户
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/CurrentUserResponse'
+  /auth/logout:
+    post:
+      tags:
+      - auth
+      summary: 退出登录
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
   /settings/campuses:
     get:
       tags:

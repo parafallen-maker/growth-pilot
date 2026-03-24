@@ -63,6 +63,8 @@
 |---|---|---|---|
 | auth | POST | `/auth/login` | 登录 |
 | auth | POST | `/auth/refresh` | 刷新 token |
+| auth | GET | `/auth/me` | 当前用户 |
+| auth | POST | `/auth/logout` | 退出登录 |
 | settings | GET | `/settings/campuses` | 校区列表 |
 | settings | GET | `/settings/terms` | 学期列表 |
 | settings | GET | `/settings/dictionaries` | 字典列表 |
