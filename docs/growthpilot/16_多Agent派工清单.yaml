@@ -579,7 +579,11 @@ agents:
       - task_id: T-B1-1
         title: 产品、合同接口与合同生命周期
         priority: P0
-        status: todo
+        status: done
+        notes:
+          - 已在 apps/api 新增 billing 模块，交付 products list/create、contracts list/detail/create，采用 controller/service/repository/dto 分层与 in-memory repository。
+          - 合同创建按合同项自动汇总 total_amount_cents / discount_amount_cents / payable_amount_cents，字段命名与 OpenAPI/DDL 对齐。
+        completion_note: 已完成 billing products + contracts 最小可运行骨架，合同与家庭/学生关系、合同项、后续发票挂接都可追踪，可交给 A9 对接收费产品与合同页。
         wbs: [WBS-037]
         depends_on: [T-M1-2, T-M1-4, T-P0-3, T-P0-4]
         input_docs:
@@ -596,7 +600,11 @@ agents:
       - task_id: T-B1-2
         title: 账单、支付、退款事务链路
         priority: P0
-        status: todo
+        status: done
+        notes:
+          - 已交付 invoices list/create、payments create/query、refunds create/query，并在内存仓储层实现 payment_no / refund_no / idempotency_key 唯一约束。
+          - 支付/退款走 repository 事务快照，创建后会回写 invoice status（issued/partial/paid），并阻止超额支付与超额退款。
+        completion_note: 已完成账单-支付-退款最小闭环，满足前端联调与后续真 DB repository 替换前的规则验证，可继续交给 A9 做账单支付页、交给 A10 做交易链路集成测试。
         wbs: [WBS-038]
         depends_on: [T-B1-1]
         input_docs:
