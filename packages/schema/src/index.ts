@@ -57,3 +57,108 @@ export interface Guardian {
   isPrimary: boolean;
   isEmergency: boolean;
 }
+
+export interface RubricDimension {
+  id: string;
+  templateId: string;
+  code: string;
+  name: string;
+  weight: number;
+  scoreMin: number;
+  scoreMax: number;
+  description?: string;
+  sortOrder: number;
+}
+
+export interface RubricTemplate {
+  id: string;
+  campusId?: string | null;
+  termId?: string | null;
+  name: string;
+  stageScope?: string;
+  status: string;
+  description?: string;
+  dimensions: RubricDimension[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GrowthObservationScore {
+  dimensionId: string;
+  score: number;
+  note?: string;
+}
+
+export interface GrowthObservation {
+  id: string;
+  studentId: string;
+  termId?: string | null;
+  teacherId?: string | null;
+  templateId: string;
+  observationDate: string;
+  scene: string;
+  scores: GrowthObservationScore[];
+  totalScore: number;
+  strengths?: string;
+  improvementNotes?: string;
+  publishToFamily: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GrowthGoalCheckin {
+  id: string;
+  goalId: string;
+  checkinDate: string;
+  progressValue?: number;
+  progressNote?: string;
+  nextAction?: string;
+  createdAt: string;
+}
+
+export interface GrowthGoal {
+  id: string;
+  studentId: string;
+  termId?: string | null;
+  goalType: string;
+  title: string;
+  description?: string;
+  ownerRole?: string;
+  metricType?: string;
+  baselineValue?: number;
+  targetValue?: number;
+  currentValue?: number;
+  startDate?: string;
+  dueDate?: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  checkins: GrowthGoalCheckin[];
+}
+
+export interface GrowthReport {
+  id: string;
+  studentId: string;
+  termId?: string | null;
+  reportType: string;
+  periodKey: string;
+  status: string;
+  title?: string;
+  draftMarkdown?: string;
+  summaryJson: Record<string, unknown>;
+  generatedByJobId?: string | null;
+  publishedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface JobStatus {
+  jobId: string;
+  jobType: string;
+  bizType: string;
+  bizId: string;
+  status: string;
+  progress: number;
+  result: Record<string, unknown> | null;
+  errorMessage?: string | null;
+}
