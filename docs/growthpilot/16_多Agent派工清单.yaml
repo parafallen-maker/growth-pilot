@@ -634,9 +634,10 @@ agents:
         priority: P0
         status: done
         notes:
-          - 已交付 invoices list/create、payments create/query、refunds create/query，并在内存仓储层实现 payment_no / refund_no / idempotency_key 唯一约束。
+          - 已交付 invoices list/create、payments create/query、refunds create/query，并在仓储层实现 payment_no / refund_no / idempotency_key 唯一约束。
           - 支付/退款走 repository 事务快照，创建后会回写 invoice status（issued/partial/paid），并阻止超额支付与超额退款。
-        completion_note: 已完成账单-支付-退款最小闭环，满足前端联调与后续真 DB repository 替换前的规则验证，可继续交给 A9 做账单支付页、交给 A10 做交易链路集成测试。
+          - 2026-03-25 IMPL-005 第一波：billing repository 改为 JSON 文件持久层（apps/api/.data/billing.json），products/contracts/invoices/payments/refunds/renewals 重启后可保留，不再纯 in-memory。
+        completion_note: 已完成账单-支付-退款最小闭环，并完成 billing 第一波持久化替换；当前满足前端联调与后续真 DB repository 替换前的规则验证，可继续交给 A9 做账单支付页、交给 A10 做交易链路集成测试。
         wbs: [WBS-038]
         depends_on: [T-B1-1]
         input_docs:
@@ -665,8 +666,8 @@ agents:
           - 临期合同可自动进入跟进池
           - 负责人、状态、下次跟进时间可维护
         notes:
-          - 已在 apps/api/billing 继续扩 renewals skeleton，新增 GET/POST /billing/renewals、PATCH /billing/renewals/{renewalId}/status、PATCH /billing/renewals/{renewalId}/follow-up；当前使用 in-memory renewal 池，统一支持 campusId / termId / dateFrom / dateTo 过滤。
-        completion_note: 已交付 renewals 查询/创建/状态更新/下次跟进时间更新骨架，并复用 billing repository/service/controller 命名；A9 可直接对接续费页面动作位，A10 可据统一筛选口径补联调与验收。
+          - 已在 apps/api/billing 继续扩 renewals skeleton，新增 GET/POST /billing/renewals、PATCH /billing/renewals/{renewalId}/status、PATCH /billing/renewals/{renewalId}/follow-up；现已随 billing JSON 持久层一并落盘，统一支持 campusId / termId / dateFrom / dateTo 过滤。
+        completion_note: 已交付 renewals 查询/创建/状态更新/下次跟进时间更新骨架，并完成持久化落盘；A9 可直接对接续费页面动作位，A10 可据统一筛选口径补联调与验收。
         handoff_to: [A9, A10]
       - task_id: T-C1-1
         title: 沟通记录、会谈、模板接口
@@ -686,8 +687,9 @@ agents:
           - 沟通记录 CRUD 可用
           - 消息草稿/待发/已发/失败状态可追踪
         notes:
-          - 已在 apps/api 增加 communication 模块 skeleton，覆盖沟通记录 list/detail/create、消息模板 list/create/update、消息任务 list/create/update status；当前采用 in-memory repository，并兼容 /communication/messages 作为消息任务 list/create 别名。
-        completion_note: 已交付 communication skeleton（controller/service/repository/dto 分层），状态收口 draft/pending/sent/failed/read；A9 可直接接沟通记录与消息中心页面，A10 可补接口集成与回归。
+          - 已在 apps/api 增加 communication 模块 skeleton，覆盖沟通记录 list/detail/create、消息模板 list/create/update、消息任务 list/create/update status；现已切到 JSON 文件持久层（apps/api/.data/communication.json），并兼容 /communication/messages 作为消息任务 list/create 别名。
+          - sent / failed / read 状态与时间戳改为持久化落盘，消息状态流转可追踪。
+        completion_note: 已交付 communication skeleton（controller/service/repository/dto 分层），并完成 records/templates/message_tasks 第一波持久化；A9 可直接接沟通记录与消息中心页面，A10 可补接口集成与回归。
         handoff_to: [A9, A10]
       - task_id: T-BI1-1
         title: overview / teaching / billing 聚合查询
@@ -707,8 +709,9 @@ agents:
           - 指标口径统一
           - 支持校区/学期/日期筛选
         notes:
-          - 已新增 apps/api/analytics 模块 skeleton，提供 /analytics/overview、/analytics/teaching、/analytics/billing 三个聚合查询；当前以 in-memory/mock 聚合为主，并复用 billing 数据源计算应收/实收/续费漏斗。
-        completion_note: 已完成 analytics 首波查询骨架，统一筛选口径为 campusId / termId / dateFrom / dateTo；overview/billing 已返回可联调 KPI 与趋势基础结构，teaching 先返回空数组 + filtersApplied/dataSource 占位，下一棒交 A9 接图表、A10 做指标口径与验收单补齐。
+          - 已新增 apps/api/analytics 模块 skeleton，提供 /analytics/overview、/analytics/teaching、/analytics/billing 三个聚合查询；2026-03-25 已改为 repository 聚合，真实读取 billing + communication + attendance + homework 数据源。
+          - teaching 看板已从空占位改为 teacherWorkloads / subjectAccuracy / topErrors / growthCoverage 的真实聚合结果，dataSource.mode=repository-aggregated。
+        completion_note: 已完成 analytics 首波真化，统一筛选口径为 campusId / termId / dateFrom / dateTo；overview/billing/teaching 均不再纯静态 mock，下一棒交 A9 接图表、A10 做指标口径与验收单补齐。
         handoff_to: [A9, A10]
 
   - id: A8

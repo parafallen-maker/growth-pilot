@@ -21,14 +21,11 @@ import { JobsRepository } from '../../src/modules/jobs/repository/jobs.repositor
 import { JobsService } from '../../src/modules/jobs/service/jobs.service';
 import { MasterDataStore } from '../../src/modules/master-data/master-data.store';
 import { StudentsRepository } from '../../src/modules/students/repository/students.repository';
-import { FamiliesRepository } from '../../src/modules/families/repository/families.repository';
-import { MasterDataStore } from '../../src/modules/master-data/master-data.store';
-import { StudentsRepository } from '../../src/modules/students/repository/students.repository';
 import { StudentsService } from '../../src/modules/students/students.service';
 import { UsersRepository } from '../../src/modules/users/repository/users.repository';
 import { UsersService } from '../../src/modules/users/service/users.service';
 
-const dataDir = resolve(process.cwd(), 'apps/api/.data');
+const dataDir = resolve(process.cwd(), '.data');
 
 function resetDataDir() {
   rmSync(dataDir, { recursive: true, force: true });
@@ -72,8 +69,8 @@ export function createQaFixture() {
   masterDataStore.reset();
   const familiesRepository = new FamiliesRepository(masterDataStore);
   const studentsRepository = new StudentsRepository(masterDataStore);
-  const studentsService = new StudentsService(studentsRepository, familiesRepository);
   const familiesService = new FamiliesService(familiesRepository);
+  const studentsService = new StudentsService(studentsRepository, familiesRepository);
   const billingService = new BillingService(new BillingRepository());
 
   return {

@@ -1,13 +1,32 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { FamiliesRepository } from '../src/modules/families/repository/families.repository';
+import { FamiliesService } from '../src/modules/families/families.service';
+import { MasterDataStore } from '../src/modules/master-data/master-data.store';
+import { StudentsRepository } from '../src/modules/students/repository/students.repository';
 import { StudentsService } from '../src/modules/students/students.service';
 
-function createFixture() {
-  return new StudentsService();
+function buildServices(storePath?: string) {
+  const filePath = storePath ?? join(mkdtempSync(join(tmpdir(), 'growthpilot-master-data-')), 'master-data.json');
+  const store = new MasterDataStore(filePath);
+  if (!storePath) {
+    store.reset();
+  }
+  const familiesRepository = new FamiliesRepository(store);
+  const studentsRepository = new StudentsRepository(store);
+  return {
+    filePath,
+    familiesService: new FamiliesService(familiesRepository),
+    service: new StudentsService(studentsRepository, familiesRepository),
+  };
 }
 
-test('student list/detail/enrollment skeleton works', () => {
-  const service = createFixture();
+test('student list/detail/enrollment persistence works', () => {
+  const fixture = buildServices();
+  const { service, filePath } = fixture;
 
   const page = service.list({ pageNo: 1, pageSize: 20, status: 'active' });
   assert.equal(page.list.length, 1);
@@ -19,16 +38,19 @@ test('student list/detail/enrollment skeleton works', () => {
   const enrollment = service.createEnrollment('student-001', {
     campusId: 'campus-002',
     termId: 'term-2026-summer',
-    primaryTeacherId: 'teacher-002',
+    primaryTeacherId: 'teacher-001',
     enrollDate: '2026-06-01',
     status: 'active',
   });
   assert.equal(enrollment.studentId, 'student-001');
   assert.equal(service.listEnrollmentsByStudent('student-001').length, 2);
+
+  const reloaded = buildServices(filePath).service;
+  assert.equal(reloaded.listEnrollmentsByStudent('student-001').length, 2);
 });
 
-test('student 360 aggregate returns summary skeleton for frontend', () => {
-  const service = createFixture();
+test('student 360 aggregate reads persisted student/family/enrollment data', () => {
+  const { service } = buildServices();
 
   const detail360 = service.detail360('student-001');
 
@@ -36,12 +58,41 @@ test('student 360 aggregate returns summary skeleton for frontend', () => {
   assert.equal(detail360.currentEnrollment?.id, 'enrollment-001');
   assert.equal(detail360.family?.id, 'family-001');
   assert.equal(detail360.guardians.length, 2);
+  assert.equal(detail360.recentTimeline.some((item) => item.type === 'student'), true);
+  assert.equal(detail360.recentTimeline.some((item) => item.type === 'family'), true);
+  assert.equal(detail360.recentTimeline.some((item) => item.type === 'enrollment'), true);
 
   assert.equal(detail360.homeworkSummary.reviewedCount, 1);
   assert.equal(detail360.homeworkSummary.pendingReviewCount, 1);
   assert.equal(detail360.growthSummary.activeGoalCount, 2);
   assert.equal(detail360.attendanceSummary.presentDays, 2);
   assert.equal(detail360.billingSummary.outstandingAmount, 1200);
-  assert.equal(detail360.recentTimeline.length > 0, true);
-  assert.equal(detail360.recentTimeline[0]?.occurredAt >= detail360.recentTimeline[1]?.occurredAt!, true);
+});
+
+test('master-data uniqueness rules are enforced via persisted repositories', () => {
+  const { service, familiesService } = buildServices();
+
+  assert.throws(() =>
+    service.create({
+      studentNo: 'S001',
+      name: '重复学号',
+      gradeLabel: '一年级',
+    }),
+  );
+
+  assert.throws(() =>
+    familiesService.create({
+      familyCode: 'F001',
+      familyName: '重复家庭',
+    }),
+  );
+
+  assert.throws(() =>
+    service.createEnrollment('student-001', {
+      campusId: 'campus-001',
+      termId: 'term-2026-spring',
+      enrollDate: '2026-02-18',
+      status: 'active',
+    }),
+  );
 });

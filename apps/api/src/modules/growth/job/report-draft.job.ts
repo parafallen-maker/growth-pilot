@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { GrowthReport } from '@growthpilot/schema/index';
+import { JobsService } from '../../jobs/service/jobs.service';
 import { GrowthRepository } from '../repository/growth.repository';
 import { ReportMaterialAssembler } from './report-material-assembler';
 
@@ -8,33 +9,56 @@ export class ReportDraftJob {
   constructor(
     private readonly growthRepository: GrowthRepository,
     private readonly materialAssembler: ReportMaterialAssembler,
+    private readonly jobsService: JobsService,
   ) {}
 
   queue(request: { reportType: 'weekly' | 'monthly'; periodKey: string; studentIds: string[]; termId?: string }) {
-    const jobId = `job-growth-report-${String(Date.now())}`;
-    this.growthRepository.createReportJob({ jobId, request, status: 'queued', createdAt: new Date().toISOString() });
+    const job = this.jobsService.createJob({
+      jobType: 'growth_report_generate',
+      bizType: 'growth_report',
+      bizId: `${request.reportType}:${request.periodKey}:${request.studentIds.join(',')}`,
+      payload: request,
+    });
 
-    for (const studentId of request.studentIds) {
-      const materials = this.materialAssembler.assemble(studentId, request.periodKey);
-      const now = new Date().toISOString();
-      const report: GrowthReport = {
-        id: `report-${studentId}-${request.periodKey}`,
-        studentId,
-        termId: request.termId ?? null,
+    try {
+      this.jobsService.markRunning(job.jobId);
+      const reportIds: string[] = [];
+
+      for (const studentId of request.studentIds) {
+        const materials = this.materialAssembler.assemble(studentId, request.periodKey);
+        const now = new Date().toISOString();
+        const reportId = `report-${studentId}-${request.periodKey}`;
+        const report: GrowthReport = {
+          id: reportId,
+          studentId,
+          termId: request.termId ?? null,
+          reportType: request.reportType,
+          periodKey: request.periodKey,
+          status: 'draft',
+          title: `${request.periodKey} ${request.reportType === 'weekly' ? '周报' : '月报'}草稿`,
+          draftMarkdown: `# ${request.periodKey} 成长草稿\n\n- 观察数：${materials.growthObservations.length}\n- 目标数：${materials.goals.length}\n- 素材装配：已持久化`,
+          summaryJson: materials,
+          generatedByJobId: job.jobId,
+          publishedAt: null,
+          createdAt: now,
+          updatedAt: now,
+        };
+        this.growthRepository.createReport(report);
+        reportIds.push(reportId);
+      }
+
+      this.jobsService.markSuccess(job.jobId, {
+        reportIds,
+        reportCount: reportIds.length,
         reportType: request.reportType,
         periodKey: request.periodKey,
-        status: 'draft',
-        title: `${request.periodKey} ${request.reportType === 'weekly' ? '周报' : '月报'}草稿`,
-        draftMarkdown: `# ${request.periodKey} 成长草稿\n\n- 观察数：${materials.growthObservations.length}\n- 目标数：${materials.goals.length}\n- 素材装配：placeholder`,
-        summaryJson: materials,
-        generatedByJobId: jobId,
-        publishedAt: null,
-        createdAt: now,
-        updatedAt: now,
-      };
-      this.growthRepository.createReport(report);
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown report draft error';
+      this.jobsService.markFailed(job.jobId, message);
+      throw error;
     }
 
-    return { jobId, status: 'queued' };
+    return { jobId: job.jobId, status: job.status };
   }
 }

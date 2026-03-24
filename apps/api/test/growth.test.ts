@@ -1,20 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdirSync, rmSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { GrowthRepository } from '../src/modules/growth/repository/growth.repository';
 import { ReportDraftJob } from '../src/modules/growth/job/report-draft.job';
 import { ReportMaterialAssembler } from '../src/modules/growth/job/report-material-assembler';
 import { GrowthService } from '../src/modules/growth/service/growth.service';
+import { JobsRepository } from '../src/modules/jobs/repository/jobs.repository';
+import { JobsService } from '../src/modules/jobs/service/jobs.service';
+
+const dataDir = resolve(process.cwd(), '.data');
+
+function resetDataDir() {
+  rmSync(dataDir, { recursive: true, force: true });
+  mkdirSync(dataDir, { recursive: true });
+}
 
 function createFixture() {
   const repository = new GrowthRepository();
+  const jobsService = new JobsService(new JobsRepository());
   const assembler = new ReportMaterialAssembler(repository);
-  const reportDraftJob = new ReportDraftJob(repository, assembler);
+  const reportDraftJob = new ReportDraftJob(repository, assembler, jobsService);
   const service = new GrowthService(repository, reportDraftJob);
-  return { repository, assembler, reportDraftJob, service };
+  return { repository, assembler, reportDraftJob, jobsService, service };
 }
 
-test('growth rubric / observation / goal / report skeleton flows work', () => {
-  const { service } = createFixture();
+test('growth rubric / observation / goal / report workflows persist to disk', () => {
+  resetDataDir();
+  const { service, jobsService } = createFixture();
 
   const rubrics = service.listRubrics({ pageNo: 1, pageSize: 20, status: 'active' });
   assert.equal(rubrics.list.length, 1);
@@ -66,9 +79,14 @@ test('growth rubric / observation / goal / report skeleton flows work', () => {
     termId: 'term-2026-spring',
   });
   assert.equal(job.status, 'queued');
+  assert.equal(jobsService.getJob(job.jobId).status, 'success');
 
-  const reports = service.listReports({ pageNo: 1, pageSize: 20, studentId: 'student-001' });
-  assert.equal(reports.page.total, 1);
-  assert.equal(reports.list[0]?.generatedByJobId, job.jobId);
-  assert.equal(reports.list[0]?.status, 'draft');
+  const restartedRepository = new GrowthRepository();
+  const reports = restartedRepository.listReports().filter((item) => item.studentId === 'student-001');
+  assert.equal(reports.length, 1);
+  assert.equal(reports[0]?.generatedByJobId, job.jobId);
+  assert.equal(reports[0]?.status, 'draft');
+  assert.equal(restartedRepository.listRubrics().length, 2);
+  assert.equal(restartedRepository.listObservations().length, 2);
+  assert.equal(restartedRepository.findGoalById(goal.id)?.checkins.length, 1);
 });

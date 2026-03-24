@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdirSync, rmSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { MockObjectStorageAdapter } from '../src/modules/files/adapter/mock-object-storage.adapter';
 import { FileAssetRepository } from '../src/modules/files/repository/file-asset.repository';
 import { FilesService } from '../src/modules/files/service/files.service';
@@ -10,6 +12,13 @@ import { HomeworkEventPublisher } from '../src/modules/homework/event/homework-e
 import { HomeworkAnalysisQueue } from '../src/modules/homework/job/homework-analysis.queue';
 import { HomeworkRepository } from '../src/modules/homework/repository/homework.repository';
 import { HomeworkService } from '../src/modules/homework/service/homework.service';
+
+const dataDir = resolve(process.cwd(), '.data');
+
+function resetDataDir() {
+  rmSync(dataDir, { recursive: true, force: true });
+  mkdirSync(dataDir, { recursive: true });
+}
 
 function createHomeworkFixture() {
   const jobsService = new JobsService(new JobsRepository());
@@ -28,7 +37,8 @@ function createHomeworkFixture() {
   };
 }
 
-test('homework submission -> analyze -> review skeleton runs end-to-end', async () => {
+test('homework submission -> analyze -> review persists across repository restarts', async () => {
+  resetDataDir();
   const { service, homeworkRepository, jobsService, eventPublisher } = createHomeworkFixture();
 
   const submission = service.createSubmission({
@@ -73,10 +83,13 @@ test('homework submission -> analyze -> review skeleton runs end-to-end', async 
   });
 
   assert.equal(review.reviewStatus, 'published');
-  const detail = service.getSubmissionDetail(submission.id);
-  assert.equal(detail.submission.finalAccuracyPct, 85);
-  assert.equal(detail.review?.publishToFamily, true);
-  assert.equal(homeworkRepository.listReviewErrorItems(review.reviewId).length, 1);
+  const restartedRepository = new HomeworkRepository();
+  const restartedJobsService = new JobsService(new JobsRepository());
+  const detail = restartedRepository.getSubmissionOrThrow(submission.id);
+  assert.equal(detail.finalAccuracyPct, 85);
+  assert.equal(restartedRepository.getReviewBySubmissionId(submission.id)?.publishToFamily, true);
+  assert.equal(restartedRepository.listReviewErrorItems(review.reviewId).length, 1);
+  assert.equal(restartedJobsService.getJob(job.jobId).status, 'success');
   assert.deepEqual(
     eventPublisher.list().map((item) => item.eventName),
     ['HomeworkReviewed', 'HomeworkSubmitted'],
@@ -84,6 +97,7 @@ test('homework submission -> analyze -> review skeleton runs end-to-end', async 
 });
 
 test('homework analysis dedupe blocks duplicate active job', async () => {
+  resetDataDir();
   const { service } = createHomeworkFixture();
 
   await assert.rejects(

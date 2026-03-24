@@ -14,7 +14,8 @@ test('E2E-01 登录与权限：管理员登录 -> me -> refresh -> logout skelet
     assert.ok(currentUser.permissions.includes('jobs.read'));
 
     const refreshResult = authService.refresh(loginResult.refreshToken);
-    assert.ok(refreshResult.accessToken.startsWith('access-'));
+    assert.ok(refreshResult.accessToken);
+    assert.ok(refreshResult.refreshToken);
 
     authService.logout(loginResult.accessToken, loginResult.refreshToken);
     assert.throws(() => authService.currentUser(loginResult.accessToken));

@@ -98,19 +98,25 @@
 ## IMPL-002 主数据真化（P0）
 
 ### A5-1 teachers / students / families / enrollments 持久化
-- [ ] 从 in-memory 替换为真实 repository
-- [ ] 唯一约束与 DDL 对齐：
+- [x] 从 in-memory 替换为真实 repository
+- [x] 唯一约束与 DDL 对齐：
   - student_no
   - employee_no
   - family_code
   - enrollment 唯一约束
-- [ ] students/families/guardians/enrollments 事务收口
+- [x] students/families/guardians/enrollments 事务收口
+- notes:
+  - 2026-03-25：A5 已在 `apps/api` 落 `MasterDataStore` 文件持久层（`.runtime/master-data.json` / 测试态 `apps/api/.data/master-data.json`），teachers / students / families / guardians / enrollments 改为真实读写。
+  - 已在 repository 层落 employee_no / student_no / family_code / `(student_id,campus_id,term_id)` 唯一校验，并通过 store 事务提交 + 原子 rename 体现事务边界。
 
 ### A5-2 Student 360 真聚合
-- [ ] student 基础信息真实聚合
-- [ ] family / guardians / enrollment 真聚合
+- [x] student 基础信息真实聚合
+- [x] family / guardians / enrollment 真聚合
 - [ ] homework / growth / attendance / billing 摘要位接真实查询
-- [ ] recentTimeline 统一口径
+- [x] recentTimeline 统一口径
+- notes:
+  - 2026-03-25：`GET /students/{studentId}/360` 已从真实 repository 聚合 student + currentEnrollment + family + guardians，recentTimeline 首屏加入主档/家庭/在读档真实落库事件。
+  - homework / growth / attendance / billing 仍是适配层摘要，但已不再是 Student/Family/Enrollment 全量假拼装；后续等 A6/A7 真仓储后可平滑替换摘要来源。
 
 **DoD**
 - Student 360 不再返回纯 mock summary
@@ -181,14 +187,18 @@
 ## IMPL-005 billing / communication / attendance / analytics 真系统化（P0/P1）
 
 ### A7-1 billing 真化
-- [ ] products / contracts / invoices / payments / refunds 持久化
-- [ ] renewals 持久化
+- [x] products / contracts / invoices / payments / refunds 持久化
+- [x] renewals 持久化
 - [ ] billing_adjustments 决策：补接口或明确后置
-- [ ] 支付 / 退款事务与 invoice 状态一致性
+- [x] 支付 / 退款事务与 invoice 状态一致性
+
+> 2026-03-25 A7 第一波：billing repository 已切到 JSON 文件持久层（`apps/api/.data/billing.json`），products/contracts/invoices/payments/refunds/renewals 重启后可保留；payment/refund 仍保留事务快照回滚与 invoice 状态回写。billing_adjustments 仍未落接口，先记后置。
 
 ### A7-2 communication 真化
-- [ ] records / templates / message_tasks 持久化
-- [ ] sent / failed / read 状态链路与时间戳落库
+- [x] records / templates / message_tasks 持久化
+- [x] sent / failed / read 状态链路与时间戳落库
+
+> 2026-03-25 A7 第一波：communication repository 已切到 JSON 文件持久层（`apps/api/.data/communication.json`），records/templates/message_tasks 状态流转改为落盘，可追踪 sent/failed/read 时间戳链路。
 
 ### A6-5 attendance 真化
 - [ ] devices / bindings / events 持久化
@@ -197,9 +207,11 @@
 - [ ] homework_time_daily_stats 真聚合
 
 ### A7-3 analytics 真化
-- [ ] overview / teaching / billing 真实聚合查询
+- [x] overview / teaching / billing 真实聚合查询
 - [ ] 指标口径文档与查询实现对齐
-- [ ] teaching 看板从空占位变成真实数据
+- [x] teaching 看板从空占位变成真实数据
+
+> 2026-03-25 A7 第一波：analytics 已改为 repository 聚合，不再直接返回纯手写 mock 常量；当前真实读取 billing + communication + attendance + homework 仓储数据，overview/billing/teaching 均可返回非静态聚合结果。指标口径文档细化仍待补齐。
 
 ### A9-3 页面联调
 - [ ] billing 页面接真接口
@@ -275,8 +287,8 @@
 > - 当前仍未真化项：permission guard / 401-403-409-422 标准错误体统一、refresh token 黑名单/多端策略、真实 S3 SDK 接入、数据库/Redis/BullMQ 真队列。
 
 ### NOW-2 A5 主数据真化
-- [ ] students / families / teachers / enrollments repository 真化
-- [ ] Student 360 真聚合
+- [x] students / families / teachers / enrollments repository 真化
+- [x] Student 360 真聚合
 
 ### NOW-3 A6 homework / growth 真化
 - [ ] homework submission / review 真入库

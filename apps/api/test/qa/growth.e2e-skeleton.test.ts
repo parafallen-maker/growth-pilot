@@ -69,7 +69,7 @@ test('E2E-04 成长管理闭环：rubric -> observation -> goal -> report draft 
     const reports = growthService.listReports({ studentId: 'student-001', pageNo: 1, pageSize: 20 });
     assert.equal(observation.templateId, rubric.id);
     assert.equal(checkin.goalId, goal.id);
-    assert.ok(reportJob.jobId.startsWith('job-growth-report-'));
+    assert.ok(reportJob.jobId.startsWith('job-growth_report_generate-'));
     assert.equal(reports.list[0]?.status, 'draft');
   });
 

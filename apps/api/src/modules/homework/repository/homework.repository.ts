@@ -6,6 +6,7 @@ import type {
   HomeworkSubmission,
   HomeworkSubmissionFile,
 } from '@growthpilot/schema/index';
+import { PersistentJsonStore } from '../../../common/persistent-json.store';
 
 export interface CreateHomeworkSubmissionRecord {
   studentId: string;
@@ -41,7 +42,7 @@ interface HomeworkState {
 
 @Injectable()
 export class HomeworkRepository {
-  private state: HomeworkState = {
+  private readonly store = new PersistentJsonStore<HomeworkState>('.data/homework.json', () => ({
     submissions: [
       {
         id: 'submission-001',
@@ -79,14 +80,14 @@ export class HomeworkRepository {
     analyses: [],
     reviews: [],
     reviewErrorItems: [],
-  };
+  }));
 
   listSubmissions() {
-    return [...this.state.submissions];
+    return [...this.store.get().submissions];
   }
 
   findSubmissionById(submissionId: string) {
-    return this.state.submissions.find((item) => item.id === submissionId);
+    return this.store.get().submissions.find((item) => item.id === submissionId);
   }
 
   getSubmissionOrThrow(submissionId: string) {
@@ -99,7 +100,7 @@ export class HomeworkRepository {
 
   createSubmission(input: CreateHomeworkSubmissionRecord) {
     const now = new Date().toISOString();
-    const sequence = this.state.submissions.length + 1;
+    const sequence = this.store.get().submissions.length + 1;
     const submission: HomeworkSubmission = {
       id: `submission-${String(sequence).padStart(3, '0')}`,
       submissionNo: `HW${input.homeworkDate.replaceAll('-', '')}${String(sequence).padStart(4, '0')}`,
@@ -124,74 +125,92 @@ export class HomeworkRepository {
       updatedAt: now,
     };
 
-    this.state.submissions.unshift(submission);
+    this.store.update((state) => {
+      state.submissions.unshift(submission);
+    });
     return submission;
   }
 
   attachFiles(submissionId: string, fileIds: string[]) {
     const now = new Date().toISOString();
+    const currentSize = this.store.get().submissionFiles.length;
     const records = fileIds.map((fileId, index) => ({
-      id: `submission-file-${String(this.state.submissionFiles.length + index + 1).padStart(3, '0')}`,
+      id: `submission-file-${String(currentSize + index + 1).padStart(3, '0')}`,
       submissionId,
       fileId,
       sortOrder: (index + 1) * 100,
       createdAt: now,
     } satisfies HomeworkSubmissionFile));
 
-    this.state.submissionFiles.unshift(...records);
+    this.store.update((state) => {
+      state.submissionFiles.unshift(...records);
+    });
     return records;
   }
 
   listSubmissionFiles(submissionId: string) {
-    return this.state.submissionFiles
-      .filter((item) => item.submissionId === submissionId)
+    return this.store
+      .get()
+      .submissionFiles.filter((item) => item.submissionId === submissionId)
       .sort((a, b) => a.sortOrder - b.sortOrder);
   }
 
   updateSubmission(submissionId: string, patch: Partial<HomeworkSubmission>) {
-    const submission = this.getSubmissionOrThrow(submissionId);
-    Object.assign(submission, patch, { updatedAt: new Date().toISOString() });
-    return submission;
+    let updated: HomeworkSubmission | undefined;
+    this.store.update((state) => {
+      const submission = state.submissions.find((item) => item.id === submissionId);
+      if (!submission) {
+        throw new NotFoundException(`submission ${submissionId} not found`);
+      }
+      Object.assign(submission, patch, { updatedAt: new Date().toISOString() });
+      updated = submission;
+    });
+    return updated!;
   }
 
   createAnalysis(record: Omit<HomeworkAiAnalysis, 'id' | 'createdAt'>) {
     const analysis: HomeworkAiAnalysis = {
       ...record,
-      id: `analysis-${String(this.state.analyses.length + 1).padStart(3, '0')}`,
+      id: `analysis-${String(this.store.get().analyses.length + 1).padStart(3, '0')}`,
       createdAt: new Date().toISOString(),
     };
-    this.state.analyses.unshift(analysis);
+    this.store.update((state) => {
+      state.analyses.unshift(analysis);
+    });
     return analysis;
   }
 
   getLatestAnalysis(submissionId: string) {
-    return this.state.analyses.find((item) => item.submissionId === submissionId);
+    return this.store.get().analyses.find((item) => item.submissionId === submissionId);
   }
 
   getReviewBySubmissionId(submissionId: string) {
-    return this.state.reviews.find((item) => item.submissionId === submissionId);
+    return this.store.get().reviews.find((item) => item.submissionId === submissionId);
   }
 
   replaceReview(record: CreateHomeworkReviewRecord) {
     const now = new Date().toISOString();
     const existing = this.getReviewBySubmissionId(record.submissionId);
     if (existing) {
-      Object.assign(existing, {
-        reviewerTeacherId: record.reviewerTeacherId ?? null,
-        reviewResult: record.reviewResult,
-        finalAccuracyPct: record.finalAccuracyPct ?? null,
-        finalErrorSummary: record.finalErrorSummary ?? null,
-        finalSuggestion: record.finalSuggestion ?? null,
-        publishToFamily: record.publishToFamily,
-        publishedAt: record.publishedAt ?? null,
-        reviewedAt: now,
-        updatedAt: now,
+      this.store.update((state) => {
+        const target = state.reviews.find((item) => item.id === existing.id)!;
+        Object.assign(target, {
+          reviewerTeacherId: record.reviewerTeacherId ?? null,
+          reviewResult: record.reviewResult,
+          finalAccuracyPct: record.finalAccuracyPct ?? null,
+          finalErrorSummary: record.finalErrorSummary ?? null,
+          finalSuggestion: record.finalSuggestion ?? null,
+          publishToFamily: record.publishToFamily,
+          publishedAt: record.publishedAt ?? null,
+          reviewedAt: now,
+          updatedAt: now,
+        });
       });
-      return existing;
+      return this.getReviewBySubmissionId(record.submissionId)!;
     }
 
     const review: HomeworkReview = {
-      id: `review-${String(this.state.reviews.length + 1).padStart(3, '0')}`,
+      id: `review-${String(this.store.get().reviews.length + 1).padStart(3, '0')}`,
       submissionId: record.submissionId,
       reviewerTeacherId: record.reviewerTeacherId ?? null,
       reviewResult: record.reviewResult,
@@ -205,35 +224,40 @@ export class HomeworkRepository {
       updatedAt: now,
     };
 
-    this.state.reviews.unshift(review);
+    this.store.update((state) => {
+      state.reviews.unshift(review);
+    });
     return review;
   }
 
   replaceReviewErrorItems(reviewId: string, items: Array<{ errorTaxonomyId: string; weight: number; note?: string }>) {
-    this.state.reviewErrorItems = this.state.reviewErrorItems.filter((item) => item.reviewId !== reviewId);
     const now = new Date().toISOString();
-    const nextItems = items.map((item, index) => ({
-      id: `review-error-${String(this.state.reviewErrorItems.length + index + 1).padStart(3, '0')}`,
-      reviewId,
-      errorTaxonomyId: item.errorTaxonomyId,
-      weight: item.weight,
-      note: item.note,
-      createdAt: now,
-    } satisfies HomeworkReviewErrorItem));
-    this.state.reviewErrorItems.unshift(...nextItems);
+    let nextItems: HomeworkReviewErrorItem[] = [];
+    this.store.update((state) => {
+      state.reviewErrorItems = state.reviewErrorItems.filter((item) => item.reviewId !== reviewId);
+      nextItems = items.map((item, index) => ({
+        id: `review-error-${String(state.reviewErrorItems.length + index + 1).padStart(3, '0')}`,
+        reviewId,
+        errorTaxonomyId: item.errorTaxonomyId,
+        weight: item.weight,
+        note: item.note,
+        createdAt: now,
+      } satisfies HomeworkReviewErrorItem));
+      state.reviewErrorItems.unshift(...nextItems);
+    });
     return nextItems;
   }
 
   listReviewErrorItems(reviewId: string) {
-    return this.state.reviewErrorItems.filter((item) => item.reviewId === reviewId);
+    return this.store.get().reviewErrorItems.filter((item) => item.reviewId === reviewId);
   }
 
   runInTransaction<T>(runner: () => T): T {
-    const snapshot: HomeworkState = JSON.parse(JSON.stringify(this.state));
+    const snapshot = this.store.snapshot();
     try {
       return runner();
     } catch (error) {
-      this.state = snapshot;
+      this.store.replace(snapshot);
       throw error;
     }
   }

@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type { Teacher } from '@growthpilot/schema/index';
 import { normalizePage } from '../../common/base-list-query.dto';
 import type { PageResult } from '../../common/api-response';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { TeacherQueryDto } from './dto/teacher-query.dto';
+import { TeachersRepository } from './repository/teachers.repository';
 
 interface TeacherDetail {
   teacher: Teacher;
@@ -14,21 +15,11 @@ interface TeacherDetail {
 
 @Injectable()
 export class TeachersService {
-  private readonly teachers: Teacher[] = [
-    {
-      id: 'teacher-001',
-      campusId: 'campus-001',
-      employeeNo: 'T001',
-      name: '王老师',
-      mobile: '13800000001',
-      leadSubject: 'math',
-      status: 'active',
-    },
-  ];
+  constructor(private readonly teachersRepository: TeachersRepository = new TeachersRepository()) {}
 
   list(query: TeacherQueryDto): PageResult<Teacher> {
     const { pageNo, pageSize } = normalizePage(query);
-    const filtered = this.teachers.filter((teacher) => {
+    const filtered = this.teachersRepository.list().filter((teacher) => {
       if (query.campusId && teacher.campusId !== query.campusId) return false;
       if (query.status && teacher.status !== query.status) return false;
       if (query.subject && teacher.leadSubject !== query.subject) return false;
@@ -47,10 +38,7 @@ export class TeachersService {
   }
 
   detail(teacherId: string): TeacherDetail {
-    const teacher = this.teachers.find((item) => item.id === teacherId);
-    if (!teacher) {
-      throw new NotFoundException(`Teacher ${teacherId} not found`);
-    }
+    const teacher = this.teachersRepository.requireById(teacherId);
 
     return {
       teacher,
@@ -63,17 +51,15 @@ export class TeachersService {
   }
 
   create(payload: CreateTeacherDto): Teacher {
-    const teacher: Teacher = {
-      id: `teacher-${String(this.teachers.length + 1).padStart(3, '0')}`,
+    return this.teachersRepository.create({
       campusId: payload.campusId,
       employeeNo: payload.employeeNo,
       name: payload.name,
       mobile: payload.mobile,
+      email: payload.email,
+      hireDate: payload.hireDate,
       leadSubject: payload.leadSubject,
       status: payload.status ?? 'active',
-    };
-
-    this.teachers.unshift(teacher);
-    return teacher;
+    });
   }
 }
