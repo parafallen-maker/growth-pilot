@@ -1,4 +1,5 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { createHash, randomUUID } from 'node:crypto';
 import type { FileAsset } from '@growthpilot/schema/index';
 import { FileAssetRepository } from '../repository/file-asset.repository';
 import { OBJECT_STORAGE_ADAPTER, ObjectStorageAdapter } from '../adapter/object-storage.adapter';
@@ -22,6 +23,7 @@ export class FilesService {
       mimeType: payload.mimeType,
       sizeBytes: payload.sizeBytes,
       checksum: payload.checksum,
+      body: payload.contentBase64 ? Buffer.from(payload.contentBase64, 'base64') : undefined,
       metadata: {
         purpose: payload.purpose ?? 'general',
         sourceType: payload.sourceType ?? 'api_metadata_upload',
@@ -41,6 +43,30 @@ export class FilesService {
     });
 
     return this.toUploadResult(fileAsset);
+  }
+
+  async uploadMultipartFile(input: {
+    fileName: string;
+    mimeType: string;
+    content: Buffer;
+    bucketName?: string;
+    uploadedBy?: string;
+    purpose?: string;
+    sourceType?: string;
+    metadata?: Record<string, string>;
+  }) {
+    return this.uploadOne({
+      fileName: input.fileName,
+      mimeType: input.mimeType,
+      sizeBytes: input.content.byteLength,
+      checksum: `sha256:${createHash('sha256').update(input.content).digest('hex')}`,
+      bucketName: input.bucketName,
+      uploadedBy: input.uploadedBy,
+      purpose: input.purpose,
+      sourceType: input.sourceType ?? 'api_multipart_upload',
+      metadata: input.metadata,
+      contentBase64: input.content.toString('base64'),
+    });
   }
 
   async uploadMany(files: UploadFileDto[]) {
@@ -68,15 +94,9 @@ export class FilesService {
   }
 
   private validatePayload(payload: UploadFileDto) {
-    if (!payload.fileName?.trim()) {
-      throw new BadRequestException('fileName is required');
-    }
-    if (!payload.mimeType?.trim()) {
-      throw new BadRequestException('mimeType is required');
-    }
-    if (!Number.isFinite(payload.sizeBytes) || payload.sizeBytes < 0) {
-      throw new BadRequestException('sizeBytes must be a non-negative number');
-    }
+    if (!payload.fileName?.trim()) throw new BadRequestException('fileName is required');
+    if (!payload.mimeType?.trim()) throw new BadRequestException('mimeType is required');
+    if (!Number.isFinite(payload.sizeBytes) || payload.sizeBytes < 0) throw new BadRequestException('sizeBytes must be a non-negative number');
   }
 
   private buildObjectKey(payload: UploadFileDto) {
@@ -85,7 +105,7 @@ export class FilesService {
     const year = now.getUTCFullYear();
     const month = String(now.getUTCMonth() + 1).padStart(2, '0');
     const purpose = payload.purpose ?? 'general';
-    return `${purpose}/${year}/${month}/${crypto.randomUUID()}-${safeFileName}`;
+    return `${purpose}/${year}/${month}/${randomUUID()}-${safeFileName}`;
   }
 
   private toUploadResult(fileAsset: FileAsset) {
@@ -103,10 +123,6 @@ export class FilesService {
   }
 
   private toAssetDetail(fileAsset: FileAsset) {
-    return {
-      ...this.toUploadResult(fileAsset),
-      checksum: fileAsset.checksum ?? null,
-      uploadedBy: fileAsset.uploadedBy ?? null,
-    };
+    return { ...this.toUploadResult(fileAsset), checksum: fileAsset.checksum ?? null, uploadedBy: fileAsset.uploadedBy ?? null };
   }
 }

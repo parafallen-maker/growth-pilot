@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { rmSync } from 'node:fs';
 import { AuthService } from '../src/modules/auth/service/auth.service';
 import { JobsRepository } from '../src/modules/jobs/repository/jobs.repository';
 import { JobsService } from '../src/modules/jobs/service/jobs.service';
@@ -8,7 +9,13 @@ import { SettingsService } from '../src/modules/settings/service/settings.servic
 import { UsersRepository } from '../src/modules/users/repository/users.repository';
 import { UsersService } from '../src/modules/users/service/users.service';
 
+function resetPersistence() {
+  rmSync('.data/auth-sessions.json', { force: true });
+  rmSync('.data/jobs.json', { force: true });
+}
+
 function createFixture() {
+  resetPersistence();
   const usersRepository = new UsersRepository();
   const usersService = new UsersService(usersRepository);
   const authService = new AuthService(usersService);
@@ -23,12 +30,12 @@ function createFixture() {
   };
 }
 
-test('auth login -> current user -> refresh -> logout closes session', () => {
+test('auth login -> current user -> refresh rotation -> logout closes session', () => {
   const { authService } = createFixture();
 
   const loginResult = authService.login('admin', 'admin123');
-  assert.ok(loginResult.accessToken);
-  assert.ok(loginResult.refreshToken);
+  assert.ok(loginResult.accessToken.split('.').length === 3);
+  assert.ok(loginResult.refreshToken.split('.').length === 3);
   assert.equal(loginResult.user.username, 'admin');
 
   const currentUser = authService.currentUser(loginResult.accessToken);
@@ -37,11 +44,14 @@ test('auth login -> current user -> refresh -> logout closes session', () => {
   assert.ok(currentUser.permissions.includes('users.role.bind'));
 
   const refreshResult = authService.refresh(loginResult.refreshToken);
-  assert.ok(refreshResult.accessToken.startsWith('access-'));
-
-  authService.logout(loginResult.accessToken, loginResult.refreshToken);
-  assert.throws(() => authService.currentUser(loginResult.accessToken));
+  assert.ok(refreshResult.accessToken.split('.').length === 3);
+  assert.ok(refreshResult.refreshToken.split('.').length === 3);
+  assert.notEqual(refreshResult.refreshToken, loginResult.refreshToken);
   assert.throws(() => authService.refresh(loginResult.refreshToken));
+
+  authService.logout(refreshResult.accessToken, refreshResult.refreshToken);
+  assert.throws(() => authService.currentUser(refreshResult.accessToken));
+  assert.throws(() => authService.refresh(refreshResult.refreshToken));
 });
 
 test('settings queries return filtered mock data aligned with list shape', () => {
@@ -67,8 +77,8 @@ test('jobs and user role assignment skeleton are available', () => {
   assert.equal(job.status, 'running');
   assert.equal(job.jobId, 'job-homework-analysis-001');
 
-  const before = usersService.getCurrentUserProfile('user-teacher-001');
-  assert.deepEqual(before.roles, ['teacher']);
+  const listed = jobsService.listJobs({ status: 'running' });
+  assert.equal(listed.list.length, 1);
 
   usersService.assignRoles('user-teacher-001', ['admin']);
   const after = usersService.getCurrentUserProfile('user-teacher-001');

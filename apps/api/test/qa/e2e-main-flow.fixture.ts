@@ -1,6 +1,9 @@
+import { mkdirSync, rmSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { AuthService } from '../../src/modules/auth/service/auth.service';
 import { BillingRepository } from '../../src/modules/billing/repository/billing.repository';
 import { BillingService } from '../../src/modules/billing/service/billing.service';
+import { FamiliesRepository } from '../../src/modules/families/repository/families.repository';
 import { FamiliesService } from '../../src/modules/families/families.service';
 import { MockObjectStorageAdapter } from '../../src/modules/files/adapter/mock-object-storage.adapter';
 import { FileAssetRepository } from '../../src/modules/files/repository/file-asset.repository';
@@ -16,11 +19,25 @@ import { HomeworkRepository } from '../../src/modules/homework/repository/homewo
 import { HomeworkService } from '../../src/modules/homework/service/homework.service';
 import { JobsRepository } from '../../src/modules/jobs/repository/jobs.repository';
 import { JobsService } from '../../src/modules/jobs/service/jobs.service';
+import { MasterDataStore } from '../../src/modules/master-data/master-data.store';
+import { StudentsRepository } from '../../src/modules/students/repository/students.repository';
+import { FamiliesRepository } from '../../src/modules/families/repository/families.repository';
+import { MasterDataStore } from '../../src/modules/master-data/master-data.store';
+import { StudentsRepository } from '../../src/modules/students/repository/students.repository';
 import { StudentsService } from '../../src/modules/students/students.service';
 import { UsersRepository } from '../../src/modules/users/repository/users.repository';
 import { UsersService } from '../../src/modules/users/service/users.service';
 
+const dataDir = resolve(process.cwd(), 'apps/api/.data');
+
+function resetDataDir() {
+  rmSync(dataDir, { recursive: true, force: true });
+  mkdirSync(dataDir, { recursive: true });
+}
+
 export function createQaFixture() {
+  resetDataDir();
+
   const usersRepository = new UsersRepository();
   const usersService = new UsersService(usersRepository);
   const authService = new AuthService(usersService);
@@ -48,11 +65,15 @@ export function createQaFixture() {
 
   const growthRepository = new GrowthRepository();
   const reportMaterialAssembler = new ReportMaterialAssembler(growthRepository);
-  const reportDraftJob = new ReportDraftJob(growthRepository, reportMaterialAssembler);
+  const reportDraftJob = new ReportDraftJob(growthRepository, reportMaterialAssembler, jobsService);
   const growthService = new GrowthService(growthRepository, reportDraftJob);
 
-  const studentsService = new StudentsService();
-  const familiesService = new FamiliesService();
+  const masterDataStore = new MasterDataStore(resolve(dataDir, 'master-data.json'));
+  masterDataStore.reset();
+  const familiesRepository = new FamiliesRepository(masterDataStore);
+  const studentsRepository = new StudentsRepository(masterDataStore);
+  const studentsService = new StudentsService(studentsRepository, familiesRepository);
+  const familiesService = new FamiliesService(familiesRepository);
   const billingService = new BillingService(new BillingRepository());
 
   return {

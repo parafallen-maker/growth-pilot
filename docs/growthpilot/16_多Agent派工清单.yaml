@@ -244,6 +244,7 @@ agents:
           - 2026-03-24 A4 已在 apps/api 落 auth module 最小闭环：POST /auth/login、POST /auth/refresh、GET /auth/me、POST /auth/logout。
           - 当前使用内存 token/session mock，便于 A8 先接登录态、权限上下文与 401 回跳；待后续接 JWT + Redis/DB 持久化。
         completion_note: 已补 users/roles/permissions 基础结构，current user 返回 roles/campusIds/permissions；并补 node:test 覆盖 login -> me -> refresh -> logout 主链路。
+        impl_note_2026_03_25: 已完成 IMPL-001 第一波 auth 真化：session 从 in-memory 改为文件持久化，access/refresh 改为 HMAC JWT，refresh 支持 rotation，logout 失效持久化 session。
         handoff_to: [A8, A9, A10]
       - task_id: T-F1-3
         title: 校区、学期、字典、任务中心接口
@@ -266,6 +267,7 @@ agents:
           - 2026-03-24 A4 已补 settings module 查询骨架：GET /settings/campuses、GET /settings/terms、GET /settings/dictionaries。
           - 同步补 GET /jobs/{jobId} mock 查询接口，字段使用 A3 冻结后的 jobId 对外口径。
         completion_note: 现阶段为 in-memory mock repository，可支撑前端 settings 页面骨架与任务中心详情联调；后续需接数据库与真实异步任务表。
+        impl_note_2026_03_25: 已完成 IMPL-001 第一波 files/jobs 真化：file asset 与 jobs repository 改为文件持久化；新增 GET /jobs 列表接口；files 默认切本地 local-s3-compatible adapter，并新增 /files/upload/multipart 骨架，仍保留 mock adapter 便于替换真实 S3。
         handoff_to: [A8, A9, A10]
       - task_id: T-M1-5
         title: 文件上传模块与 fileId 回传能力
@@ -392,7 +394,7 @@ agents:
         status: done
         notes:
           - 已在 apps/api 落 homework submission controller/service/repository/dto 骨架，路径与 OpenAPI 对齐。
-        completion_note: 已完成 in-memory 作业提交链路、submissionNo 生成、fileIds 关联与提交事件发布，供 A9 接前端列表/上传入口。
+        completion_note: 已完成第一波持久化：submission/submission_files 已落 apps/api/.data/homework.json，fileIds 仍校验 file assets，列表/详情不再依赖纯运行时数组；供 A9 接前端列表/上传入口。
         wbs: [WBS-019]
         depends_on: [T-M1-2, T-M1-5, T-P0-4]
         input_docs:
@@ -412,7 +414,7 @@ agents:
         status: done
         notes:
           - 已补 JobsService/JobsRepository 创建、状态推进、active job 去重能力，并接入 homework analysis queue 占位实现。
-        completion_note: 已完成 mock queue + job dedupe 骨架，支持 analyze 建 job、running/success/failed 状态推进与 jobs 查询接口复用。
+        completion_note: 已完成第一波持久化 jobs：homework analyze job 已落 apps/api/.data/jobs.json，支持 dedupe、running/success/failed、attempts、startedAt/finishedAt 持久追踪；下一步再接真实队列与 retry worker。
         wbs: [WBS-020]
         depends_on: [T-H1-1, T-M1-5]
         input_docs:
@@ -453,7 +455,7 @@ agents:
         status: done
         notes:
           - 已实现 in-memory transaction runner，review / review_error_items / submission 状态更新在同一事务骨架内完成，并发布 HomeworkReviewed 事件。
-        completion_note: 已完成教师复核正式提交流程骨架，发布/未发布两种状态可收口；后续可替换为真实 DB 事务与事件总线。
+        completion_note: 已完成第一波持久化复核链路：review / review_error_items / submission 状态更新通过持久层事务快照一并写入 homework.json，发布/未发布两种状态可重启后保留；后续再替换真实 DB 事务与 outbox。
         wbs: [WBS-024]
         depends_on: [T-H1-3]
         input_docs:
@@ -483,7 +485,7 @@ agents:
           - 动态表单 schema 可被前端消费
         notes:
           - 已在 apps/api 增加 growth 模块 skeleton，交付 /growth/rubrics list/detail/create 与维度结构返回。
-        completion_note: 已完成 rubric 模板接口骨架，dimensions[] 可被前端 rubrics 页面直接消费。
+        completion_note: 已完成第一波持久化 rubric 链路，模板与 dimensions 已落 apps/api/.data/growth.json，dimensions[] 可被前端 rubrics 页面直接消费。
         handoff_to: [A9, A10]
       - task_id: T-G1-2
         title: 成长观察接口
@@ -501,7 +503,7 @@ agents:
           - 可进入报告素材池
         notes:
           - 已实现 /growth/observations list/create 骨架，支持 scores[] / totalScore / strengths / improvementNotes / publishToFamily 字段。
-        completion_note: 已完成成长观察接口骨架，可作为 report material assembler 的素材输入。
+        completion_note: 已完成第一波持久化成长观察链路，observations 已落 apps/api/.data/growth.json，可作为 report material assembler 的素材输入。
         handoff_to: [A9, A10]
       - task_id: T-G1-3
         title: 成长目标与 check-in 接口
@@ -520,7 +522,7 @@ agents:
           - 可关联观察与家庭任务
         notes:
           - 已实现 /growth/goals list/create 与 /growth/goals/{goalId}/checkins 骨架，支持目标跟进写入。
-        completion_note: 已完成成长目标与 check-in 接口骨架，可供前端 goals 页与 follow-up 动作联调。
+        completion_note: 已完成第一波持久化成长目标链路，goals / check-ins 已落 apps/api/.data/growth.json，可供前端 goals 页与 follow-up 动作联调。
         handoff_to: [A9, A10]
       - task_id: T-G1-4
         title: 周报/月报草稿生成 job
@@ -539,7 +541,7 @@ agents:
           - draft 与 publish 分离
         notes:
           - 已补 ReportMaterialAssembler 与 ReportDraftJob，占位实现 report generate -> jobId/status -> draft report 链路。
-        completion_note: 已完成周报/月报草稿生成骨架，当前为 mock job + draft 报告写入，后续可平滑替换真实队列。
+        completion_note: 已完成第一波持久化周报/月报草稿链路：report draft 写入 apps/api/.data/growth.json，生成 job 写入 apps/api/.data/jobs.json，二者通过 generatedByJobId 关联；后续再替换真实队列与 publish 流程。
         handoff_to: [A9, A10]
       - task_id: T-A1-1
         title: 设备与绑定接口

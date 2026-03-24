@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { FileAsset } from '@growthpilot/schema/index';
+import { randomUUID } from 'node:crypto';
+import { FileJsonStore } from '../../../shared/persistence/file-json-store';
 
 export interface CreateFileAssetRecord {
   storageProvider: string;
@@ -12,48 +14,56 @@ export interface CreateFileAssetRecord {
   uploadedBy?: string | null;
 }
 
+interface FileAssetStoreShape {
+  fileAssets: FileAsset[];
+}
+
 @Injectable()
 export class FileAssetRepository {
-  private readonly fileAssets: FileAsset[] = [
-    {
-      id: 'file-001',
-      storageProvider: 'mock-s3',
-      bucketName: 'growthpilot-dev',
-      objectKey: 'homework/2026/03/file-001-math-01.jpg',
-      fileName: 'math-01.jpg',
-      mimeType: 'image/jpeg',
-      sizeBytes: 204800,
-      checksum: 'sha256:demo-001',
-      uploadedBy: 'user-teacher-001',
-      createdAt: '2026-03-23T18:00:00+08:00',
-    },
-    {
-      id: 'file-002',
-      storageProvider: 'mock-s3',
-      bucketName: 'growthpilot-dev',
-      objectKey: 'homework/2026/03/file-002-math-02.jpg',
-      fileName: 'math-02.jpg',
-      mimeType: 'image/jpeg',
-      sizeBytes: 198100,
-      checksum: 'sha256:demo-002',
-      uploadedBy: 'user-teacher-001',
-      createdAt: '2026-03-23T18:01:00+08:00',
-    },
-  ];
+  private readonly store = new FileJsonStore<FileAssetStoreShape>('.data/file-assets.json', () => ({
+    fileAssets: [
+      {
+        id: 'file-001',
+        storageProvider: 'mock-s3',
+        bucketName: 'growthpilot-dev',
+        objectKey: 'homework/2026/03/file-001-math-01.jpg',
+        fileName: 'math-01.jpg',
+        mimeType: 'image/jpeg',
+        sizeBytes: 204800,
+        checksum: 'sha256:demo-001',
+        uploadedBy: 'user-teacher-001',
+        createdAt: '2026-03-23T18:00:00+08:00',
+      },
+      {
+        id: 'file-002',
+        storageProvider: 'mock-s3',
+        bucketName: 'growthpilot-dev',
+        objectKey: 'homework/2026/03/file-002-math-02.jpg',
+        fileName: 'math-02.jpg',
+        mimeType: 'image/jpeg',
+        sizeBytes: 198100,
+        checksum: 'sha256:demo-002',
+        uploadedBy: 'user-teacher-001',
+        createdAt: '2026-03-23T18:01:00+08:00',
+      },
+    ],
+  }));
 
   list() {
-    return [...this.fileAssets];
+    return [...this.store.read().fileAssets];
   }
 
   create(input: CreateFileAssetRecord) {
     const fileAsset: FileAsset = {
-      id: `file-${String(this.fileAssets.length + 1).padStart(3, '0')}`,
+      id: randomUUID(),
       ...input,
       checksum: input.checksum ?? null,
       uploadedBy: input.uploadedBy ?? null,
       createdAt: new Date().toISOString(),
     };
-    this.fileAssets.unshift(fileAsset);
+    this.store.update((state) => {
+      state.fileAssets.unshift(fileAsset);
+    });
     return fileAsset;
   }
 
@@ -62,7 +72,7 @@ export class FileAssetRepository {
   }
 
   getById(fileId: string) {
-    return this.fileAssets.find((item) => item.id === fileId);
+    return this.store.read().fileAssets.find((item) => item.id === fileId);
   }
 
   getByIdOrThrow(fileId: string) {

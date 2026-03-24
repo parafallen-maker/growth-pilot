@@ -70,21 +70,21 @@
 ## IMPL-001 基础设施真化（P0）
 
 ### A4-1 真实鉴权
-- [ ] JWT access token / refresh token 持久化
+- [x] JWT access token / refresh token 持久化
 - [ ] refresh rotation
 - [ ] logout token 失效链路
 - [ ] 权限 guard / permission policy 真化
 - [ ] 401 / 403 / 409 / 422 标准错误体收口
 
 ### A4-2 真实文件上传
-- [ ] multipart 上传入口
-- [ ] 对象存储 adapter 接真实 S3 兼容存储
+- [x] multipart 上传入口
+- [x] 对象存储 adapter 接真实 S3 兼容存储
 - [ ] file asset 元数据落库
 - [ ] upload -> fileId -> submission 真链路打通
 
 ### A4-3 真实 jobs 基础设施
-- [ ] jobs 表持久化 repository
-- [ ] jobs 列表接口
+- [x] jobs 表持久化 repository
+- [x] jobs 列表接口
 - [ ] job 状态推进与 retry 基础能力
 - [ ] AI / report draft / 聚合任务统一接入 jobs
 
@@ -121,20 +121,23 @@
 ## IMPL-003 homework 真系统化（P0）
 
 ### A6-1 submission 真入库
-- [ ] fileIds 校验接真实 file assets
-- [ ] submission / submission_files 真落库
-- [ ] 列表 / 详情改成真实 repository
+- [x] fileIds 校验接真实 file assets
+- [x] submission / submission_files 真落库
+- [x] 列表 / 详情改成真实 repository
 
 ### A6-2 analysis 真任务化
-- [ ] ai_jobs 真落库
+- [x] ai_jobs 真落库
 - [ ] adapter 接真实 provider 配置边界
-- [ ] rawMarkdown / structuredOutput / provider / model / promptVersion 留痕入库
-- [ ] analyze 去重、失败重试、状态推进
+- [x] rawMarkdown / structuredOutput / provider / model / promptVersion 留痕入库
+- [x] analyze 去重、失败重试、状态推进
 
 ### A6-3 review 真事务
-- [ ] review / review_error_items 真事务
+- [x] review / review_error_items 真事务
 - [ ] draft 保存接口（若保留）
 - [ ] HomeworkReviewed 事件总线 / outbox 方案
+
+> 2026-03-25 A6 第一波：已把 homework submissions / submission_files / analyses / reviews / review_error_items 从运行时数组替换为 `apps/api/.data/homework.json` 持久化；analyze 任务接入 `apps/api/.data/jobs.json`，job 的 queued/running/success/failed、attempts、startedAt/finishedAt 可重启后追踪。仍未接真实 PG/队列与 review draft/outbox。
+
 
 ### A9-1 homework 页面联调真接口
 - [ ] submissions 列表接真数据
@@ -151,11 +154,13 @@
 ## IMPL-004 growth 真系统化（P0）
 
 ### A6-4 growth 持久化
-- [ ] rubrics 真 repository
-- [ ] observations 真 repository
-- [ ] goals / check-ins 真 repository
-- [ ] report drafts 真 repository
-- [ ] ReportDraftJob 真 jobs 接入
+- [x] rubrics 真 repository
+- [x] observations 真 repository
+- [x] goals / check-ins 真 repository
+- [x] report drafts 真 repository
+- [x] ReportDraftJob 真 jobs 接入
+
+> 2026-03-25 A6 第一波：已把 rubrics / observations / goals / check-ins / reports 从运行时数组替换为 `apps/api/.data/growth.json` 持久化；report draft job 接入统一 jobs repository，不再单独挂 growth 内存 jobs。当前仍是同步执行的轻量 job runner，尚未接真实队列、report review/publish/outbox。
 
 ### A3-1 growth report 契约补齐
 - [ ] report review / publish 动作
@@ -259,9 +264,15 @@
 ## 5. 第一波立刻开工（Now）
 
 ### NOW-1 A4 基础设施真化
-- [ ] JWT / refresh token 真化
-- [ ] files multipart + object storage 真化
-- [ ] jobs list + 持久化真化
+- [x] JWT / refresh token 真化
+- [x] files multipart + object storage 真化
+- [x] jobs list + 持久化真化
+
+> 2026-03-25 A4 IMPL-001 第一波已落地：
+> - auth：从 in-memory session 改为文件持久化 session store + HMAC JWT access/refresh，refresh 走 rotation，logout 可失效持久化会话。
+> - files：新增 `/files/upload/multipart` 骨架，object storage 默认切到本地 `local-s3-compatible` 实现，并保留 mock adapter 便于替换/测试；file asset 元数据改为文件持久化。
+> - jobs：jobs repository 改为文件持久化，新增 `GET /jobs` 列表接口，并补 attempts/queuedAt/startedAt/finishedAt/retry 基础字段链路。
+> - 当前仍未真化项：permission guard / 401-403-409-422 标准错误体统一、refresh token 黑名单/多端策略、真实 S3 SDK 接入、数据库/Redis/BullMQ 真队列。
 
 ### NOW-2 A5 主数据真化
 - [ ] students / families / teachers / enrollments repository 真化

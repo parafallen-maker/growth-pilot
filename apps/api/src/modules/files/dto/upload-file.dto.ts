@@ -8,4 +8,5 @@ export class UploadFileDto {
   purpose?: string;
   sourceType?: string;
   metadata?: Record<string, string>;
+  contentBase64?: string;
 }

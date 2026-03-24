@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { LocalObjectStorageAdapter } from './adapter/local-object-storage.adapter';
 import { MockObjectStorageAdapter } from './adapter/mock-object-storage.adapter';
 import { OBJECT_STORAGE_ADAPTER } from './adapter/object-storage.adapter';
 import { FilesController } from './controller/files.controller';
@@ -11,9 +12,12 @@ import { FilesService } from './service/files.service';
     FileAssetRepository,
     FilesService,
     MockObjectStorageAdapter,
+    LocalObjectStorageAdapter,
     {
       provide: OBJECT_STORAGE_ADAPTER,
-      useExisting: MockObjectStorageAdapter,
+      useFactory: (localAdapter: LocalObjectStorageAdapter, mockAdapter: MockObjectStorageAdapter) =>
+        process.env.OBJECT_STORAGE_DRIVER === 'mock' ? mockAdapter : localAdapter,
+      inject: [LocalObjectStorageAdapter, MockObjectStorageAdapter],
     },
   ],
   exports: [FilesService, FileAssetRepository, OBJECT_STORAGE_ADAPTER],

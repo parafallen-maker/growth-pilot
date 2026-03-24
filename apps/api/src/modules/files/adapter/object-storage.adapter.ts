@@ -8,6 +8,7 @@ export interface PutObjectInput {
   sizeBytes: number;
   checksum?: string;
   metadata?: Record<string, string>;
+  body?: Buffer;
 }
 
 export interface PutObjectResult {
