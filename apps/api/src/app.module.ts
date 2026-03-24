@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
+import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { CommunicationModule } from './modules/communication/communication.module';
 import { FamiliesModule } from './modules/families/families.module';
 import { FilesModule } from './modules/files/files.module';
 import { GrowthModule } from './modules/growth/growth.module';
@@ -22,7 +24,9 @@ import { UsersModule } from './modules/users/users.module';
     FamiliesModule,
     FilesModule,
     HomeworkModule,
+    AttendanceModule,
     BillingModule,
+    CommunicationModule,
     GrowthModule,
   ],
 })

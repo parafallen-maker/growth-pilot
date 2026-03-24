@@ -636,7 +636,7 @@ agents:
       - task_id: T-C1-1
         title: 沟通记录、会谈、模板接口
         priority: P1
-        status: todo
+        status: done
         wbs: [WBS-042, WBS-043]
         depends_on: [T-M1-4, T-P0-4]
         input_docs:
@@ -650,6 +650,9 @@ agents:
         done_definition:
           - 沟通记录 CRUD 可用
           - 消息草稿/待发/已发/失败状态可追踪
+        notes:
+          - 已在 apps/api 增加 communication 模块 skeleton，覆盖沟通记录 list/detail/create、消息模板 list/create/update、消息任务 list/create/update status；当前采用 in-memory repository，并兼容 /communication/messages 作为消息任务 list/create 别名。
+        completion_note: 已交付 communication skeleton（controller/service/repository/dto 分层），状态收口 draft/pending/sent/failed/read；A9 可直接接沟通记录与消息中心页面，A10 可补接口集成与回归。
         handoff_to: [A9, A10]
       - task_id: T-BI1-1
         title: overview / teaching / billing 聚合查询
@@ -870,7 +873,7 @@ agents:
       - task_id: T-A1-FE
         title: 出勤看板、设备绑定、作业时长页面
         priority: P1
-        status: todo
+        status: done
         wbs: [WBS-036]
         depends_on: [T-A1-1, T-A1-2, T-A1-3, T-F1-2]
         input_docs:
@@ -882,7 +885,12 @@ agents:
           - homework_time_page
         done_definition:
           - 看板、列表、趋势图联通
-        handoff_to: [A10]
+        notes:
+          - 2026-03-25：已在 apps/web 新增 /attendance/board、/attendance/devices、/attendance/homework-time 三页骨架，并补 attendance service/mock data、query keys、权限常量、导航接入。
+          - 页面已覆盖签到 KPI、未签到/异常状态块、设备列表/当前绑定/历史绑定、绑定动作位、作业时长筛选栏、日统计/趋势图占位、列表骨架，以及 loading/empty/error/permissionDenied 状态。
+          - 当前仍为 mock service 版本；已保留 service 分层、query key、permission guard，待 A6 用真实 attendance device/event/homework-time 接口替换。
+        completion_note: 已完成 T-A1-FE 前端骨架并通过本地 typecheck/test；下一棒交 A6 对接设备绑定、签到事件、日聚合真实接口，再交 A10 纳入出勤闭环联调与验收。
+        handoff_to: [A6, A10]
       - task_id: T-B1-FE
         title: 产品、合同、账单支付、续费页面
         priority: P0

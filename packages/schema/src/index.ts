@@ -440,6 +440,113 @@ export interface BillingRefund {
   updatedAt: string;
 }
 
+export interface AttendanceDevice {
+  id: string;
+  campusId?: string | null;
+  serialNo: string;
+  deviceType: string;
+  status: string;
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StudentDeviceBinding {
+  id: string;
+  studentId: string;
+  deviceId: string;
+  status: string;
+  boundAt: string;
+  unboundAt?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AttendanceEvent {
+  id: string;
+  studentId: string;
+  campusId: string;
+  deviceId?: string | null;
+  eventType: string;
+  eventTime: string;
+  operatorUserId?: string | null;
+  remark?: string | null;
+  dedupeKey: string;
+  createdAt: string;
+}
+
+export interface HomeworkTimeSession {
+  id: string;
+  studentId: string;
+  termId?: string | null;
+  campusId?: string | null;
+  subject?: string | null;
+  deviceId?: string | null;
+  sourceType: string;
+  startTime: string;
+  endTime?: string | null;
+  durationMinutes: number;
+  createdBy?: string | null;
+  remark?: string | null;
+  createdAt: string;
+}
+
+export interface HomeworkTimeDailyStat {
+  id: string;
+  studentId: string;
+  statDate: string;
+  subject?: string | null;
+  totalMinutes: number;
+  sessionCount: number;
+  generatedAt: string;
+}
+
+export type MessageTaskStatus = 'draft' | 'pending' | 'sent' | 'failed' | 'read';
+
+export interface CommunicationRecord {
+  id: string;
+  familyId: string;
+  studentId?: string | null;
+  channel: string;
+  direction: string;
+  topic?: string;
+  summary: string;
+  nextAction?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MessageTemplate {
+  id: string;
+  code: string;
+  name: string;
+  channel: string;
+  subject?: string;
+  bodyTemplate: string;
+  variables: string[];
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MessageTask {
+  id: string;
+  templateId?: string | null;
+  familyId: string;
+  studentId?: string | null;
+  channel: string;
+  subject?: string;
+  body: string;
+  status: MessageTaskStatus;
+  scheduledAt?: string;
+  sentAt?: string;
+  failureReason?: string;
+  readAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface JobStatus {
   jobId: string;
   jobType: string;
