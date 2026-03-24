@@ -1,0 +1,4 @@
+batch_id,source_file,source_sheet,source_row_no,source_pk,target_domain,business_key,reject_code,reject_reason,field_name,raw_value,expected_rule,suggested_action,owner,status
+BATCH-2026-03-25,history.xlsx,2026上半学年学生信息表,12,student-row-012,students,S-001,CONFLICT_STUDENT_NO,"同一 student_no 对应多个不同学生主体",studentNo,S-001,"student_no 必须稳定指向唯一学生主体","人工重编或补 old->new 编号映射",A2/A5,open
+BATCH-2026-03-25,history.xlsx,2026上半学年每日作业完成质量表,88,hw-row-088,homework,S-404,FK_STUDENT_MISSING,"作业记录未命中 student 主档映射",studentNo,S-404,"student 外键必须先命中 students 映射","先完成 students/families/enrollments 主数据导入",A5/A6,open
+BATCH-2026-03-25,history.xlsx,历史账单表,9,invoice-row-009,billing,I-009,BALANCE_REFUND_EXCEEDS_PAYMENT,"退款金额不能超过成功支付金额",refundsAmountCents,7000,"refund_amount_cents <= paid_amount_cents","核对 payment/refund 明细",A7,open

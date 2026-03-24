@@ -980,7 +980,7 @@ agents:
       - task_id: T-DM1-1
         title: staging 导入脚本与清洗规则
         priority: P0
-        status: todo
+        status: done
         wbs: [WBS-048]
         depends_on: [T-P0-3]
         input_docs:
@@ -993,11 +993,15 @@ agents:
         done_definition:
           - 历史表先入 staging
           - 清洗、去重、映射规则可复用
+        notes:
+          - 已新增 docs/growthpilot/25_迁移执行与校验清单.md，冻结 raw staging / normalized staging / final load 三层迁移策略、批次步骤、post-check 与 reject report 口径。
+          - 已新增 scripts/migration/run-staging-import.mjs dry-run skeleton，内置编号冲突 / 外键缺失 / 字典映射失败 / 金额链路不平 四类校验样例，并补 reject report CSV 模板。
+        completion_note: 已完成 migration 首波基础资产；当前可跑 dry-run 级 staging import plan，待 A2/A5/A6/A7 将 ready_to_load payload 接到真实 DB/repository 导入器。
         handoff_to: [A2, A5, A6, A7]
       - task_id: T-DM1-2
         title: 首批样本导入与校验报告
         priority: P0
-        status: todo
+        status: doing
         wbs: [WBS-048]
         depends_on: [T-DM1-1, T-M1-2, T-M1-4, T-H1-6, T-B1-2]
         input_docs:
@@ -1008,6 +1012,10 @@ agents:
         done_definition:
           - 首批样本入库通过
           - 异常可追溯到源表与字段
+        notes:
+          - 本轮先交付样本导入报告骨架与 reject 模板，真实首批样本尚待接入 CSV/Excel 与 PostgreSQL staging schema。
+          - dry-run 已可输出批次摘要、rejectSamples、rejectsByCode，后续可直接沉淀为 import_validation_report / data_exception_list。
+        completion_note: 当前推进到 dry-run 校验报告级；待真实样本接入后补正式 validation report，并回填 A1/A2 的签收结论。
         handoff_to: [A1, A2]
       - task_id: T-QA1-1
         title: 主流程 E2E、集成测试、回归测试
