@@ -264,7 +264,11 @@ agents:
       - task_id: T-M1-5
         title: 文件上传模块与 fileId 回传能力
         priority: P0
-        status: todo
+        status: done
+        notes:
+          - 已在 apps/api 增加 files 模块：单文件/批量元数据上传、fileId 回传、file asset repository/service/dto、mock object storage adapter。
+          - 已把 homework submission 与 files 模块打通：创建 submission 前校验 fileIds，AI 分析阶段从 files 模块解析 mock object URL。
+        completion_note: 已交付可运行的 files 上传骨架，当前为 metadata + mock storage 形态，接口与 adapter 已为后续替换 S3 兼容对象存储留好边界；下游 A6/A8/A9 可直接基于 fileId 接 homework 上传与前端上传流。
         wbs: [WBS-018]
         depends_on: [T-P0-2, T-P0-3]
         input_docs:

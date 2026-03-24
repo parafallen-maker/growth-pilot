@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { FilesService } from '../../files/service/files.service';
 import { JobsService } from '../../jobs/service/jobs.service';
 import { HOMEWORK_ANALYSIS_ADAPTER, HomeworkAnalysisAdapter } from '../adapter/homework-analysis.adapter';
 import { HomeworkRepository } from '../repository/homework.repository';
@@ -8,6 +9,7 @@ export class HomeworkAnalysisQueue {
   constructor(
     private readonly jobsService: JobsService,
     private readonly homeworkRepository: HomeworkRepository,
+    private readonly filesService: FilesService,
     @Inject(HOMEWORK_ANALYSIS_ADAPTER)
     private readonly homeworkAnalysisAdapter: HomeworkAnalysisAdapter,
   ) {}
@@ -42,9 +44,9 @@ export class HomeworkAnalysisQueue {
         submissionId: submission.id,
         subject: submission.subject,
         gradeLabel: undefined,
-        imageUrls: this.homeworkRepository
-          .listSubmissionFiles(submission.id)
-          .map((item) => `mock://file-assets/${item.fileId}`),
+        imageUrls: this.filesService.resolveFileUrls(
+          this.homeworkRepository.listSubmissionFiles(submission.id).map((item) => item.fileId),
+        ),
         promptVersion: input.promptVersion,
       });
 

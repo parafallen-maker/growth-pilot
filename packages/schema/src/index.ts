@@ -318,7 +318,7 @@ export interface GrowthGoal {
   targetValue?: number;
   currentValue?: number;
   startDate?: string;
-  dueDate?: string;
+  dueDate?: string | null;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -341,6 +341,105 @@ export interface GrowthReport {
   updatedAt: string;
 }
 
+export interface BillingProduct {
+  id: string;
+  code: string;
+  name: string;
+  category: string;
+  billingMode: string;
+  priceCents: number;
+  unit?: string;
+  description?: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BillingContract {
+  id: string;
+  contractNo: string;
+  campusId?: string | null;
+  termId?: string | null;
+  familyId: string;
+  studentId: string;
+  signDate: string;
+  startDate: string;
+  endDate: string;
+  totalAmountCents: number;
+  discountAmountCents: number;
+  payableAmountCents: number;
+  status: string;
+  remark?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BillingContractItem {
+  id: string;
+  contractId: string;
+  productId?: string | null;
+  itemName: string;
+  unitPriceCents: number;
+  quantity: number;
+  subtotalCents: number;
+  createdAt: string;
+}
+
+export interface BillingInvoice {
+  id: string;
+  invoiceNo: string;
+  contractId?: string | null;
+  familyId: string;
+  studentId: string;
+  billingPeriod?: string;
+  issueDate: string;
+  dueDate?: string;
+  amountCents: number;
+  status: string;
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BillingInvoiceItem {
+  id: string;
+  invoiceId: string;
+  itemName: string;
+  productId?: string | null;
+  quantity: number;
+  unitPriceCents: number;
+  amountCents: number;
+  remark?: string;
+  createdAt: string;
+}
+
+export interface BillingPayment {
+  id: string;
+  invoiceId: string;
+  paymentNo: string;
+  paidAmountCents: number;
+  paymentTime: string;
+  channel: string;
+  transactionNo?: string | null;
+  status: string;
+  idempotencyKey?: string | null;
+  remark?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BillingRefund {
+  id: string;
+  paymentId: string;
+  refundNo: string;
+  refundAmountCents: number;
+  refundTime: string;
+  reason?: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface JobStatus {
   jobId: string;
   jobType: string;
@@ -351,3 +450,4 @@ export interface JobStatus {
   result: Record<string, unknown> | null;
   errorMessage?: string | null;
 }
+

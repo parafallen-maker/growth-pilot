@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './modules/auth/auth.module';
+import { BillingModule } from './modules/billing/billing.module';
 import { FamiliesModule } from './modules/families/families.module';
+import { FilesModule } from './modules/files/files.module';
 import { GrowthModule } from './modules/growth/growth.module';
 import { HomeworkModule } from './modules/homework/homework.module';
 import { JobsModule } from './modules/jobs/jobs.module';
@@ -18,7 +20,9 @@ import { UsersModule } from './modules/users/users.module';
     TeachersModule,
     StudentsModule,
     FamiliesModule,
+    FilesModule,
     HomeworkModule,
+    BillingModule,
     GrowthModule,
   ],
 })

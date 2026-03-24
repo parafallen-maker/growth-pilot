@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { MockObjectStorageAdapter } from '../src/modules/files/adapter/mock-object-storage.adapter';
+import { FileAssetRepository } from '../src/modules/files/repository/file-asset.repository';
+import { FilesService } from '../src/modules/files/service/files.service';
 import { JobsRepository } from '../src/modules/jobs/repository/jobs.repository';
 import { JobsService } from '../src/modules/jobs/service/jobs.service';
 import { MockHomeworkAnalysisAdapter } from '../src/modules/homework/adapter/mock-homework-analysis.adapter';
@@ -10,15 +13,17 @@ import { HomeworkService } from '../src/modules/homework/service/homework.servic
 
 function createHomeworkFixture() {
   const jobsService = new JobsService(new JobsRepository());
+  const filesService = new FilesService(new FileAssetRepository(), new MockObjectStorageAdapter());
   const homeworkRepository = new HomeworkRepository();
   const eventPublisher = new HomeworkEventPublisher();
-  const queue = new HomeworkAnalysisQueue(jobsService, homeworkRepository, new MockHomeworkAnalysisAdapter());
-  const service = new HomeworkService(homeworkRepository, queue, eventPublisher);
+  const queue = new HomeworkAnalysisQueue(jobsService, homeworkRepository, filesService, new MockHomeworkAnalysisAdapter());
+  const service = new HomeworkService(homeworkRepository, queue, eventPublisher, filesService);
 
   return {
     jobsService,
     homeworkRepository,
     eventPublisher,
+    filesService,
     service,
   };
 }
@@ -33,7 +38,7 @@ test('homework submission -> analyze -> review skeleton runs end-to-end', async 
     teacherId: 'teacher-001',
     subject: 'math',
     homeworkDate: '2026-03-24',
-    fileIds: ['file-101', 'file-102'],
+    fileIds: ['file-001', 'file-002'],
     sourceType: 'teacher_upload',
     remark: '晚自习作业',
   });

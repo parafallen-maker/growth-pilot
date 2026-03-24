@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { FilesModule } from '../files/files.module';
 import { JobsModule } from '../jobs/jobs.module';
 import { HOMEWORK_ANALYSIS_ADAPTER } from './adapter/homework-analysis.adapter';
 import { MockHomeworkAnalysisAdapter } from './adapter/mock-homework-analysis.adapter';
@@ -9,7 +10,7 @@ import { HomeworkRepository } from './repository/homework.repository';
 import { HomeworkService } from './service/homework.service';
 
 @Module({
-  imports: [JobsModule],
+  imports: [JobsModule, FilesModule],
   controllers: [HomeworkController],
   providers: [
     HomeworkRepository,

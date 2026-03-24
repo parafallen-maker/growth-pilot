@@ -2,6 +2,7 @@ import { ConflictException, Injectable } from '@nestjs/common';
 import type { HomeworkSubmission } from '@growthpilot/schema/index';
 import { normalizePage } from '../../../common/base-list-query.dto';
 import type { PageResult } from '../../../common/api-response';
+import { FilesService } from '../../files/service/files.service';
 import { HomeworkEventPublisher } from '../event/homework-event.publisher';
 import { HomeworkAnalysisQueue } from '../job/homework-analysis.queue';
 import { CreateHomeworkSubmissionDto } from '../dto/create-homework-submission.dto';
@@ -16,6 +17,7 @@ export class HomeworkService {
     private readonly homeworkRepository: HomeworkRepository,
     private readonly homeworkAnalysisQueue: HomeworkAnalysisQueue,
     private readonly homeworkEventPublisher: HomeworkEventPublisher,
+    private readonly filesService: FilesService,
   ) {}
 
   listSubmissions(query: HomeworkSubmissionQueryDto): PageResult<HomeworkSubmission> {
@@ -59,6 +61,8 @@ export class HomeworkService {
     if (!payload.fileIds?.length) {
       throw new ConflictException('fileIds is required');
     }
+
+    this.filesService.assertFileAssetsExist(payload.fileIds);
 
     const submission = this.homeworkRepository.createSubmission({
       studentId: payload.studentId,
