@@ -576,12 +576,15 @@
 
 #### CI/CD 流水线
 
-- [ ] `INF-15` **更新 `.github/workflows/ci.yml`**：
+- [x] `INF-15` **更新 `.github/workflows/ci.yml`**：
   - 添加 Docker build 步骤
   - 添加 Docker image push（到 Docker Hub / GHCR / 阿里云 ACR）
   - 添加 tag 触发生产部署
+  - 已将 `ci.yml` 扩展为：保留 lint/typecheck/test，新增 API/Web Docker buildx 流程，并在非 PR 事件登录 GHCR 推送镜像。
+  - 当前分支未包含 `apps/api/Dockerfile` / `apps/web/Dockerfile`，工作流在文件缺失时会显式 skip，而不是伪装成功构建。
+  - 已在 `v*` tag push 时复用 `deploy.yml` 触发 production 部署。
 
-- [ ] `INF-16` **创建 `.github/workflows/deploy.yml`**：
+- [x] `INF-16` **创建 `.github/workflows/deploy.yml`**：
   ```yaml
   # 触发条件：push to main / 手动触发
   # 步骤：
@@ -592,8 +595,11 @@
   # 5. 健康检查
   # 6. 失败回滚
   ```
+  - 已新增独立 `deploy.yml`，支持 `push main`、`workflow_dispatch`、以及供 `ci.yml` 复用的 `workflow_call`；生产 tag 发布经由 `ci.yml` 统一调用，避免重复部署。
+  - 已采用 environment-scoped secrets（`DEPLOY_HOST` / `DEPLOY_USER` / `DEPLOY_SSH_KEY` / `DEPLOY_TARGET_PATH` 等）通过 SSH 到目标机执行仓库内 `deploy/scripts/deploy.sh`。
+  - 失败时会触发远程 `rollback.sh --skip-db-restore` 兜底；完整 DB 回滚由 `deploy.sh` 内部在健康检查失败时基于预部署备份自动处理。
 
-- [ ] `INF-17` **创建部署脚本 `deploy/scripts/deploy.sh`**：
+- [x] `INF-17` **创建部署脚本 `deploy/scripts/deploy.sh`**：
   ```bash
   # 1. 拉取最新镜像
   # 2. 备份当前数据库
@@ -602,33 +608,47 @@
   # 5. 健康检查
   # 6. 如果失败 → 回滚数据库 + 回退镜像
   ```
+  - 已创建 `deploy/scripts/deploy.sh`，具备 pre-deploy backup、migration、可选 seed、`docker compose up -d --remove-orphans`、健康检查与失败自动回滚链路。
+  - 镜像版本通过 `deploy/state/current-release.env` / `previous-release.env` 管理，兼容使用 env substitution 的 compose 配置。
+  - 健康检查 URL 默认指向 `/health` 与 `/health/ready`，但因当前允许编辑范围不含 API 健康端点实现，脚本保留 `DEPLOY_HEALTHCHECK_URLS` 可配置入口。
 
-- [ ] `INF-18` **创建回滚脚本 `deploy/scripts/rollback.sh`**：
+- [x] `INF-18` **创建回滚脚本 `deploy/scripts/rollback.sh`**：
   ```bash
   # 1. 恢复上一个镜像版本
   # 2. 恢复数据库备份
   # 3. 重启服务
   # 4. 健康检查
   ```
+  - 已创建 `deploy/scripts/rollback.sh`，会恢复上一个 release env、按需恢复最近一次 `.sql.gz` 备份、重新 `docker compose up -d` 并执行健康检查。
+  - 已补充 `deploy/scripts/db-restore.sh` 供回滚脚本复用。
 
 #### 数据库运维
 
-- [ ] `INF-19` **数据库 Migration 命令**：
+- [x] `INF-19` **数据库 Migration 命令**：
   - `npm run db:migrate` — 执行迁移
   - `npm run db:seed` — 执行种子数据
   - `npm run db:reset` — 清空重建（仅 dev）
   - `npm run db:backup` — pg_dump 备份
+  - 已在根 `package.json` 落地 `db:migrate` / `db:seed` / `db:reset` / `db:backup`，并补充 `db:restore` 与 `db:backup:install-cron`。
+  - 命令默认支持本地执行，也支持通过 `DB_COMMAND_MODE=compose-run` 在 compose 的 `api` service 中执行 migration/seed。
+  - `db:reset` 默认禁止在 `NODE_ENV=production` 下运行，除非显式设置 `ALLOW_DB_RESET=1`。
 
-- [ ] `INF-20` **数据库自动备份**：
+- [x] `INF-20` **数据库自动备份**：
   - 创建 `deploy/scripts/db-backup.sh`
   - 每日自动备份（cron）
   - 保留最近 30 天备份
   - 备份到独立存储目录
+  - 已创建 `deploy/scripts/db-backup.sh`，使用 `pg_dump` 生成 gzip 备份，并按天数清理过期文件。
+  - 已新增 `deploy/scripts/install-db-backup-cron.sh` 与 `deploy/cron/db-backup.cron` 模板，默认每天 `03:00` 备份并保留最近 30 天。
+  - 默认独立备份目录为 `deploy/backups/postgres/`，日志输出到 `deploy/logs/db-backup.log`。
 
-- [ ] `INF-21` **SSL/TLS 证书**：
+- [x] `INF-21` **SSL/TLS 证书**：
   - 创建 `deploy/nginx/ssl/` 目录
   - 预留 Let's Encrypt certbot 配置
   - 或创建自签证书脚本用于测试
+  - 已创建 `deploy/nginx/ssl/`、`deploy/nginx/ssl/certbot/`、`deploy/nginx/ssl/self-signed/` 目录结构。
+  - 已新增 `deploy/nginx/ssl/self-signed/generate-self-signed-cert.sh`，可直接生成测试用 `fullchain.pem` / `privkey.pem`。
+  - 已补充 `deploy/nginx/ssl/README.md` 说明 certbot 预留目录与自签证书用法。
 
 **验收**：
 - `docker compose -f docker-compose.prod.yml up -d` 一键启动全套服务
