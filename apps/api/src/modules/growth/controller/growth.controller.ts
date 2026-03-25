@@ -8,7 +8,9 @@ import { CreateRubricTemplateDto } from '../dto/create-rubric-template.dto';
 import { GenerateGrowthReportDto } from '../dto/generate-report.dto';
 import { GoalQueryDto } from '../dto/goal-query.dto';
 import { ObservationQueryDto } from '../dto/observation-query.dto';
+import { PublishGrowthReportDto } from '../dto/publish-growth-report.dto';
 import { ReportQueryDto } from '../dto/report-query.dto';
+import { ReviewGrowthReportDto } from '../dto/review-growth-report.dto';
 import { RubricQueryDto } from '../dto/rubric-query.dto';
 import { GrowthService } from '../service/growth.service';
 
@@ -62,8 +64,23 @@ export class GrowthController {
     return ok(this.growthService.listReports(query));
   }
 
+  @Get('reports/:reportId')
+  getReport(@Param('reportId') reportId: string) {
+    return ok(this.growthService.getReportDetail(reportId));
+  }
+
   @Post('reports/generate')
   generateReport(@Body() payload: GenerateGrowthReportDto) {
     return ok(this.growthService.generateReportDraft(payload));
+  }
+
+  @Post('reports/:reportId/review')
+  reviewReport(@Param('reportId') reportId: string, @Body() payload: ReviewGrowthReportDto) {
+    return ok(this.growthService.reviewReport(reportId, payload));
+  }
+
+  @Post('reports/:reportId/publish')
+  publishReport(@Param('reportId') reportId: string, @Body() payload: PublishGrowthReportDto) {
+    return ok(this.growthService.publishReport(reportId, payload));
   }
 }

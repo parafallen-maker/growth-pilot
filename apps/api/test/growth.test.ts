@@ -81,11 +81,36 @@ test('growth rubric / observation / goal / report workflows persist to disk', ()
   assert.equal(job.status, 'queued');
   assert.equal(jobsService.getJob(job.jobId).status, 'success');
 
+  const reportId = `report-student-001-2026-W13`;
+  const reportDetail = service.getReportDetail(reportId);
+  assert.equal(reportDetail.report.status, 'draft');
+
+  const reviewed = service.reviewReport(reportId, {
+    reviewerUserId: 'advisor-001',
+    reviewNote: '结构可发布，补一段家长建议',
+    title: '2026-W13 周报',
+    draftMarkdown: '# 2026-W13 周报\n\n本周整体不错。',
+  });
+  assert.equal(reviewed.status, 'reviewed');
+
+  const published = service.publishReport(reportId, {
+    publisherUserId: 'teacher-001',
+    publishNote: '推送到家长群',
+    channels: ['family_feed'],
+  });
+  assert.equal(published.status, 'published');
+
+  const publishedObservations = service.listObservations({ pageNo: 1, pageSize: 20, reportPublished: 'published' });
+  assert.equal(publishedObservations.list.some((item) => item.id === observation.id), true);
+
+  assert.throws(() => service.publishReport(reportId, { publisherUserId: 'teacher-001' }));
+
   const restartedRepository = new GrowthRepository();
   const reports = restartedRepository.listReports().filter((item) => item.studentId === 'student-001');
   assert.equal(reports.length, 1);
   assert.equal(reports[0]?.generatedByJobId, job.jobId);
-  assert.equal(reports[0]?.status, 'draft');
+  assert.equal(reports[0]?.status, 'published');
+  assert.equal(reports[0]?.publishedAt != null, true);
   assert.equal(restartedRepository.listRubrics().length, 2);
   assert.equal(restartedRepository.listObservations().length, 2);
   assert.equal(restartedRepository.findGoalById(goal.id)?.checkins.length, 1);

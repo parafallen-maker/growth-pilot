@@ -114,5 +114,26 @@ export class GrowthRepository {
   }
 
   listReports() { return this.store.get().reports; }
-  createReport(report: GrowthReport) { this.store.update((state) => { state.reports.unshift(report); }); return report; }
+  findReportById(reportId: string) { return this.store.get().reports.find((item) => item.id === reportId); }
+  createReport(report: GrowthReport) {
+    this.store.update((state) => {
+      const existing = state.reports.find((item) => item.id === report.id);
+      if (existing) {
+        Object.assign(existing, report, { createdAt: existing.createdAt });
+        return;
+      }
+      state.reports.unshift(report);
+    });
+    return report;
+  }
+  updateReport(reportId: string, patch: Partial<GrowthReport>) {
+    let updated: GrowthReport | undefined;
+    this.store.update((state) => {
+      const report = state.reports.find((item) => item.id === reportId);
+      if (!report) return;
+      Object.assign(report, patch);
+      updated = report;
+    });
+    return updated;
+  }
 }

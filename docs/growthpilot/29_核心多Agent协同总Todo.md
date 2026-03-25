@@ -154,11 +154,12 @@
 #### IMPL-004 Growth
 - [x] rubrics / observations / goals / check-ins / reports 持久化
 - [x] report draft job 接 jobs
-- [ ] report review / publish API
-- [ ] reportPublished 口径定版
+- [x] report review / publish API
+- [x] reportPublished 口径定版（以“是否已被 published report 的 materialRefs/growthObservations 引用”作为派生口径）
 - [ ] materials assembler 去 placeholder
 - [ ] growth 页面接真接口
 - [ ] report draft job 异步态前后端联通
+- 2026-03-25：已补 `GET /growth/reports/:reportId`、`POST /growth/reports/:reportId/review`、`POST /growth/reports/:reportId/publish`，后端状态流转固定为 `draft -> reviewed -> published`；review/publish workflow 先写入 `summaryJson.workflow`，保持当前 schema 与 JSON 持久化架构不破。
 
 ### 当前判断
 - 后端主链路能跑
@@ -224,15 +225,15 @@
 ### 任务
 
 #### IMPL-006 Migration
-- [ ] 真 Excel/CSV parser
+- [x] 真 Excel/CSV parser（当前已支持 `run-staging-import.mjs --csv/--json/--input` 读取文件输入，保留 mock fallback；Excel 原生 `.xlsx` 仍待接入）
 - [ ] staging schema
 - [ ] final load / upsert
-- [ ] 第一批真实样本导入
+- [x] 第一批真实样本导入（已补 `scripts/migration/fixtures/staging-import-sample.csv` 可跑 dry-run 样本）
 - [ ] 正式 validation report
 
 #### IMPL-006 QA
-- [ ] skeleton E2E -> executable E2E
-- [ ] 主流程 smoke 机器化
+- [x] skeleton E2E -> executable E2E（auth/enrollment/homework/growth/billing 均补到可执行断言，不再只挂 todo）
+- [x] 主流程 smoke 机器化（`apps/api/test/qa` 已覆盖 refresh rotation、Student360 查询、作业 job/result、growth report job、billing 幂等与超额保护）
 - [ ] 缺陷单 / triage / 回归报告
 
 #### IMPL-006 Release
@@ -244,7 +245,9 @@
 
 ### 当前判断
 - 文档齐
-- 真导入、真联调、真预发基本还没打透
+- migration 已从“只会吃内置 mock”推进到“可吃 CSV/JSON 文件 dry-run”，但 `.xlsx` 原生解析、staging schema、final load 还没接上
+- QA 已把主流程 skeleton 收口成可执行断言，能先兜住 auth / 主数据 / homework / growth / billing 的最小回归
+- 真联调、真预发、回滚演练仍是下一阶段硬骨头
 
 ---
 
@@ -319,13 +322,13 @@
 - [ ] 再接 billing/contracts/invoices 与 analytics overview
 
 ### NOW-C｜A3/A6 教学闭环收口
-- [ ] growth report review/publish 契约与实现
+- [x] growth report review/publish 契约与实现
 - [ ] homework review draft / outbox 决策与实现
 
 ### NOW-D｜A10 真导入与真联调
-- [ ] migration 脚本去掉 mock source rows
-- [ ] 补真实 parser / staging / upsert
-- [ ] 把 QA 里 todo case 改成 executable assertions
+- [~] migration 脚本去掉 mock source rows（已支持外部 CSV/JSON 输入；默认 mock fallback 暂保留给 dry-run 样本）
+- [~] 补真实 parser / staging / upsert（parser 已补，staging/upsert 仍待接正式库）
+- [x] 把 QA 里 todo case 改成 executable assertions
 
 ---
 

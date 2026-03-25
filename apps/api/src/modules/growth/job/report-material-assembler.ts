@@ -14,6 +14,10 @@ export class ReportMaterialAssembler {
       studentId,
       periodKey,
       homeworkSummary: { placeholder: true },
+      materialRefs: {
+        observationIds: observations.map((item) => item.id),
+        goalIds: goals.map((item) => item.id),
+      },
       growthObservations: observations.map((item: GrowthObservation) => ({
         id: item.id,
         observationDate: item.observationDate,

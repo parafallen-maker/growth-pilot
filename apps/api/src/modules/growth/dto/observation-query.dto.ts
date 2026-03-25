@@ -6,4 +6,5 @@ export class ObservationQueryDto extends BaseListQueryDto {
   scene?: string;
   dateFrom?: string;
   dateTo?: string;
+  reportPublished?: 'all' | 'published' | 'unpublished';
 }

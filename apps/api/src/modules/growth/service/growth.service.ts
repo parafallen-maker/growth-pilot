@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { GrowthGoal, GrowthObservation, GrowthReport, RubricTemplate } from '@growthpilot/schema/index';
 import { normalizePage } from '../../../common/base-list-query.dto';
 import type { PageResult } from '../../../common/api-response';
@@ -9,7 +9,9 @@ import { CreateRubricTemplateDto } from '../dto/create-rubric-template.dto';
 import { GenerateGrowthReportDto } from '../dto/generate-report.dto';
 import { GoalQueryDto } from '../dto/goal-query.dto';
 import { ObservationQueryDto } from '../dto/observation-query.dto';
+import { PublishGrowthReportDto } from '../dto/publish-growth-report.dto';
 import { ReportQueryDto } from '../dto/report-query.dto';
+import { ReviewGrowthReportDto } from '../dto/review-growth-report.dto';
 import { RubricQueryDto } from '../dto/rubric-query.dto';
 import { ReportDraftJob } from '../job/report-draft.job';
 import { GrowthRepository } from '../repository/growth.repository';
@@ -68,6 +70,7 @@ export class GrowthService {
 
   listObservations(query: ObservationQueryDto): PageResult<GrowthObservation> {
     const { pageNo, pageSize } = normalizePage(query);
+    const publishedObservationIds = this.listPublishedObservationIds();
     const filtered = this.growthRepository.listObservations().filter((item) => {
       if (query.studentId && item.studentId !== query.studentId) return false;
       if (query.teacherId && item.teacherId !== query.teacherId) return false;
@@ -75,6 +78,8 @@ export class GrowthService {
       if (query.scene && item.scene !== query.scene) return false;
       if (query.dateFrom && item.observationDate < query.dateFrom) return false;
       if (query.dateTo && item.observationDate > query.dateTo) return false;
+      if (query.reportPublished === 'published' && !publishedObservationIds.has(item.id)) return false;
+      if (query.reportPublished === 'unpublished' && publishedObservationIds.has(item.id)) return false;
       return true;
     });
     return this.page(filtered, pageNo, pageSize);
@@ -169,8 +174,116 @@ export class GrowthService {
     return this.page(filtered, pageNo, pageSize);
   }
 
+  getReportDetail(reportId: string) {
+    const report = this.growthRepository.findReportById(reportId);
+    if (!report) throw new NotFoundException(`Report ${reportId} not found`);
+    return {
+      report,
+      workflow: this.extractWorkflow(report.summaryJson),
+    };
+  }
+
   generateReportDraft(payload: GenerateGrowthReportDto) {
     return this.reportDraftJob.queue(payload);
+  }
+
+  reviewReport(reportId: string, payload: ReviewGrowthReportDto) {
+    const report = this.growthRepository.findReportById(reportId);
+    if (!report) throw new NotFoundException(`Report ${reportId} not found`);
+    if (report.status === 'published') {
+      throw new ConflictException('published report can not be reviewed again');
+    }
+
+    const now = new Date().toISOString();
+    const summaryJson = {
+      ...report.summaryJson,
+      ...(payload.summaryJson ?? {}),
+      workflow: {
+        ...this.extractWorkflow(report.summaryJson),
+        reviewedAt: now,
+        reviewerUserId: payload.reviewerUserId ?? this.extractWorkflow(report.summaryJson).reviewerUserId ?? null,
+        reviewNote: payload.reviewNote ?? this.extractWorkflow(report.summaryJson).reviewNote ?? null,
+      },
+    };
+
+    const updated = this.growthRepository.updateReport(reportId, {
+      status: 'reviewed',
+      title: payload.title ?? report.title,
+      draftMarkdown: payload.draftMarkdown ?? report.draftMarkdown,
+      summaryJson,
+      updatedAt: now,
+    });
+    if (!updated) throw new NotFoundException(`Report ${reportId} not found`);
+
+    return {
+      reportId,
+      status: updated.status,
+      reviewedAt: now,
+    };
+  }
+
+  publishReport(reportId: string, payload: PublishGrowthReportDto) {
+    const report = this.growthRepository.findReportById(reportId);
+    if (!report) throw new NotFoundException(`Report ${reportId} not found`);
+    if (report.status === 'draft') {
+      throw new ConflictException('report must be reviewed before publish');
+    }
+    if (report.status === 'published') {
+      throw new ConflictException('report already published');
+    }
+
+    const now = new Date().toISOString();
+    const summaryJson = {
+      ...report.summaryJson,
+      workflow: {
+        ...this.extractWorkflow(report.summaryJson),
+        publishedAt: now,
+        publisherUserId: payload.publisherUserId ?? null,
+        publishNote: payload.publishNote ?? null,
+        channels: payload.channels ?? [],
+      },
+    };
+
+    const updated = this.growthRepository.updateReport(reportId, {
+      status: 'published',
+      summaryJson,
+      publishedAt: now,
+      updatedAt: now,
+    });
+    if (!updated) throw new NotFoundException(`Report ${reportId} not found`);
+
+    return {
+      reportId,
+      status: updated.status,
+      publishedAt: now,
+    };
+  }
+
+  private listPublishedObservationIds() {
+    const ids = new Set<string>();
+    for (const report of this.growthRepository.listReports()) {
+      if (report.status !== 'published') continue;
+      const observationIds = this.extractMaterialObservationIds(report.summaryJson);
+      observationIds.forEach((id) => ids.add(id));
+    }
+    return ids;
+  }
+
+  private extractMaterialObservationIds(summaryJson: Record<string, unknown>) {
+    const refs = summaryJson.materialRefs;
+    if (refs && typeof refs === 'object' && Array.isArray((refs as { observationIds?: unknown }).observationIds)) {
+      return ((refs as { observationIds: unknown[] }).observationIds).filter((item): item is string => typeof item === 'string');
+    }
+    const observations = summaryJson.growthObservations;
+    if (!Array.isArray(observations)) return [];
+    return observations
+      .map((item) => (item && typeof item === 'object' ? (item as { id?: unknown }).id : undefined))
+      .filter((item): item is string => typeof item === 'string');
+  }
+
+  private extractWorkflow(summaryJson: Record<string, unknown>) {
+    const workflow = summaryJson.workflow;
+    return workflow && typeof workflow === 'object' ? (workflow as Record<string, unknown>) : {};
   }
 
   private page<T>(list: T[], pageNo: number, pageSize: number): PageResult<T> {
