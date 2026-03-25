@@ -1,0 +1,21 @@
+CREATE INDEX "student_enrollments_campus_term_status_idx" ON "student_enrollments" USING btree ("campus_id","term_id","status");--> statement-breakpoint
+CREATE INDEX "student_enrollments_teacher_idx" ON "student_enrollments" USING btree ("primary_teacher_id");--> statement-breakpoint
+CREATE INDEX "students_home_campus_status_idx" ON "students" USING btree ("home_campus_id","status");--> statement-breakpoint
+CREATE INDEX "students_created_at_idx" ON "students" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "homework_ai_analyses_submission_idx" ON "homework_ai_analyses" USING btree ("submission_id","created_at");--> statement-breakpoint
+CREATE INDEX "homework_outbox_events_status_created_idx" ON "homework_outbox_events" USING btree ("status","created_at");--> statement-breakpoint
+CREATE INDEX "homework_outbox_events_biz_idx" ON "homework_outbox_events" USING btree ("biz_id");--> statement-breakpoint
+CREATE INDEX "homework_review_drafts_reviewer_idx" ON "homework_review_drafts" USING btree ("reviewer_teacher_id","saved_at");--> statement-breakpoint
+CREATE INDEX "homework_submissions_student_date_idx" ON "homework_submissions" USING btree ("student_id","homework_date");--> statement-breakpoint
+CREATE INDEX "homework_submissions_campus_term_status_idx" ON "homework_submissions" USING btree ("campus_id","term_id","review_status");--> statement-breakpoint
+CREATE INDEX "homework_submissions_teacher_status_idx" ON "homework_submissions" USING btree ("teacher_id","ai_status");--> statement-breakpoint
+CREATE INDEX "growth_goal_checkins_goal_date_idx" ON "growth_goal_checkins" USING btree ("goal_id","checkin_date");--> statement-breakpoint
+CREATE INDEX "growth_goals_student_status_idx" ON "growth_goals" USING btree ("student_id","status");--> statement-breakpoint
+CREATE INDEX "growth_goals_term_due_date_idx" ON "growth_goals" USING btree ("term_id","due_date");--> statement-breakpoint
+CREATE INDEX "growth_observations_student_date_idx" ON "growth_observations" USING btree ("student_id","observation_date");--> statement-breakpoint
+CREATE INDEX "growth_observations_template_idx" ON "growth_observations" USING btree ("template_id");--> statement-breakpoint
+CREATE INDEX "growth_observations_teacher_idx" ON "growth_observations" USING btree ("teacher_id","created_at");--> statement-breakpoint
+CREATE INDEX "growth_reports_term_status_idx" ON "growth_reports" USING btree ("term_id","status");--> statement-breakpoint
+CREATE INDEX "growth_reports_job_idx" ON "growth_reports" USING btree ("generated_by_job_id");--> statement-breakpoint
+CREATE INDEX "rubric_templates_campus_term_status_idx" ON "rubric_templates" USING btree ("campus_id","term_id","status");--> statement-breakpoint
+CREATE INDEX "rubric_templates_created_at_idx" ON "rubric_templates" USING btree ("created_at");
