@@ -7,21 +7,38 @@ import { writeFileSync } from 'node:fs';
 const args = parseArgs(process.argv.slice(2));
 const repoRoot = process.cwd();
 const reportFile = args['report-file'] ? path.resolve(repoRoot, args['report-file']) : null;
+const connectHost = String(args['connect-host'] ?? '127.0.0.1');
+const connectPorts = splitCsv(args['connect-ports'] ?? '3000,3001,3100,3101,5432,6379,9000,9001').map((value) => Number(value));
 
 const listenHosts = ['127.0.0.1', '0.0.0.0', '::1'];
 const listenProbes = await Promise.all(listenHosts.map((host, index) => probeListenHost(host, 3911 + index)));
 const loopbackListen = listenProbes.find((probe) => probe.host === '127.0.0.1') ?? null;
+const connectProbes = await Promise.all(connectPorts.map((port) => probeConnectTarget(connectHost, port)));
 const dockerProbe = probeDockerSocket();
 const listenOk = listenProbes.every((probe) => probe.ok);
+const connectPermissionOk = connectProbes.every((probe) => probe.ok || probe.code === 'ECONNREFUSED');
+const reachableTargets = connectProbes.filter((probe) => probe.ok);
+const permissionBlockedTargets = connectProbes.filter((probe) => probe.code === 'EPERM');
+const unavailableTargets = connectProbes.filter((probe) => !probe.ok && probe.code !== 'EPERM');
 
 const summary = {
   checkedAt: new Date().toISOString(),
   sandboxEvidence: {
     loopbackListen,
     listenHosts: listenProbes,
+    loopbackConnect: connectProbes.find((probe) => probe.port === 3000) ?? null,
+    connectTargets: connectProbes,
     dockerSocket: dockerProbe,
   },
-  status: listenOk && dockerProbe.ok ? 'clear' : 'blocked',
+  status: listenOk && connectPermissionOk ? 'clear' : 'sandbox-blocked',
+  statusDetails: {
+    listenOk,
+    connectPermissionOk,
+    reachableTargetCount: reachableTargets.length,
+    permissionBlockedTargetCount: permissionBlockedTargets.length,
+    unavailableTargetCount: unavailableTargets.length,
+    dockerOk: dockerProbe.ok,
+  },
 };
 
 if (reportFile) {
@@ -31,6 +48,8 @@ if (reportFile) {
 console.log(
   [
     `listen_ok=${listenOk}`,
+    `connect_permission_ok=${connectPermissionOk}`,
+    `reachable_targets=${reachableTargets.length}/${connectProbes.length}`,
     `docker_ok=${dockerProbe.ok}`,
     `status=${summary.status}`,
   ].join(' | '),
@@ -51,6 +70,13 @@ function parseArgs(argv) {
     index += 1;
   }
   return parsed;
+}
+
+function splitCsv(value) {
+  return String(value ?? '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 async function probeListenHost(host, port) {
@@ -78,6 +104,46 @@ async function probeListenHost(host, port) {
           port,
           message: 'listen succeeded',
         });
+      });
+    });
+  });
+}
+
+async function probeConnectTarget(host, port) {
+  return await new Promise((resolve) => {
+    const socket = net.createConnection({ host, port });
+    const done = (result) => {
+      socket.removeAllListeners();
+      if (!socket.destroyed) {
+        socket.destroy();
+      }
+      resolve(result);
+    };
+    socket.setTimeout(1_500, () => {
+      done({
+        host,
+        port,
+        ok: false,
+        code: 'ETIMEDOUT',
+        message: `connect timeout after 1500ms ${host}:${port}`,
+      });
+    });
+    socket.once('connect', () => {
+      done({
+        host,
+        port,
+        ok: true,
+        code: null,
+        message: 'connect succeeded',
+      });
+    });
+    socket.once('error', (error) => {
+      done({
+        host,
+        port,
+        ok: false,
+        code: error.code ?? null,
+        message: error.message,
       });
     });
   });

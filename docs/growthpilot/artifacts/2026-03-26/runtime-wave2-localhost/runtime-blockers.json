@@ -1,0 +1,123 @@
+{
+  "checkedAt": "2026-03-25T18:16:54.294Z",
+  "sandboxEvidence": {
+    "loopbackListen": {
+      "host": "127.0.0.1",
+      "ok": true,
+      "code": null,
+      "syscall": null,
+      "address": "127.0.0.1",
+      "port": 3911,
+      "message": "listen succeeded"
+    },
+    "listenHosts": [
+      {
+        "host": "127.0.0.1",
+        "ok": true,
+        "code": null,
+        "syscall": null,
+        "address": "127.0.0.1",
+        "port": 3911,
+        "message": "listen succeeded"
+      },
+      {
+        "host": "0.0.0.0",
+        "ok": true,
+        "code": null,
+        "syscall": null,
+        "address": "0.0.0.0",
+        "port": 3912,
+        "message": "listen succeeded"
+      },
+      {
+        "host": "::1",
+        "ok": true,
+        "code": null,
+        "syscall": null,
+        "address": "::1",
+        "port": 3913,
+        "message": "listen succeeded"
+      }
+    ],
+    "loopbackConnect": {
+      "host": "127.0.0.1",
+      "port": 3000,
+      "ok": false,
+      "code": "ECONNREFUSED",
+      "message": "connect ECONNREFUSED 127.0.0.1:3000"
+    },
+    "connectTargets": [
+      {
+        "host": "127.0.0.1",
+        "port": 3000,
+        "ok": false,
+        "code": "ECONNREFUSED",
+        "message": "connect ECONNREFUSED 127.0.0.1:3000"
+      },
+      {
+        "host": "127.0.0.1",
+        "port": 3001,
+        "ok": false,
+        "code": "ECONNREFUSED",
+        "message": "connect ECONNREFUSED 127.0.0.1:3001"
+      },
+      {
+        "host": "127.0.0.1",
+        "port": 3100,
+        "ok": false,
+        "code": "ECONNREFUSED",
+        "message": "connect ECONNREFUSED 127.0.0.1:3100"
+      },
+      {
+        "host": "127.0.0.1",
+        "port": 3101,
+        "ok": false,
+        "code": "ECONNREFUSED",
+        "message": "connect ECONNREFUSED 127.0.0.1:3101"
+      },
+      {
+        "host": "127.0.0.1",
+        "port": 5432,
+        "ok": true,
+        "code": null,
+        "message": "connect succeeded"
+      },
+      {
+        "host": "127.0.0.1",
+        "port": 6379,
+        "ok": true,
+        "code": null,
+        "message": "connect succeeded"
+      },
+      {
+        "host": "127.0.0.1",
+        "port": 9000,
+        "ok": true,
+        "code": null,
+        "message": "connect succeeded"
+      },
+      {
+        "host": "127.0.0.1",
+        "port": 9001,
+        "ok": true,
+        "code": null,
+        "message": "connect succeeded"
+      }
+    ],
+    "dockerSocket": {
+      "ok": true,
+      "exitCode": 0,
+      "stdout": "f3cdcdf8085a\nb9898e079138\n83b417579ad3",
+      "stderr": ""
+    }
+  },
+  "status": "clear",
+  "statusDetails": {
+    "listenOk": true,
+    "connectPermissionOk": true,
+    "reachableTargetCount": 4,
+    "permissionBlockedTargetCount": 0,
+    "unavailableTargetCount": 4,
+    "dockerOk": true
+  }
+}
