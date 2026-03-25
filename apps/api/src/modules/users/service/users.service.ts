@@ -105,6 +105,7 @@ export class UsersService {
       displayName: user.displayName,
       roles: [...user.roles],
       campusIds: [...user.campusIds],
+      status: user.status,
     };
   }
 }

@@ -8,11 +8,12 @@ import { attendanceService } from '@/services/attendance-service';
 export default async function AttendanceBoardPage() {
   const currentUser = await requireCurrentUser();
   const allowed = hasPermission(currentUser.permissions, attendancePermissions.boardView);
+  const today = new Date().toISOString().slice(0, 10);
   const filters = {
     pageNo: 1,
     pageSize: 20,
-    campusId: 'campus-guiyang',
-    date: '2026-03-24',
+    campusId: currentUser.campusIds[0],
+    date: today,
     eventType: 'all',
     sortBy: 'happenedAt',
     sortOrder: 'desc' as const,
@@ -39,8 +40,8 @@ export default async function AttendanceBoardPage() {
         <MetricGrid items={result.metrics} />
 
         <FilterBar fields={[
-          { label: '校区', value: '贵阳主校区', kind: 'select' },
-          { label: '日期', value: '2026-03-24' },
+          { label: '校区', value: currentUser.campusIds.length ? '当前账号首个可见校区' : '全部校区', kind: 'select' },
+          { label: '日期', value: today },
           { label: '事件类型', value: '全部事件', kind: 'select' },
         ]} />
 

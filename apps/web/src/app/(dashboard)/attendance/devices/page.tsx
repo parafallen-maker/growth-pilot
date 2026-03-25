@@ -11,7 +11,7 @@ export default async function AttendanceDevicesPage() {
   const deviceFilters = {
     pageNo: 1,
     pageSize: 20,
-    campusId: 'campus-guiyang',
+    campusId: currentUser.campusIds[0],
     tab: 'devices' as const,
     deviceType: 'all',
     status: 'all',
@@ -44,7 +44,7 @@ export default async function AttendanceDevicesPage() {
         <TabStrip tabs={['设备列表', '当前绑定', '历史绑定']} active="设备列表" />
 
         <FilterBar fields={[
-          { label: '校区', value: '贵阳主校区', kind: 'select' },
+          { label: '校区', value: currentUser.campusIds.length ? '当前账号首个可见校区' : '全部校区', kind: 'select' },
           { label: '设备类型', value: '全部类型', kind: 'select' },
           { label: '状态', value: '全部状态', kind: 'select' },
           { label: '关键词', value: 'SN / 学生姓名' },

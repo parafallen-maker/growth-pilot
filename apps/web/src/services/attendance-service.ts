@@ -148,7 +148,18 @@ export const attendanceService = {
     }));
 
     const abnormalEvents = latestEvents.filter((item) => item.status !== '正常');
-    const normalCheckins = latestEvents.filter((item) => item.eventType === '签到').length;
+    const normalCheckins = result.list.filter((item) => item.eventType === 'checkin').length;
+    const latestEventTime = result.list.reduce<number | null>((latest, item) => {
+      const timestamp = Date.parse(item.eventTime);
+      if (Number.isNaN(timestamp)) return latest;
+      return latest === null || timestamp > latest ? timestamp : latest;
+    }, null);
+    const recentHourCount = latestEventTime === null
+      ? 0
+      : result.list.filter((item) => {
+        const timestamp = Date.parse(item.eventTime);
+        return !Number.isNaN(timestamp) && latestEventTime - timestamp <= 60 * 60 * 1000;
+      }).length;
 
     return {
       filters: params,
@@ -156,11 +167,11 @@ export const attendanceService = {
         { label: '今日事件', value: String(result.page.total), hint: 'attendance/events 真接口' },
         { label: '签到数', value: String(normalCheckins), hint: '按当天 checkin 事件统计' },
         { label: '异常事件', value: String(abnormalEvents.length), hint: '迟到 / 补录 / 其他异常' },
-        { label: '最近 1h 事件', value: String(latestEvents.slice(0, 5).length), hint: '当前先按最新事件窗口展示' },
+        { label: '最近 1h 事件', value: String(recentHourCount), hint: '按最新事件时间向前 1 小时窗口统计' },
       ],
       absentStudents: result.page.total
-        ? []
-        : [{ name: '暂无当日事件', detail: '后端未提供 roster/应到名单接口，缺真正未签到名单口径。' }],
+        ? [{ name: '应到名单缺口', detail: 'attendance/events 已接真，但后端仍未提供 roster/应到名单接口，无法计算真正未签到名单。' }]
+        : [{ name: '暂无当日事件', detail: '当前筛选下未返回 attendance/events，且 roster 接口尚未开放。' }],
       abnormalRecords: abnormalEvents.length
         ? abnormalEvents.map((item) => ({ name: item.eventType, detail: `${item.studentName} · ${item.happenedAt} · ${item.note}` }))
         : [{ name: '暂无异常', detail: '当前筛选条件下未命中异常事件。' }],

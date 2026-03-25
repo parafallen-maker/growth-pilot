@@ -8,14 +8,17 @@ import { attendanceService } from '@/services/attendance-service';
 export default async function AttendanceHomeworkTimePage() {
   const currentUser = await requireCurrentUser();
   const allowed = hasPermission(currentUser.permissions, attendancePermissions.homeworkTimeView);
+  const today = new Date();
+  const dateTo = today.toISOString().slice(0, 10);
+  const dateFrom = new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const filters = {
     pageNo: 1,
     pageSize: 20,
-    campusId: 'campus-guiyang',
+    campusId: currentUser.campusIds[0],
     studentId: 'all',
     subject: 'all',
-    dateFrom: '2026-03-18',
-    dateTo: '2026-03-24',
+    dateFrom,
+    dateTo,
     sortBy: 'date',
     sortOrder: 'desc' as const,
   };
@@ -37,11 +40,11 @@ export default async function AttendanceHomeworkTimePage() {
         <MetricGrid items={detail.metrics} />
 
         <FilterBar fields={[
-          { label: '校区', value: '贵阳主校区', kind: 'select' },
+          { label: '校区', value: currentUser.campusIds.length ? '当前账号首个可见校区' : '全部校区', kind: 'select' },
           { label: '学生', value: '全部学生', kind: 'select' },
           { label: '学科', value: '全部学科', kind: 'select' },
-          { label: '开始日期', value: '2026-03-18' },
-          { label: '结束日期', value: '2026-03-24' },
+          { label: '开始日期', value: dateFrom },
+          { label: '结束日期', value: dateTo },
         ]} />
 
         <div className="grid-2">
