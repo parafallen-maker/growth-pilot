@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { buildRouteInventory } from './web-surface.mjs';
 
 const args = parseArgs(process.argv.slice(2));
 const repoRoot = process.cwd();
@@ -10,23 +11,42 @@ const apiPort = Number(args['api-port'] ?? process.env.QA_API_PORT ?? 3101);
 const webPort = Number(args['web-port'] ?? process.env.QA_WEB_PORT ?? 3100);
 const apiBaseUrl = `http://127.0.0.1:${apiPort}/api/v1`;
 const webBaseUrl = `http://127.0.0.1:${webPort}`;
-const pageDir = path.join(repoRoot, 'apps/web/src/app');
 const reportFile = args['report-file'] ? path.resolve(repoRoot, args['report-file']) : null;
 const username = args.username ?? 'admin';
 const password = args.password ?? 'admin123';
 const failFast = Boolean(args['fail-fast']);
 const skipBuild = Boolean(args['skip-build']);
+const listRoutesOnly = Boolean(args['list-routes-only']);
+const assertRouteCount = args['assert-route-count'] ? Number(args['assert-route-count']) : null;
 const routeFilter = splitCsv(args.routes);
 const routePrefixFilter = splitCsv(args['route-prefixes']);
 const expectForbiddenPrefixes = splitCsv(args['expect-forbidden-prefixes']);
 const expectOkPrefixes = splitCsv(args['expect-ok-prefixes']);
 
-const dynamicRouteValues = {
-  familyId: 'family-001',
-  studentId: 'student-001',
-  submissionId: 'submission-001',
-  teacherId: 'teacher-001',
-};
+const routeInventory = buildRouteInventory(repoRoot);
+const collectedRoutes = routeInventory.routes;
+const routes = filterRoutes(collectedRoutes, routeFilter, routePrefixFilter);
+
+if (assertRouteCount !== null && collectedRoutes.length !== assertRouteCount) {
+  throw new Error(`expected ${assertRouteCount} routes, got ${collectedRoutes.length}`);
+}
+if (!routes.length) {
+  throw new Error('no routes selected for SSR smoke');
+}
+
+if (listRoutesOnly) {
+  const summary = {
+    ...routeInventory,
+    selectedRoutes: routes,
+  };
+
+  if (reportFile) {
+    writeFileSync(reportFile, JSON.stringify(summary, null, 2));
+  }
+
+  console.log(`SSR route inventory listed ${routes.length} routes (full surface: ${collectedRoutes.length})`);
+  process.exit(0);
+}
 
 resetQaFiles();
 
@@ -66,14 +86,9 @@ try {
   await waitForHttp(`${webBaseUrl}/login`);
 
   const cookieHeader = await loginAndBuildCookieHeader(username, password, apiBaseUrl);
-  const collectedRoutes = collectPageRoutes(pageDir);
-  const routes = filterRoutes(collectedRoutes, routeFilter, routePrefixFilter);
 
   if (!routeFilter.length && !routePrefixFilter.length && collectedRoutes.length !== 31) {
     throw new Error(`expected 31 routes, got ${collectedRoutes.length}`);
-  }
-  if (!routes.length) {
-    throw new Error('no routes selected for SSR smoke');
   }
 
   const results = [];
@@ -220,40 +235,6 @@ function filterRoutes(routes, exactRoutes, prefixes) {
     return routes;
   }
   return routes.filter((route) => exactRoutes.includes(route) || matchesPrefix(route, prefixes));
-}
-
-function collectPageRoutes(root) {
-  const routes = [];
-  walk(root, (file) => {
-    if (!file.endsWith(`${path.sep}page.tsx`)) return;
-    const relativeDir = path.relative(root, path.dirname(file));
-    const segments = relativeDir
-      .split(path.sep)
-      .filter(Boolean)
-      .filter((segment) => !/^\(.*\)$/.test(segment));
-    const route = '/' + segments.map((segment) => {
-      const match = /^\[(.+)\]$/.exec(segment);
-      if (!match) return segment;
-      const key = match[1];
-      const value = dynamicRouteValues[key];
-      if (!value) throw new Error(`missing dynamic route value for ${key}`);
-      return value;
-    }).join('/');
-    routes.push(route === '/' ? '/' : route.replace(/\/+/g, '/'));
-  });
-  return routes.sort();
-}
-
-function walk(dir, visit) {
-  for (const entry of readdirSync(dir)) {
-    const fullPath = path.join(dir, entry);
-    const stats = statSync(fullPath);
-    if (stats.isDirectory()) {
-      walk(fullPath, visit);
-      continue;
-    }
-    visit(fullPath);
-  }
 }
 
 function resetQaFiles() {

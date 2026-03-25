@@ -369,7 +369,7 @@
 #### API 合约验证
 
 - [/] `QA-06` 对照 OpenAPI 逐条验证所有接口：请求格式、响应格式、状态码、错误码
-  - 2026-03-25：contract smoke 已扩展到 auth / settings / users / teachers / students / families / files / homework / growth / attendance / billing / communication / analytics / jobs，覆盖代表性 happy-path 与 error semantics，并已通过 `npm run test --workspace @growthpilot/api`。
+  - 2026-03-25：`openapi-contract.test.ts` 已改为从 Nest controller metadata 自动枚举已实现路由，并逐条断言 `docs/growthpilot/07_OpenAPI.yaml` 覆盖全部 89+ operations；同时保留 auth / settings / users / teachers / students / families / files / homework / growth / attendance / billing / communication / analytics / jobs 的代表性 happy-path 与 error semantics smoke，并已通过 `npm run test --workspace @growthpilot/api`。
   - 仍未做到“所有接口逐条 HTTP 级别矩阵”，因此保持 `[/]` 而不标全绿。
 - [x] `QA-07` auth 接口安全验证：过期 token、无效 token、权限不足
 - [x] `QA-08` 分页接口统一验证：pageNo/pageSize/total 格式一致
@@ -377,20 +377,24 @@
 #### 数据迁移验证
 
 - [/] `QA-09` 更新 `scripts/migration/run-staging-import.mjs` 对接真实 DB
-  - 2026-03-25：脚本已支持 `--db-apply` + PostgreSQL staging upsert，新增 `qa_staging.import_batches / staging_raw_rows / staging_normalized_rows / staging_rejects` 路径；当前 sandbox 未提供可执行 live DB apply 的 `DATABASE_URL`，因此保持 `[/]`。
+  - 2026-03-25：脚本已支持 `--db-apply` + PostgreSQL staging upsert，新增 `qa_staging.import_batches / staging_raw_rows / staging_normalized_rows / staging_rejects` 路径，并支持 `--pg-module` 注入 stub client；`node --test scripts/migration/run-staging-import.test.mjs` 已验证 connect / begin / upsert / commit 执行序列。
+  - 当前 sandbox 未提供可执行 live DB apply 的 `DATABASE_URL`，因此仍无法做真实 PostgreSQL apply，保持 `[/]`。
 - [x] `QA-10` 用 `fixtures/staging-import-sample.csv` 执行首批导入
   - 2026-03-25：已执行 `fixtures/staging-import-sample.csv` dry-run，批次 `BATCH-QA-DOC` 产出 sample artifact，`3/3` rows ready-to-load。
 - [/] `QA-11` 验证导入数据：字段映射正确、幂等性、reject report 生成
-  - 2026-03-25：sample batch 已验证字段映射与 import key 稳定；mock batch 已验证 reject CSV 生成与分类统计；真实 PostgreSQL 查库级校验待预发环境补跑，因此保持 `[/]`。
+  - 2026-03-25：sample batch 已验证字段映射与 import key 稳定；新增 db-apply contract test 已验证重复 upsert 写入 staging 表的 SQL 路径与 reject report 持久化序列；sample artifact 已产出 `reject-report.csv` / `summary.json` / `db-plan.sql`。
+  - 真实 PostgreSQL 查库级校验待预发环境补跑，因此保持 `[/]`。
 
 #### 页面验证
 
 - [/] `QA-12` 所有 31 个页面 SSR 渲染成功（无 500 错误）
-  - 2026-03-25：`run-ssr-smoke.mjs` 已升级为 route-by-route validator，支持 `--report-file`、路由过滤、forbidden 断言；Web build 已列出 31 个业务页面。
-  - 当前 sandbox 在 runtime 阶段访问 `127.0.0.1:3101` 命中 `EPERM`，无法在本环境确认页面级 non-500 结果，因此保持 `[/]`。
+  - 2026-03-25：`run-ssr-smoke.mjs` 已升级为 route-by-route validator，支持 `--report-file`、路由过滤、forbidden 断言；`npm run test --workspace @growthpilot/web` 已验证 route inventory 稳定列出 31 个页面，artifact 见 `docs/growthpilot/artifacts/2026-03-25/ssr-route-inventory.json`。
+  - 同日执行 `node scripts/qa/run-ssr-smoke.mjs --routes /dashboard --fail-fast` 时，build 阶段通过，但 runtime 访问 `127.0.0.1:3101` 命中 `connect EPERM`；无法在本 sandbox 确认页面级 non-500 结果，因此保持 `[/]`。
 - [/] `QA-13` 权限验证：teacher 角色不能访问 billing 页面
-  - 2026-03-25：已新增 API 级 teacher vs billing 权限边界测试，并新增 `scripts/qa/run-billing-permission-smoke.mjs`；页面级 smoke 受同一 localhost `EPERM` 阻断，保持 `[/]`。
-- [ ] `QA-14` 响应式检查：主要页面在 1280/1440/1920 宽度下无溢出
+  - 2026-03-25：`npm run test --workspace @growthpilot/api` 已覆盖 API 级 teacher vs billing 权限边界，`npm run test --workspace @growthpilot/web` 已覆盖 teacher 导航面不暴露 `/billing*` 与 `/analytics/billing`；页面级 SSR permission smoke 仍受同一 localhost `EPERM` 阻断，保持 `[/]`。
+- [/] `QA-14` 响应式检查：主要页面在 1280/1440/1920 宽度下无溢出
+  - 2026-03-25：新增 `scripts/qa/run-responsive-audit.mjs` 与 web QA test，已对 31 个页面做 1280 / 1440 / 1920 静态 responsive audit，未发现超过 1280px 的固定宽度声明，artifact 见 `docs/growthpilot/artifacts/2026-03-25/responsive-static-audit.json`。
+  - 浏览器级 overflow / clipping 仍需在允许 localhost runtime 的环境中补跑，因此保持 `[/]`。
 
 #### 发布准备
 

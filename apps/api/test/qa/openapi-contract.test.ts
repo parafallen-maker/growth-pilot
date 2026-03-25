@@ -1,9 +1,11 @@
+import 'reflect-metadata';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, RequestMethod } from '@nestjs/common';
+import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { AnalyticsController } from '../../src/modules/analytics/controller/analytics.controller';
 import { AttendanceController } from '../../src/modules/attendance/controller/attendance.controller';
 import { AuthController } from '../../src/modules/auth/controller/auth.controller';
@@ -24,6 +26,7 @@ import { TeachersController } from '../../src/modules/teachers/teachers.controll
 import { UsersController } from '../../src/modules/users/controller/users.controller';
 import { UsersRepository } from '../../src/modules/users/repository/users.repository';
 import { UsersService } from '../../src/modules/users/service/users.service';
+import { PERMISSION_METADATA_KEY } from '../../src/common/permission.decorator';
 import { createQaFixture } from './e2e-main-flow.fixture';
 
 const currentDir = fileURLToPath(new URL('.', import.meta.url));
@@ -51,97 +54,81 @@ function assertEnvelope<T>(payload: { code: string; message: string; data: T; tr
   return payload.data;
 }
 
-const expectedOperations: Array<[string, string]> = [
-  ['/auth/login', 'post'],
-  ['/auth/refresh', 'post'],
-  ['/auth/me', 'get'],
-  ['/auth/logout', 'post'],
-  ['/settings/campuses', 'get'],
-  ['/settings/terms', 'get'],
-  ['/settings/dictionaries', 'get'],
-  ['/users', 'get'],
-  ['/users', 'post'],
-  ['/users/{userId}/roles', 'post'],
-  ['/jobs', 'get'],
-  ['/jobs/{jobId}', 'get'],
-  ['/teachers', 'get'],
-  ['/teachers/{teacherId}', 'get'],
-  ['/teachers/{teacherId}/development-records', 'post'],
-  ['/students', 'get'],
-  ['/students/import', 'post'],
-  ['/students/{studentId}', 'get'],
-  ['/students/{studentId}/360', 'get'],
-  ['/students/{studentId}/enrollments', 'post'],
-  ['/families', 'get'],
-  ['/families/{familyId}', 'get'],
-  ['/families/{familyId}/guardians', 'post'],
-  ['/families/{familyId}/tasks', 'post'],
-  ['/files/upload', 'post'],
-  ['/files/upload/multipart', 'post'],
-  ['/files/upload/batch', 'post'],
-  ['/files/{fileId}', 'get'],
-  ['/homework/submissions', 'get'],
-  ['/homework/submissions/{submissionId}', 'get'],
-  ['/homework/submissions/{submissionId}/analyze', 'post'],
-  ['/homework/submissions/{submissionId}/review-draft', 'get'],
-  ['/homework/submissions/{submissionId}/review-draft', 'put'],
-  ['/homework/submissions/{submissionId}/review', 'post'],
-  ['/homework/error-taxonomies', 'get'],
-  ['/homework/error-taxonomies/{taxonomyId}', 'patch'],
-  ['/homework/error-taxonomies/{taxonomyId}', 'delete'],
-  ['/homework/outbox-events', 'get'],
-  ['/growth/rubrics', 'get'],
-  ['/growth/rubrics/{templateId}', 'get'],
-  ['/growth/observations', 'get'],
-  ['/growth/goals', 'get'],
-  ['/growth/goals/{goalId}/checkins', 'post'],
-  ['/growth/reports', 'get'],
-  ['/growth/reports/{reportId}', 'get'],
-  ['/growth/reports/generate', 'post'],
-  ['/growth/reports/{reportId}/review', 'post'],
-  ['/growth/reports/{reportId}/publish', 'post'],
-  ['/attendance/devices', 'get'],
-  ['/attendance/devices', 'post'],
-  ['/attendance/devices/bindings', 'get'],
-  ['/attendance/devices/bindings', 'post'],
-  ['/attendance/devices/bindings/{bindingId}', 'patch'],
-  ['/attendance/events', 'get'],
-  ['/attendance/events', 'post'],
-  ['/attendance/homework-time/daily-stats', 'get'],
-  ['/billing/products', 'get'],
-  ['/billing/products', 'post'],
-  ['/billing/contracts', 'get'],
-  ['/billing/contracts/{contractId}', 'get'],
-  ['/billing/contracts', 'post'],
-  ['/billing/invoices', 'get'],
-  ['/billing/invoices', 'post'],
-  ['/billing/invoices/{invoiceId}/payments', 'post'],
-  ['/billing/payments/{paymentId}', 'get'],
-  ['/billing/payments/{paymentId}/refunds', 'post'],
-  ['/billing/refunds/{refundId}', 'get'],
-  ['/billing/renewals', 'get'],
-  ['/billing/renewals', 'post'],
-  ['/billing/renewals/{renewalId}/status', 'patch'],
-  ['/billing/renewals/{renewalId}/follow-up', 'patch'],
-  ['/communication/records', 'get'],
-  ['/communication/records/{recordId}', 'get'],
-  ['/communication/records', 'post'],
-  ['/communication/templates', 'get'],
-  ['/communication/templates', 'post'],
-  ['/communication/templates/{templateId}', 'patch'],
-  ['/communication/message-tasks', 'get'],
-  ['/communication/message-tasks', 'post'],
-  ['/communication/message-tasks/{taskId}/status', 'patch'],
-  ['/communication/messages', 'get'],
-  ['/communication/messages', 'post'],
-  ['/analytics/overview', 'get'],
-  ['/analytics/teaching', 'get'],
-  ['/analytics/billing', 'get'],
+const controllerClasses = [
+  AnalyticsController,
+  AttendanceController,
+  AuthController,
+  BillingController,
+  CommunicationController,
+  FamiliesController,
+  FilesController,
+  GrowthController,
+  HomeworkController,
+  JobsController,
+  SettingsController,
+  StudentsController,
+  TeachersController,
+  UsersController,
 ];
 
-test('QA-06 OpenAPI includes the merged Wave 2 smoke surface', () => {
-  for (const [path, method] of expectedOperations) {
-    assertOpenApiOperation(path, method);
+const requestMethodNames: Partial<Record<RequestMethod, string>> = {
+  [RequestMethod.GET]: 'get',
+  [RequestMethod.POST]: 'post',
+  [RequestMethod.PUT]: 'put',
+  [RequestMethod.PATCH]: 'patch',
+  [RequestMethod.DELETE]: 'delete',
+};
+
+function normalizeRoutePart(value: unknown) {
+  return String(value ?? '')
+    .trim()
+    .replace(/^\/+|\/+$/g, '')
+    .replace(/:([A-Za-z0-9_]+)/g, '{$1}');
+}
+
+function collectControllerOperations() {
+  const operations = [];
+
+  for (const controllerClass of controllerClasses) {
+    const controllerPath = normalizeRoutePart(Reflect.getMetadata(PATH_METADATA, controllerClass));
+    const prototype = controllerClass.prototype;
+
+    for (const propertyName of Object.getOwnPropertyNames(prototype)) {
+      if (propertyName === 'constructor') {
+        continue;
+      }
+
+      const handler = prototype[propertyName];
+      const requestMethod = Reflect.getMetadata(METHOD_METADATA, handler);
+      if (requestMethod === undefined) {
+        continue;
+      }
+
+      const methodPath = normalizeRoutePart(Reflect.getMetadata(PATH_METADATA, handler));
+      const path = `/${[controllerPath, methodPath].filter(Boolean).join('/')}`.replace(/\/+/g, '/');
+
+      operations.push({
+        path,
+        method: requestMethodNames[requestMethod] ?? `unknown:${String(requestMethod)}`,
+        permission: Reflect.getMetadata(PERMISSION_METADATA_KEY, handler) ?? null,
+        controller: controllerClass.name,
+        handler: propertyName,
+      });
+    }
+  }
+
+  return operations.sort((left, right) =>
+    `${left.method} ${left.path}`.localeCompare(`${right.method} ${right.path}`),
+  );
+}
+
+test('QA-06 OpenAPI covers every implemented controller route in the merged API surface', () => {
+  const implementedOperations = collectControllerOperations();
+
+  assert.ok(implementedOperations.length >= 89, `expected at least 89 implemented operations, got ${implementedOperations.length}`);
+
+  for (const operation of implementedOperations) {
+    assertOpenApiOperation(operation.path, operation.method);
   }
 });
 

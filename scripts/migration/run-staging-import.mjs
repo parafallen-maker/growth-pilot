@@ -3,6 +3,7 @@
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, extname, join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const dictionaryMaps = {
   subject: new Map([
@@ -55,6 +56,7 @@ const sourceSystem = args.sourceSystem ?? inferSourceSystem(args);
 const sourceFile = args.sourceFile ?? inferSourceFile(args);
 const dbUrl = args['db-url'] ?? process.env.DATABASE_URL ?? null;
 const dbSchema = args['db-schema'] ?? process.env.GP_STAGING_SCHEMA ?? 'qa_staging';
+const pgModule = args['pg-module'] ?? process.env.GP_STAGING_IMPORT_PG_MODULE ?? 'pg';
 const artifactsDir = args['artifacts-dir'] ? resolve(process.cwd(), args['artifacts-dir']) : null;
 
 const sourceRows = loadSourceRows(args, { batchId, sourceSystem, sourceFile });
@@ -87,6 +89,7 @@ if (dbApply) {
   const execution = await applyDbPlan({
     dbUrl,
     dbSchema,
+    pgModule,
     summary,
     rawRows,
     normalizedRows,
@@ -596,14 +599,14 @@ function writeArtifacts(artifactsDir, summary, rawRows, normalizedRows, rejects,
   };
 }
 
-async function applyDbPlan({ dbUrl, dbSchema, summary, rawRows, normalizedRows, rejects }) {
+async function applyDbPlan({ dbUrl, dbSchema, pgModule, summary, rawRows, normalizedRows, rejects }) {
   if (!dbUrl) {
     throw new Error('DATABASE_URL or --db-url is required when --db-apply is set');
   }
 
   let Client;
   try {
-    ({ Client } = await import('pg'));
+    ({ Client } = await import(resolveImportSpecifier(pgModule)));
   } catch {
     throw new Error('pg package is required for --db-apply; install workspace dependencies before applying to PostgreSQL');
   }
@@ -753,6 +756,19 @@ async function applyDbPlan({ dbUrl, dbSchema, summary, rawRows, normalizedRows, 
   } finally {
     await client.end();
   }
+}
+
+function resolveImportSpecifier(moduleSpecifier) {
+  if (!moduleSpecifier || moduleSpecifier === 'pg') {
+    return 'pg';
+  }
+  if (moduleSpecifier.startsWith('file:')) {
+    return moduleSpecifier;
+  }
+  if (moduleSpecifier.startsWith('.') || moduleSpecifier.startsWith('/')) {
+    return pathToFileURL(resolve(process.cwd(), moduleSpecifier)).href;
+  }
+  return moduleSpecifier;
 }
 
 function buildDbSqlPreview(tables) {

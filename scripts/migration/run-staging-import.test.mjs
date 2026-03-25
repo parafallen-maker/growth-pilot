@@ -9,10 +9,14 @@ const repoRoot = resolve(import.meta.dirname, '..', '..');
 const scriptPath = resolve(repoRoot, 'scripts/migration/run-staging-import.mjs');
 const sampleCsvPath = resolve(repoRoot, 'fixtures/staging-import-sample.csv');
 
-function runScript(args = []) {
+function runScript(args = [], options = {}) {
   return JSON.parse(execFileSync('node', [scriptPath, ...args], {
     cwd: repoRoot,
     encoding: 'utf8',
+    env: {
+      ...process.env,
+      ...(options.env ?? {}),
+    },
   }));
 }
 
@@ -70,6 +74,48 @@ test('migration artifacts include summary, reject report, and db-plan preview wi
   } finally {
     rmSync(artifactsDir, { recursive: true, force: true });
   }
+});
+
+test('migration db-apply path executes the staging upsert flow against the pg client contract', () => {
+  const stubLogFile = resolve(mkdtempSync(resolve(tmpdir(), 'qa-migration-db-apply-')), 'pg-stub-log.json');
+  const stubModulePath = resolve(repoRoot, 'fixtures/pg-client-stub.mjs');
+
+  const result = runScript([
+    '--db-apply',
+    '--batchId',
+    'BATCH-QA-DB-APPLY',
+    '--db-url',
+    'postgresql://qa:qa@localhost:5432/growthpilot',
+    '--pg-module',
+    stubModulePath,
+  ], {
+    env: {
+      PG_STUB_LOG_FILE: stubLogFile,
+    },
+  });
+
+  assert.equal(result.mode, 'db-apply');
+  assert.deepEqual(result.dbPlan.execution, {
+    applied: true,
+    schema: 'qa_staging',
+    rawRowsUpserted: 4,
+    normalizedRowsUpserted: 4,
+    rejectsUpserted: 7,
+  });
+
+  const operations = JSON.parse(readFileSync(stubLogFile, 'utf8'));
+  assert.equal(operations[0].type, 'connect');
+  assert.equal(operations.at(-1).type, 'end');
+
+  const queries = operations.filter((operation) => operation.type === 'query').map((operation) => operation.sql);
+  assert.match(queries[0], /create schema if not exists qa_staging;/i);
+  assert.ok(queries.includes('begin'));
+  assert.equal(queries.filter((sql) => /insert into qa_staging\.import_batches/i.test(sql)).length, 1);
+  assert.equal(queries.filter((sql) => /insert into qa_staging\.staging_raw_rows/i.test(sql)).length, 4);
+  assert.equal(queries.filter((sql) => /insert into qa_staging\.staging_normalized_rows/i.test(sql)).length, 4);
+  assert.equal(queries.filter((sql) => /insert into qa_staging\.staging_rejects/i.test(sql)).length, 7);
+  assert.ok(queries.includes('commit'));
+  assert.ok(!queries.includes('rollback'));
 });
 
 test('migration db-apply path fails fast with a clear message when no database url is provided', () => {
