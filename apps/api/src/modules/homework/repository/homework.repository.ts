@@ -941,8 +941,8 @@ class DbHomeworkRepository implements HomeworkRepositoryPort {
 export class HomeworkRepository {
   private readonly adapter: HomeworkRepositoryPort;
 
-  constructor(filePath?: string) {
-    this.adapter = isDbPersistenceEnabled() ? new DbHomeworkRepository() : new FileHomeworkRepository(filePath);
+  constructor() {
+    this.adapter = isDbPersistenceEnabled() ? new DbHomeworkRepository() : new FileHomeworkRepository();
   }
 
   listSubmissions() { return this.adapter.listSubmissions(); }

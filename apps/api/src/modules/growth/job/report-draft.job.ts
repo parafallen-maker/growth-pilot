@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import type { GrowthReport } from '@growthpilot/schema/index';
+import { BullmqJobBroker } from '../../jobs/queue/bullmq-job-broker';
+import { GROWTH_REPORT_DRAFT_JOB, GROWTH_REPORT_DRAFT_QUEUE } from '../../jobs/queue/job-queue.constants';
+import { GrowthReportDraftDispatchInput, GrowthReportDraftJobPayload } from '../../jobs/queue/job-queue.types';
 import { JobsService } from '../../jobs/service/jobs.service';
 import { GrowthRepository } from '../repository/growth.repository';
 import { ReportMaterialAssembler } from './report-material-assembler';
@@ -10,32 +13,47 @@ export class ReportDraftJob {
     private readonly growthRepository: GrowthRepository,
     private readonly materialAssembler: ReportMaterialAssembler,
     private readonly jobsService: JobsService,
+    private readonly bullmqJobBroker: BullmqJobBroker = new BullmqJobBroker(),
   ) {}
 
-  queue(request: { reportType: 'weekly' | 'monthly'; periodKey: string; studentIds: string[]; termId?: string }) {
+  async queue(request: GrowthReportDraftDispatchInput) {
     const job = this.jobsService.createJob({
       jobType: 'growth_report_generate',
       bizType: 'growth_report',
       bizId: `${request.reportType}:${request.periodKey}:${request.studentIds.join(',')}`,
-      payload: request,
+      payload: { ...request },
     });
 
-    this.jobsService.processJob(job.jobId, async ({ jobId }) => {
+    const payload: GrowthReportDraftJobPayload = {
+      jobId: job.jobId,
+      request: { ...request },
+    };
+    const queued = await this.bullmqJobBroker.enqueue(GROWTH_REPORT_DRAFT_QUEUE, GROWTH_REPORT_DRAFT_JOB, job.jobId, payload);
+
+    if (!queued) {
+      void this.executeQueuedJob(payload);
+    }
+
+    return { jobId: job.jobId, status: job.status };
+  }
+
+  async executeQueuedJob(payload: GrowthReportDraftJobPayload) {
+    return this.jobsService.processJob(payload.jobId, async ({ jobId }) => {
       const reportIds: string[] = [];
 
-      for (const studentId of request.studentIds) {
-        const materials = await this.materialAssembler.assemble(studentId, request.periodKey);
+      for (const studentId of payload.request.studentIds) {
+        const materials = await this.materialAssembler.assemble(studentId, payload.request.periodKey);
         const now = new Date().toISOString();
-        const reportId = `report-${studentId}-${request.periodKey}`;
+        const reportId = `report-${studentId}-${payload.request.periodKey}`;
         const report: GrowthReport = {
           id: reportId,
           studentId,
-          termId: request.termId ?? null,
-          reportType: request.reportType,
-          periodKey: request.periodKey,
+          termId: payload.request.termId ?? null,
+          reportType: payload.request.reportType,
+          periodKey: payload.request.periodKey,
           status: 'draft',
-          title: `${request.periodKey} ${request.reportType === 'weekly' ? '周报' : '月报'}草稿`,
-          draftMarkdown: `# ${request.periodKey} 成长草稿\n\n- 观察数：${materials.growthObservations.length}\n- 目标数：${materials.goals.length}\n- 素材装配：已持久化`,
+          title: `${payload.request.periodKey} ${payload.request.reportType === 'weekly' ? '周报' : '月报'}草稿`,
+          draftMarkdown: `# ${payload.request.periodKey} 成长草稿\n\n- 观察数：${materials.growthObservations.length}\n- 目标数：${materials.goals.length}\n- 素材装配：已持久化`,
           summaryJson: materials,
           generatedByJobId: jobId,
           publishedAt: null,
@@ -49,11 +67,9 @@ export class ReportDraftJob {
       return {
         reportIds,
         reportCount: reportIds.length,
-        reportType: request.reportType,
-        periodKey: request.periodKey,
+        reportType: payload.request.reportType,
+        periodKey: payload.request.periodKey,
       };
     });
-
-    return { jobId: job.jobId, status: job.status };
   }
 }

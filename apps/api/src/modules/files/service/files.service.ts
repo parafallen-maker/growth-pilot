@@ -17,7 +17,7 @@ export class FilesService {
     this.validatePayload(payload);
     const objectKey = this.buildObjectKey(payload);
     const putResult = await this.objectStorageAdapter.putObject({
-      bucketName: payload.bucketName ?? 'growthpilot-dev',
+      bucketName: payload.bucketName ?? process.env.S3_BUCKET ?? 'growthpilot-dev',
       objectKey,
       fileName: payload.fileName,
       mimeType: payload.mimeType,
@@ -86,7 +86,10 @@ export class FilesService {
   }
 
   async resolveFileUrls(fileIds: string[]) {
-    return (await this.fileAssetRepository.getManyByIds(fileIds)).map((asset) => this.objectStorageAdapter.getObjectUrl(asset.bucketName, asset.objectKey));
+    return Promise.all(
+      (await this.fileAssetRepository.getManyByIds(fileIds))
+        .map((asset) => this.objectStorageAdapter.getObjectUrl(asset.bucketName, asset.objectKey)),
+    );
   }
 
   async assertFileAssetsExist(fileIds: string[]) {
@@ -108,7 +111,7 @@ export class FilesService {
     return `${purpose}/${year}/${month}/${randomUUID()}-${safeFileName}`;
   }
 
-  private toUploadResult(fileAsset: FileAsset) {
+  private async toUploadResult(fileAsset: FileAsset) {
     return {
       fileId: fileAsset.id,
       fileName: fileAsset.fileName,
@@ -117,12 +120,16 @@ export class FilesService {
       bucketName: fileAsset.bucketName,
       objectKey: fileAsset.objectKey,
       storageProvider: fileAsset.storageProvider,
-      url: this.objectStorageAdapter.getObjectUrl(fileAsset.bucketName, fileAsset.objectKey),
+      url: await this.objectStorageAdapter.getObjectUrl(fileAsset.bucketName, fileAsset.objectKey),
       createdAt: fileAsset.createdAt,
     };
   }
 
-  private toAssetDetail(fileAsset: FileAsset) {
-    return { ...this.toUploadResult(fileAsset), checksum: fileAsset.checksum ?? null, uploadedBy: fileAsset.uploadedBy ?? null };
+  private async toAssetDetail(fileAsset: FileAsset) {
+    return {
+      ...(await this.toUploadResult(fileAsset)),
+      checksum: fileAsset.checksum ?? null,
+      uploadedBy: fileAsset.uploadedBy ?? null,
+    };
   }
 }

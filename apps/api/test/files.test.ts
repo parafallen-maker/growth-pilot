@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { rmSync } from 'node:fs';
 import { LocalObjectStorageAdapter } from '../src/modules/files/adapter/local-object-storage.adapter';
 import { MockObjectStorageAdapter } from '../src/modules/files/adapter/mock-object-storage.adapter';
+import { S3ObjectStorageAdapter } from '../src/modules/files/adapter/s3-object-storage.adapter';
 import { FileAssetRepository } from '../src/modules/files/repository/file-asset.repository';
 import { FilesService } from '../src/modules/files/service/files.service';
 
@@ -60,4 +61,23 @@ test('files service keeps mock provider replaceable', async () => {
 
   assert.equal(uploaded.storageProvider, 'mock-s3');
   assert.match(uploaded.url, /^mock-s3:\/\//);
+});
+
+test('s3 adapter can resolve MinIO-compatible public URLs without loading the SDK', async () => {
+  const originalBaseUrl = process.env.S3_PUBLIC_BASE_URL;
+  process.env.S3_PUBLIC_BASE_URL = 'http://localhost:9000';
+
+  try {
+    const adapter = new S3ObjectStorageAdapter();
+    assert.equal(
+      await adapter.getObjectUrl('growthpilot-dev', 'homework/2026/03/demo.txt'),
+      'http://localhost:9000/growthpilot-dev/homework/2026/03/demo.txt',
+    );
+  } finally {
+    if (originalBaseUrl === undefined) {
+      delete process.env.S3_PUBLIC_BASE_URL;
+    } else {
+      process.env.S3_PUBLIC_BASE_URL = originalBaseUrl;
+    }
+  }
 });

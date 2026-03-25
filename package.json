@@ -10,6 +10,7 @@
   "scripts": {
     "dev:web": "npm run dev --workspace @growthpilot/web",
     "dev:api": "npm run start:dev --workspace @growthpilot/api",
+    "dev:api:worker": "npm run start:worker:dev --workspace @growthpilot/api",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "format": "npm run format --workspaces --if-present",

@@ -15,11 +15,11 @@ export class LocalObjectStorageAdapter implements ObjectStorageAdapter {
       objectKey: input.objectKey,
       provider: 'local-s3-compatible',
       etag: createHash('sha1').update(input.body ?? input.objectKey).digest('hex'),
-      url: this.getObjectUrl(input.bucketName, input.objectKey),
+      url: await this.getObjectUrl(input.bucketName, input.objectKey),
     };
   }
 
-  getObjectUrl(bucketName: string, objectKey: string) {
+  async getObjectUrl(bucketName: string, objectKey: string) {
     return `local-s3://${bucketName}/${objectKey}`;
   }
 }
