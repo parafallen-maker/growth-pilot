@@ -492,55 +492,75 @@
 
 #### 容器化
 
-- [ ] `INF-10` **API Dockerfile**：
+- [x] `INF-10` **API Dockerfile**：
   ```dockerfile
   # apps/api/Dockerfile
   # 多阶段构建：builder(npm ci + build) → runner(node:20-alpine + dist)
   # 暴露端口 3000
   # CMD ["node", "dist/main.js"]
   ```
+  - 已创建 `apps/api/Dockerfile`，采用 `deps -> builder -> production-deps -> runner` 多阶段构建。
+  - runner 默认 `PORT=3000`，并预建 `apps/api/.data` / `apps/api/.runtime` 目录以承接当前 file-backed 运行时数据。
+  - 已在临时目录验证 `npm ci --omit=dev --workspace @growthpilot/api --include-workspace-root=false --dry-run` 可解析。
 
-- [ ] `INF-11` **Web Dockerfile**：
+- [x] `INF-11` **Web Dockerfile**：
   ```dockerfile
   # apps/web/Dockerfile
-  # 多阶段构建：deps → builder(next build) → runner(next start)
+  # 多阶段构建：deps → builder(next build) → runner(node server.js)
   # 暴露端口 3001
-  # 使用 standalone output
+  # 使用 standalone output（通过 NEXT_PRIVATE_STANDALONE=true 生成）
   ```
+  - 已创建 `apps/web/Dockerfile`，采用 `deps -> builder -> runner` 多阶段构建。
+  - 受限于本轮允许编辑范围，未改 `next.config.ts`；改为在 builder 阶段使用 `NEXT_PRIVATE_STANDALONE=true` 生成 `.next/standalone`，本地已验证可产出 standalone 目录。
+  - runner 以 `node server.js` 启动 standalone 服务，默认 `PORT=3001`、`HOSTNAME=0.0.0.0`。
 
-- [ ] `INF-12` **docker-compose.prod.yml**：
+- [x] `INF-12` **docker-compose.prod.yml**：
   ```yaml
   # 包含：api, web, postgres, redis, minio, nginx
   # nginx 反向代理：
   #   / → web:3001
   #   /api → api:3000
-  # volumes: postgres-data, minio-data, redis-data
+  # volumes: api-data, api-runtime, postgres-data, minio-data, redis-data
   # restart: always
   # 环境变量从 .env.prod 读取
   ```
+  - 已创建 `docker-compose.prod.yml`，包含 `api`、`web`、`postgres`、`redis`、`minio`、`nginx` 六个服务，均设置 `restart: always`。
+  - `nginx` 转发 `/` 到 `web:3001`，转发 `/api/` 到 `api:3000`；`postgres` 在内部网络增加 `db` alias 以兼容 `DATABASE_URL` 示例。
+  - 除 `postgres-data` / `redis-data` / `minio-data` 外，额外增加 `api-data` / `api-runtime` volume，保持当前 API 的 `.data` / `.runtime` 持久化。
+  - 已使用 `docker compose --env-file .env.prod -f docker-compose.prod.yml config` 做过配置解析校验。
 
-- [ ] `INF-13` **Nginx 配置**：
+- [x] `INF-13` **Nginx 配置**：
   - 创建 `deploy/nginx/nginx.conf`
   - 反向代理 web 和 api
   - 静态资源缓存策略
   - gzip 压缩
   - SSL/TLS 终结点预留（Let's Encrypt 或云证书）
+  - 已创建 `deploy/nginx/nginx.conf`，包含 `api_upstream` / `web_upstream`、`/_next/static/` 缓存、gzip、`/healthz`、ACME challenge 路径与 TLS 注释占位。
 
-- [ ] `INF-14` **创建 `.env.prod.example`**：
+- [x] `INF-14` **创建 `.env.prod.example`**：
   ```env
   NODE_ENV=production
-  DATABASE_URL=postgresql://gp:STRONG_PASSWORD@db:5432/growthpilot
+  POSTGRES_DB=growthpilot
+  POSTGRES_USER=gp
+  POSTGRES_PASSWORD=REPLACE_WITH_STRONG_PASSWORD
+  DATABASE_URL=postgresql://gp:REPLACE_WITH_STRONG_PASSWORD@db:5432/growthpilot
   REDIS_URL=redis://redis:6379
   JWT_SECRET=REPLACE_WITH_64_CHAR_RANDOM_STRING
   JWT_ACCESS_TTL_SECONDS=900
   JWT_REFRESH_TTL_SECONDS=2592000
+  GP_PERSISTENCE_ADAPTER=db
+  OBJECT_STORAGE_DRIVER=local
   S3_ENDPOINT=http://minio:9000
-  S3_ACCESS_KEY=REPLACE
-  S3_SECRET_KEY=REPLACE
+  S3_ACCESS_KEY=REPLACE_WITH_MINIO_ACCESS_KEY
+  S3_SECRET_KEY=REPLACE_WITH_MINIO_SECRET_KEY
   S3_BUCKET=growthpilot
   CORS_ORIGIN=https://your-domain.com
-  API_BASE_URL=https://your-domain.com/api
+  API_BASE_URL=https://your-domain.com/api/v1
+  NEXT_PUBLIC_API_BASE_URL=/api/v1
+  GROWTHPILOT_API_BASE_URL=http://api:3000/api/v1
   ```
+  - 已创建 `.env.prod.example`，补齐 PostgreSQL / Redis / JWT / MinIO / Nginx 端口等生产示例变量。
+  - 诚实说明当前应用层对象存储仍使用 `OBJECT_STORAGE_DRIVER=local`；`S3_*` / MinIO 变量已预留并在 compose 中提供基础设施，但 API 尚未切换到真实 S3-compatible adapter。
 
 #### CI/CD 流水线
 
