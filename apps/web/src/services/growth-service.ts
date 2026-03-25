@@ -25,6 +25,51 @@ export type CreateObservationPayload = {
   publishToFamily?: boolean;
 };
 
+export type CreateGoalPayload = {
+  studentId: string;
+  termId?: string;
+  goalType: string;
+  title: string;
+  description?: string;
+  ownerRole?: string;
+  metricType?: string;
+  baselineValue?: number;
+  targetValue?: number;
+  currentValue?: number;
+  startDate?: string;
+  dueDate?: string;
+  status?: string;
+};
+
+export type CreateGoalCheckinPayload = {
+  checkinDate: string;
+  progressValue?: number;
+  progressNote?: string;
+  nextAction?: string;
+};
+
+export type GenerateReportPayload = {
+  reportType: 'weekly' | 'monthly';
+  periodKey: string;
+  studentIds: string[];
+  termId?: string;
+  campusId?: string;
+};
+
+export type ReviewReportPayload = {
+  reviewerUserId?: string;
+  reviewNote?: string;
+  title?: string;
+  draftMarkdown?: string;
+  summaryJson?: Record<string, unknown>;
+};
+
+export type PublishReportPayload = {
+  publisherUserId?: string;
+  publishNote?: string;
+  channels?: string[];
+};
+
 export type ObservationItem = {
   observationId: string;
   observedAt: string;
@@ -116,7 +161,7 @@ export const growthService = {
         description: dimension.description ?? '--',
         sort: dimension.sortOrder,
       })),
-      editorNotice: 'rubric 列表与 detail 已切到真实接口；模板编辑保存仍待下一波接入。',
+      editorNotice: 'rubric 列表与 detail 已切到真实接口。',
     };
   },
 
@@ -148,7 +193,7 @@ export const growthService = {
     return {
       schemaKey: 'observation.dynamic.rubric-template-v1',
       createPermission: 'growth:observations:manage',
-      idempotencyHint: '创建观察已存在真实 POST /growth/observations，当前页先完成列表真化。',
+      idempotencyHint: '已开放真实创建接口。',
     };
   },
 
@@ -170,6 +215,20 @@ export const growthService = {
     };
   },
 
+  async createGoal(payload: CreateGoalPayload) {
+    return serverApiRequest<{ id: string; title: string }>(`/growth/goals`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  async createGoalCheckin(goalId: string, payload: CreateGoalCheckinPayload) {
+    return serverApiRequest<{ id: string; goalId: string }>(`/growth/goals/${goalId}/checkins`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
   async detailGoal(goalId: string) {
     const goals = await this.queryGoals({ pageNo: 1, pageSize: 100 });
     const goal = goals.list.find((item) => item.goalId === goalId) ?? goals.list[0] ?? null;
@@ -185,8 +244,8 @@ export const growthService = {
         detail: [item.progressNote, item.nextAction].filter(Boolean).join(' / ') || '已记录 check-in。',
       })),
       linkedItems: [
-        { name: '关联观察', detail: '后端暂未提供 goal -> observation 聚合关系，当前页先显示真实 goal/checkin 数据。' },
-        { name: '关联家庭任务', detail: '当前后端未提供该聚合，先明确缺口，不再伪装成本地 mock。' },
+        { name: '关联观察', detail: '当前后端未返回 goal -> observation 聚合关系。' },
+        { name: '关联家庭任务', detail: '当前后端未提供该聚合。' },
       ],
       nextAction: 'goal 列表与 check-in 历史已来自真实接口。',
     };
@@ -230,9 +289,11 @@ export const growthService = {
       queued: groups.queued,
       drafts: groups.drafts,
       published: groups.published,
+      all: result.list,
+      firstReportId,
       editor: {
         materialPool: [
-          { name: '作业复核摘要', detail: '后端尚未提供 homework -> growth 报告聚合接口，暂保留缺口说明。' },
+          { name: '作业复核摘要', detail: '后端尚未提供 homework -> growth 报告聚合接口。' },
           { name: '成长观察', detail: 'observations 列表已接真接口。' },
           { name: '成长目标', detail: 'goals 列表已接真接口。' },
         ],
@@ -249,12 +310,33 @@ export const growthService = {
     };
   },
 
+  async generateReport(payload: GenerateReportPayload) {
+    return serverApiRequest<{ createdIds?: string[]; count?: number }>(`/growth/reports/generate`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  async reviewReport(reportId: string, payload: ReviewReportPayload) {
+    return serverApiRequest<{ id: string; status?: string }>(`/growth/reports/${reportId}/review`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  async publishReport(reportId: string, payload: PublishReportPayload) {
+    return serverApiRequest<{ id: string; status?: string }>(`/growth/reports/${reportId}/publish`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
   actionReport() {
     return {
       generateEndpoint: '/growth/reports/generate',
       reviewEndpoint: '/growth/reports/{reportId}/review',
       publishEndpoint: '/growth/reports/{reportId}/publish',
-      note: 'reports 列表与首条 detail 已接真实接口；生成/复核/发布动作接口已存在，编辑器交互留待后续。',
+      note: 'reports 列表、detail、generate/review/publish 都已接真实接口。',
     };
   },
 };

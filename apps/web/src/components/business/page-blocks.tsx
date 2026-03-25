@@ -50,17 +50,21 @@ export function FilterBar({ fields, actions }: { fields: { label: string; value:
   );
 }
 
-export function DataTable({ title, columns, rows }: { title: string; columns: string[]; rows: string[][] }) {
+export function DataTable({ title, columns, rows, description, actions }: { title: string; columns: string[]; rows: ReactNode[][]; description?: string; actions?: ReactNode }) {
   return (
     <section className="table-card">
       <div className="page-header" style={{ marginBottom: 12 }}>
         <div>
           <h3>{title}</h3>
-          <p>当前展示真实数据列表，排序 / 勾选 / 行操作 / 导出能力继续迭代。</p>
+          <p>{description ?? '当前展示真实数据列表。'}</p>
         </div>
         <div className="button-row">
-          <button className="btn">列显隐</button>
-          <button className="btn">导出</button>
+          {actions ?? (
+            <>
+              <button className="btn">列显隐</button>
+              <button className="btn">导出</button>
+            </>
+          )}
         </div>
       </div>
       <table className="data-table">

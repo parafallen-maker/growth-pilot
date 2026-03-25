@@ -4,6 +4,8 @@ import { queryKeys } from '@/features/shared/query-keys';
 import { growthPermissions } from '@/features/growth/constants';
 import { growthService } from '@/services/growth-service';
 import { requireCurrentUser } from '@/lib/current-user';
+import { studentService } from '@/services/students-service';
+import { generateGrowthReport, publishGrowthReport, reviewGrowthReport } from '../actions';
 
 type GrowthReportsResult = Awaited<ReturnType<typeof growthService.queryReports>>;
 
@@ -31,11 +33,22 @@ function ReportListSection({ title, items }: { title: string; items: GrowthRepor
   );
 }
 
-export default async function GrowthReportsPage() {
+export default async function GrowthReportsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ generated?: string; reviewed?: string; published?: string; error?: string }>;
+}) {
   const currentUser = await requireCurrentUser();
+  const query = await searchParams;
   const allowed = hasPermission(currentUser.permissions, growthPermissions.reportsView);
-  const result = await growthService.queryReports({ pageNo: 1, pageSize: 20, reportType: 'weekly', publishStatus: 'all' });
-  const action = growthService.actionReport();
+  const [result, action, students] = await Promise.all([
+    growthService.queryReports({ pageNo: 1, pageSize: 20, reportType: 'weekly', publishStatus: 'all' }),
+    Promise.resolve(growthService.actionReport()),
+    studentService.query({ pageNo: 1, pageSize: 50, status: 'active' }),
+  ]);
+  const selectedReportId = result.firstReportId ?? result.drafts[0]?.reportId ?? result.queued[0]?.reportId ?? result.published[0]?.reportId ?? '';
+  const draftMarkdown = result.editor.draftSections[0]?.detail ?? '';
+  const reportTitle = result.editor.draftSections[0]?.title ?? '报告正文';
 
   return (
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="成长报告" permissionCode={growthPermissions.reportsView} />}>
@@ -43,8 +56,12 @@ export default async function GrowthReportsPage() {
         <PageHeader
           title="成长报告"
           description={`真实 reports 列表已接：${JSON.stringify(queryKeys.growthReports({ pageNo: 1, pageSize: 20, reportType: 'weekly' }))}`}
-          actions={<><button className="btn primary">生成草稿</button><button className="btn">打开预览</button><button className="btn">发布设置</button></>}
+          actions={<><a className="btn primary" href="#report-generate-form">生成草稿</a><a className="btn" href="#report-review-form">报告复核</a><a className="btn" href="#report-publish-form">发布设置</a></>}
         />
+        {query?.generated ? <section className="panel"><div className="badge success">已生成报告：{query.generated} 份</div></section> : null}
+        {query?.reviewed ? <section className="panel"><div className="badge success">已复核报告：{query.reviewed}</div></section> : null}
+        {query?.published ? <section className="panel"><div className="badge success">已发布报告：{query.published}</div></section> : null}
+        {query?.error ? <section className="panel"><div className="badge warning">{decodeURIComponent(query.error)}</div></section> : null}
         <FilterBar fields={[
           { label: '报告类型', value: '周报', kind: 'select' },
           { label: '学期', value: '2026 春季', kind: 'select' },
@@ -53,6 +70,23 @@ export default async function GrowthReportsPage() {
           { label: '老师', value: '全部老师', kind: 'select' },
           { label: '发布状态', value: '全部', kind: 'select' },
         ]} />
+        <section className="panel stack" id="report-generate-form">
+          <div className="page-header">
+            <div>
+              <h3>生成报告草稿</h3>
+              <p>已接 POST /growth/reports/generate，当前支持按学生批量生成。</p>
+            </div>
+            <span className="badge success">POST /generate</span>
+          </div>
+          <form className="form-grid" action={generateGrowthReport}>
+            <div className="field"><label>报告类型</label><select className="select" name="reportType" defaultValue="weekly"><option value="weekly">weekly</option><option value="monthly">monthly</option></select></div>
+            <div className="field"><label>周期键</label><input className="input" name="periodKey" defaultValue="2026-W12" required /></div>
+            <div className="field"><label>学期 ID</label><input className="input" name="termId" defaultValue="2026-spring" /></div>
+            <div className="field"><label>校区 ID</label><input className="input" name="campusId" defaultValue="campus-guiyang" /></div>
+            <div className="field form-span-2"><label>学生</label><div className="chip-row">{students.list.map((student) => <label key={student.id} className="tab" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><input type="checkbox" name="studentIds" value={student.id} defaultChecked={students.list.indexOf(student) === 0} /><span>{student.name} / {student.studentNo}</span></label>)}</div></div>
+            <div className="button-row form-span-2"><button className="btn primary" type="submit">生成草稿</button></div>
+          </form>
+        </section>
         <div className="grid-3">
           <ReportListSection title="待生成" items={result.queued} />
           <ReportListSection title="草稿 / 已复核" items={result.drafts} />
@@ -63,7 +97,7 @@ export default async function GrowthReportsPage() {
             <div className="page-header"><h3>素材池</h3><span className="badge">traceable sources</span></div>
             <SummaryPanel title="素材来源" items={result.editor.materialPool} />
           </section>
-          <section className="panel stack">
+          <section className="panel stack" id="report-review-form">
             <div className="page-header"><h3>正文 / 详情预览</h3><span className="badge">real detail</span></div>
             {result.editor.draftSections.map((item) => (
               <article key={item.title} className="selection-card">
@@ -71,20 +105,35 @@ export default async function GrowthReportsPage() {
                 <div className="subtle" style={{ marginTop: 8, whiteSpace: 'pre-wrap' }}>{item.detail}</div>
               </article>
             ))}
+            <form className="selection-card stack" action={reviewGrowthReport}>
+              <input type="hidden" name="reportId" value={selectedReportId} />
+              <strong>报告复核</strong>
+              <div className="subtle">review: {action.reviewEndpoint} / 当前用户：{currentUser.name}</div>
+              <div className="field"><label>标题</label><input className="input" name="title" defaultValue={reportTitle} /></div>
+              <div className="field"><label>复核备注</label><textarea className="textarea" name="reviewNote" defaultValue="已核对措辞与成长建议，可进入发布。" /></div>
+              <div className="field"><label>正文</label><textarea className="textarea" name="draftMarkdown" defaultValue={draftMarkdown} rows={12} /></div>
+              <div className="button-row"><button className="btn primary" type="submit" disabled={!selectedReportId}>提交复核</button></div>
+            </form>
           </section>
-          <section className="panel stack">
+          <section className="panel stack" id="report-publish-form">
             <div className="page-header"><h3>发布设置</h3><span className="badge success">API ready</span></div>
             <SummaryPanel title="发布规则" items={result.editor.publishSettings} />
             <article className="selection-card">
               <strong>动作约定</strong>
               <div className="subtle" style={{ marginTop: 8 }}>{action.note}</div>
               <div className="subtle" style={{ marginTop: 8 }}>generate: {action.generateEndpoint} / review: {action.reviewEndpoint} / publish: {action.publishEndpoint}</div>
-              <div className="button-row" style={{ marginTop: 12 }}>
-                <button className="btn">保存草稿</button>
-                <button className="btn">预览报告</button>
-                <button className="btn primary">确认发布</button>
-              </div>
             </article>
+            <form className="selection-card stack" action={publishGrowthReport}>
+              <input type="hidden" name="reportId" value={selectedReportId} />
+              <strong>确认发布</strong>
+              <div className="chip-row">
+                <label className="tab" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><input type="checkbox" name="channels" value="app" defaultChecked /><span>app</span></label>
+                <label className="tab" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><input type="checkbox" name="channels" value="wechat" /><span>wechat</span></label>
+                <label className="tab" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><input type="checkbox" name="channels" value="sms" /><span>sms</span></label>
+              </div>
+              <div className="field"><label>发布备注</label><textarea className="textarea" name="publishNote" defaultValue="已通过教务复核，按默认渠道发布。" /></div>
+              <div className="button-row"><button className="btn primary" type="submit" disabled={!selectedReportId}>确认发布</button></div>
+            </form>
           </section>
         </div>
       </div>

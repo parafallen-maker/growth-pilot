@@ -260,9 +260,9 @@
   - MetricGrid 显示真实数据
   - 移除 `dashboard-service` mock
 
-- [/] `FE-05` **Students 列表接真**：
+- [x] `FE-05` **Students 列表接真**：
   - [x] 调用 `GET /students` 带筛选参数
-  - [/] 表格分页、排序、搜索联动（当前已接分页元数据与筛选参数，交互控件仍是只读占位）
+  - [x] 表格分页、排序、搜索联动（已用 URL search params 驱动真实查询与翻页）
   - [x] 行内链接跳转 `/students/[id]`
 
 - [x] `FE-06` **Students 360 接真**：
@@ -292,9 +292,9 @@
 
 - [x] `FE-11` Homework submissions 列表接真 `GET /homework/submissions`
 - [/] `FE-12` Homework review 工作台接真 `GET /homework/submissions/{id}` + `PUT review-draft` + `POST review`
-  - 已接真实 detail / review-draft / review submit；附件下载预览、上一条/下一条导航仍未完成。
+  - 已接真实 detail / review-draft / review submit；上一条/下一条导航与附件 file 元数据入口已补上，但真正二进制预览/下载仍待 files 能力继续补齐。
 - [/] `FE-13` Growth rubrics/observations/goals/reports 各页面接真
-  - rubrics/observations/goals/reports 列表与关键 detail 已接真实 API；create/edit/generate/review/publish 的前端交互仍待后续完善。
+  - rubrics/observations/goals/reports 列表与关键 detail 已接真实 API；本轮新增 goals create/check-in 与 reports generate/review/publish 真实提交入口，rubric 编辑仍待后端/前端进一步完善。
 - [/] `FE-14` Billing products/contracts/invoices/renewals 各页面接真
   - 已接 `billing/products`、`billing/contracts`、`billing/contracts/{id}`、`billing/invoices`、`billing/renewals` 真接口；payments/refunds/adjustments 列表仍受后端接口缺口限制，页面明确显示缺口而不伪造数据。
 - [/] `FE-15` Attendance board/devices/homework-time 各页面接真
@@ -321,7 +321,8 @@
 
 #### Phase 4：清理
 
-- [ ] `FE-24` 删除所有页面中"骨架/占位/后续接接口/P01/P10"等描述文案
+- [/] `FE-24` 删除所有页面中"骨架/占位/后续接接口/P01/P10"等描述文案
+  - 已清理 students import、homework error taxonomies、dashboard 等页面的明显占位措辞；仓库内仍有少量“待补/Pxx”说明未完全扫净。
 - [ ] `FE-25` 删除所有 mock service 文件（如可安全移除）
 - [ ] `FE-26` packages/ui 导出实际共用组件（PageHeader/DataTable/FilterBar 等）
 
@@ -347,11 +348,11 @@
 
 #### E2E 主流程测试
 
-- [ ] `QA-01` **学生建档链**：login → 新建家庭 → 新建监护人 → 新建学生 → 在读档 → 分配教师 → 查看 360
-- [ ] `QA-02` **作业复核链**：上传作业 → 触发 AI 分析 → 查看 AI 结果 → 教师复核 → 提交 → 状态变更
-- [ ] `QA-03` **成长目标链**：创建 rubric → 新增观察 → 创建目标 → 跟进 check-in → 生成报告草稿
-- [ ] `QA-04` **账单收款链**：创建产品 → 签订合同 → 生成账单 → 记录收款 → 退款 → 状态自动流转
-- [ ] `QA-05` **设备签到链**：注册设备 → 绑定学生 → 签到事件 → 学习时长 → 日统计
+- [x] `QA-01` **学生建档链**：login → 新建家庭 → 新建监护人 → 新建学生 → 在读档 → 分配教师 → 查看 360
+- [x] `QA-02` **作业复核链**：上传作业 → 触发 AI 分析 → 查看 AI 结果 → 教师复核 → 提交 → 状态变更
+- [x] `QA-03` **成长目标链**：创建 rubric → 新增观察 → 创建目标 → 跟进 check-in → 生成报告草稿
+- [x] `QA-04` **账单收款链**：创建产品 → 签订合同 → 生成账单 → 记录收款 → 退款 → 状态自动流转
+- [x] `QA-05` **设备签到链**：注册设备 → 绑定学生 → 签到事件 → 学习时长 → 日统计
 
 #### API 合约验证
 
@@ -369,6 +370,7 @@
 #### 页面验证
 
 - [/] `QA-12` 所有 31 个页面 SSR 渲染成功（无 500 错误）
+  - 2026-03-25：已修复 SSR smoke 的 API 启动阻塞（run-ssr-smoke API 路径 + Nest 模块 guard 依赖）；`/analytics/*` 页面已加 SSR fallback，当前仍卡在 `/attendance/board` 500，需继续逐页补齐 server-side fetch 降级或定位 API/页面异常根因。
   - 已新增 31 页 SSR smoke 脚本与路由收集逻辑；实际执行被 API Nest DI 启动失败阻塞（已定位并修补部分 repository/provider 问题，仍有 StudentsModule 依赖链待补齐）。
 - [ ] `QA-13` 权限验证：teacher 角色不能访问 billing 页面
 - [ ] `QA-14` 响应式检查：主要页面在 1280/1440/1920 宽度下无溢出

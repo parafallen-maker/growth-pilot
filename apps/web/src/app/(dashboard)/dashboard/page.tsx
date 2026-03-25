@@ -8,8 +8,8 @@ export default async function DashboardPage() {
     <div className="stack">
       <PageHeader
         title="Dashboard 总览"
-        description="真实数据来自 GET /analytics/overview。骨架可以演戏，指标不能。"
-        actions={<><button className="btn primary">切学期</button><button className="btn">导出截图（占位）</button></>}
+        description="真实数据来自 GET /analytics/overview。指标说话，比口号靠谱。"
+        actions={<><button className="btn primary">切学期</button><button className="btn">导出截图</button></>}
       />
       <MetricGrid items={data.metrics} />
       <div className="grid-2">

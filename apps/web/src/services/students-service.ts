@@ -3,6 +3,15 @@ import { getAuthTokens } from '@/lib/auth-session';
 import type { Student360Aggregate } from '@growthpilot/schema';
 import type { QueryBase } from '@/features/shared/types';
 
+export type StudentQuery = QueryBase & {
+  campusId?: string;
+  termId?: string;
+  status?: string;
+  keyword?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+};
+
 type StudentListItem = {
   id: string;
   studentNo: string;
@@ -83,7 +92,7 @@ function mapStudentAggregate(aggregate: Student360Aggregate): StudentItem {
 }
 
 export const studentService = {
-  async query(params: QueryBase = {}): Promise<PageResult<StudentItem>> {
+  async query(params: StudentQuery = {}): Promise<PageResult<StudentItem>> {
     const auth = await getAuthTokens();
     const result = await apiRequest<PageResult<StudentListItem>>(`/students${buildQuery(params)}`, { auth, retryOn401: Boolean(auth.refreshToken) });
 
@@ -97,28 +106,60 @@ export const studentService = {
       }),
     );
 
+    let list = result.list.map((student, index) => {
+      const aggregate = detailAggregates[index];
+      if (!aggregate) {
+        return {
+          id: student.id,
+          studentNo: student.studentNo,
+          name: student.name,
+          grade: student.gradeLabel,
+          campus: '--',
+          teacher: '--',
+          family: student.familyId ?? '--',
+          accuracy: '--',
+          observation: '--',
+          balance: '¥0',
+          status: formatStudentStatus(student.status),
+          detailHref: `/students/${student.id}`,
+        };
+      }
+      return mapStudentAggregate(aggregate);
+    });
+
+    if (params.keyword) {
+      const keyword = params.keyword.trim().toLowerCase();
+      list = list.filter((item) => [item.studentNo, item.name, item.family, item.teacher].some((field) => field.toLowerCase().includes(keyword)));
+    }
+
+    if (params.sortBy) {
+      const direction = params.sortOrder === 'asc' ? 1 : -1;
+      const sorter = (left: StudentItem, right: StudentItem) => {
+        switch (params.sortBy) {
+          case 'studentNo':
+            return left.studentNo.localeCompare(right.studentNo, 'zh-CN');
+          case 'name':
+            return left.name.localeCompare(right.name, 'zh-CN');
+          case 'gradeLabel':
+            return left.grade.localeCompare(right.grade, 'zh-CN');
+          case 'status':
+            return left.status.localeCompare(right.status, 'zh-CN');
+          default:
+            return 0;
+        }
+      };
+      list = [...list].sort((left, right) => sorter(left, right) * direction);
+    }
+
     return {
       ...result,
-      list: result.list.map((student, index) => {
-        const aggregate = detailAggregates[index];
-        if (!aggregate) {
-          return {
-            id: student.id,
-            studentNo: student.studentNo,
-            name: student.name,
-            grade: student.gradeLabel,
-            campus: '--',
-            teacher: '--',
-            family: student.familyId ?? '--',
-            accuracy: '--',
-            observation: '--',
-            balance: '¥0',
-            status: formatStudentStatus(student.status),
-            detailHref: `/students/${student.id}`,
-          };
-        }
-        return mapStudentAggregate(aggregate);
-      }),
+      list,
+      page: {
+        ...result.page,
+        pageNo: params.pageNo ?? result.page.pageNo,
+        pageSize: params.pageSize ?? result.page.pageSize,
+        total: result.page.total,
+      },
     };
   },
 

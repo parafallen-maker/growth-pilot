@@ -105,46 +105,52 @@ export const homeworkService = {
   },
 
   async detail(submissionId: string) {
-    const detail = await serverApiRequest<{
-      submission: {
-        id: string;
-        submissionNo?: string | null;
-        studentId: string;
-        teacherId?: string | null;
-        subject: string;
-        reviewStatus?: string | null;
-        finalAccuracyPct?: number | null;
-      };
-      files: Array<{ fileId?: string; id?: string }>;
-      latestAiAnalysis: {
-        jobId?: string;
-        status?: string;
-        provider?: string;
-        modelName?: string;
-        promptVersion?: string;
-        rawMarkdown?: string;
-        structuredResult?: unknown;
-      } | null;
-      review: {
-        reviewResult?: string | null;
-        finalErrorSummary?: string | null;
-        finalSuggestion?: string | null;
-        finalAccuracyPct?: number | null;
-        updatedAt?: string | null;
-        publishToFamily?: boolean | null;
-      } | null;
-      reviewDraft: {
-        reviewResult?: 'approved' | 'adjusted' | 'rejected';
-        finalAccuracyPct?: number | null;
-        finalErrorSummary?: string | null;
-        finalSuggestion?: string | null;
-        publishToFamily?: boolean;
-        reviewerTeacherId?: string | null;
-        finalErrorItems?: Array<{ errorTaxonomyId: string; weight?: number; note?: string }>;
-        savedAt?: string;
-        updatedAt?: string;
-      } | null;
-    }>(`/homework/submissions/${submissionId}`);
+    const [detail, allSubmissions] = await Promise.all([
+      serverApiRequest<{
+        submission: {
+          id: string;
+          submissionNo?: string | null;
+          studentId: string;
+          teacherId?: string | null;
+          subject: string;
+          reviewStatus?: string | null;
+          finalAccuracyPct?: number | null;
+        };
+        files: Array<{ fileId?: string; id?: string }>;
+        latestAiAnalysis: {
+          jobId?: string;
+          status?: string;
+          provider?: string;
+          modelName?: string;
+          promptVersion?: string;
+          rawMarkdown?: string;
+          structuredResult?: unknown;
+        } | null;
+        review: {
+          reviewResult?: string | null;
+          finalErrorSummary?: string | null;
+          finalSuggestion?: string | null;
+          finalAccuracyPct?: number | null;
+          updatedAt?: string | null;
+          publishToFamily?: boolean | null;
+        } | null;
+        reviewDraft: {
+          reviewResult?: 'approved' | 'adjusted' | 'rejected';
+          finalAccuracyPct?: number | null;
+          finalErrorSummary?: string | null;
+          finalSuggestion?: string | null;
+          publishToFamily?: boolean;
+          reviewerTeacherId?: string | null;
+          finalErrorItems?: Array<{ errorTaxonomyId: string; weight?: number; note?: string }>;
+          savedAt?: string;
+          updatedAt?: string;
+        } | null;
+      }>(`/homework/submissions/${submissionId}`),
+      this.query({ pageNo: 1, pageSize: 100, sortBy: 'homeworkDate', sortOrder: 'desc' }),
+    ]);
+    const currentIndex = allSubmissions.list.findIndex((item) => item.submissionId === submissionId);
+    const prevSubmission = currentIndex >= 0 ? allSubmissions.list[currentIndex - 1] ?? null : null;
+    const nextSubmission = currentIndex >= 0 ? allSubmissions.list[currentIndex + 1] ?? null : null;
 
     return {
       submissionId,
@@ -159,10 +165,15 @@ export const homeworkService = {
         model: detail.latestAiAnalysis?.modelName ?? '--',
         promptVersion: detail.latestAiAnalysis?.promptVersion ?? '--',
       },
-      attachments: detail.files.map((file, index) => ({
-        name: file.fileId ?? file.id ?? `file-${index + 1}`,
-        detail: '已关联真实 fileId；当前前端仅展示元信息，下载/预览待 files 页面继续接。',
-      })),
+      attachments: detail.files.map((file, index) => {
+        const fileId = file.fileId ?? file.id ?? `file-${index + 1}`;
+        return {
+          name: fileId,
+          detail: '已关联真实 fileId 元数据。',
+          fileId,
+          href: `/api/files/${fileId}`,
+        };
+      }),
       rawMarkdown: detail.latestAiAnalysis?.rawMarkdown ?? [
         '# AI 批改摘要',
         '',
@@ -181,13 +192,16 @@ export const homeworkService = {
       reviewMeta: [
         { name: '复核状态', detail: detail.submission.reviewStatus ?? 'unreviewed' },
         { name: '最近保存', detail: formatAt(detail.reviewDraft?.savedAt ?? detail.reviewDraft?.updatedAt ?? detail.review?.updatedAt) },
-        { name: '正式提交', detail: 'POST /homework/submissions/{id}/review 已接，当前页面可直接提交。' },
+        { name: '正式提交', detail: '当前页面可直接提交。' },
       ],
+      navigation: {
+        prev: prevSubmission ? { id: prevSubmission.submissionId, label: prevSubmission.submissionNo } : null,
+        next: nextSubmission ? { id: nextSubmission.submissionId, label: nextSubmission.submissionNo } : null,
+      },
       reviewDraft: detail.reviewDraft,
       review: detail.review,
     };
   },
-
 
   async createSubmission(payload: CreateHomeworkSubmissionPayload) {
     return serverApiRequest<{ id: string; submissionNo?: string | null }>(`/homework/submissions`, {

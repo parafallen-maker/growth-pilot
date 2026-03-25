@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { PermissionGuard } from '@/components/business/permission-guard';
 import { PageHeader, SummaryPanel, TabStrip, TimelinePanel } from '@/components/business/page-blocks';
 import { homeworkPermissions, reviewViewModes } from '@/features/homework/constants';
@@ -37,8 +38,8 @@ export default async function HomeworkReviewWorkbenchPage({
           description={`detail key: ${JSON.stringify(queryKeys.homeworkSubmissionDetail(submissionId))} / review key: ${JSON.stringify(queryKeys.homeworkReviewDraft(submissionId))}`}
           actions={
             <>
-              <button className="btn">上一条</button>
-              <button className="btn">下一条</button>
+              {detail.navigation.prev ? <Link className="btn" href={`/homework/review/${detail.navigation.prev.id}`}>上一条：{detail.navigation.prev.label}</Link> : <button className="btn" disabled>没有上一条</button>}
+              {detail.navigation.next ? <Link className="btn" href={`/homework/review/${detail.navigation.next.id}`}>下一条：{detail.navigation.next.label}</Link> : <button className="btn" disabled>没有下一条</button>}
               <span className="badge">status: {detail.aiJob.status}</span>
             </>
           }
@@ -52,19 +53,21 @@ export default async function HomeworkReviewWorkbenchPage({
           <section className="panel stack">
             <div className="page-header">
               <div>
-                <h3>左栏 / 原图附件</h3>
-                <p>当前已展示真实 submission file 关联；预览下载仍待 files 页面继续接。</p>
+                <h3>左栏 / 附件</h3>
+                <p>当前可读取真实 fileId 元数据，并在同页切换上一条 / 下一条作业。</p>
               </div>
               <div className="button-row">
-                <button className="btn">上一页</button>
-                <button className="btn">下一页</button>
-                <button className="btn">放大</button>
+                {detail.navigation.prev ? <Link className="btn" href={`/homework/review/${detail.navigation.prev.id}`}>上一条</Link> : null}
+                {detail.navigation.next ? <Link className="btn" href={`/homework/review/${detail.navigation.next.id}`}>下一条</Link> : null}
               </div>
             </div>
             {detail.attachments.map((attachment) => (
-              <div className="attachment-card" key={attachment.name}>
+              <div className="attachment-card" key={attachment.fileId}>
                 <div className="attachment-preview">{attachment.name}</div>
                 <div className="subtle">{attachment.detail}</div>
+                <div className="button-row" style={{ marginTop: 12 }}>
+                  <a className="btn" href={attachment.href} target="_blank" rel="noreferrer">查看元数据</a>
+                </div>
               </div>
             ))}
           </section>
