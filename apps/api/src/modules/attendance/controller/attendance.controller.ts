@@ -25,36 +25,43 @@ export class AttendanceController {
   }
 
   @Post('devices')
+  @RequirePermission('attendance:devices:manage')
   createDevice(@Body() payload: CreateDeviceDto) {
     return ok(this.attendanceService.createDevice(payload));
   }
 
   @Get('devices/bindings')
+  @RequirePermission('attendance:devices:view')
   listBindings(@Query() query: DeviceBindingQueryDto) {
     return ok(this.attendanceService.listBindings(query));
   }
 
   @Post('devices/bindings')
+  @RequirePermission('attendance:devices:manage')
   createBinding(@Body() payload: CreateDeviceBindingDto) {
     return ok(this.attendanceService.createBinding(payload));
   }
 
   @Patch('devices/bindings/:bindingId')
+  @RequirePermission('attendance:devices:manage')
   updateBinding(@Param('bindingId') bindingId: string, @Body() payload: UpdateDeviceBindingDto) {
     return ok(this.attendanceService.updateBinding(bindingId, payload));
   }
 
   @Get('events')
+  @RequirePermission('attendance:board:view')
   listEvents(@Query() query: AttendanceEventQueryDto) {
     return ok(this.attendanceService.listEvents(query));
   }
 
   @Post('events')
+  @RequirePermission('attendance:board:manage')
   createEvent(@Body() payload: CreateAttendanceEventDto, @Headers('idempotency-key') idempotencyKey?: string) {
     return ok(this.attendanceService.createEvent(payload, idempotencyKey));
   }
 
   @Get('homework-time/daily-stats')
+  @RequirePermission('attendance:homework-time:view')
   getHomeworkTimeDailyStats(@Query() query: HomeworkTimeDailyStatsQueryDto) {
     return ok(this.attendanceService.getHomeworkTimeDailyStats(query));
   }
