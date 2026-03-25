@@ -114,6 +114,7 @@ type RenewalItem = {
 };
 
 const toYuan = (cents: number) => `¥${(cents / 100).toFixed(2)}`;
+const formatAt = (value?: string | null) => (value ? value.replace('T', ' ').slice(0, 16) : '--');
 
 function buildQuery(params: Record<string, string | number | undefined>) {
   const query = new URLSearchParams();
@@ -122,6 +123,24 @@ function buildQuery(params: Record<string, string | number | undefined>) {
   });
   const text = query.toString();
   return text ? `?${text}` : '';
+}
+
+async function fetchBillingLookups(auth: Awaited<ReturnType<typeof getAuthTokens>>) {
+  const [familiesResult, studentsResult, usersResult] = await Promise.all([
+    apiRequest<PageResult<{ id: string; familyName?: string | null; primaryContactName?: string | null; familyCode: string }>>('/families?pageNo=1&pageSize=200', { auth, retryOn401: Boolean(auth.refreshToken) }),
+    apiRequest<PageResult<{ id: string; name: string }>>('/students?pageNo=1&pageSize=200', { auth, retryOn401: Boolean(auth.refreshToken) }),
+    apiRequest<PageResult<{ id: string; displayName: string }>>('/users?pageNo=1&pageSize=200', { auth, retryOn401: Boolean(auth.refreshToken) }).catch(() => ({ list: [], page: { pageNo: 1, pageSize: 200, total: 0 } })),
+  ]);
+
+  return {
+    familyNameById: new Map(familiesResult.list.map((item) => [item.id, item.familyName ?? item.primaryContactName ?? item.familyCode])),
+    studentNameById: new Map(studentsResult.list.map((item) => [item.id, item.name])),
+    userNameById: new Map(usersResult.list.map((item) => [item.id, item.displayName])),
+  };
+}
+
+function toLookupName(id: string | null | undefined, lookup: Map<string, string>, empty = '--') {
+  return id ? lookup.get(id) ?? id : empty;
 }
 
 export const billingService = {
@@ -143,14 +162,17 @@ export const billingService = {
 
   async queryContracts(params: BillingFilters = {}): Promise<PageResult<ContractItem>> {
     const auth = await getAuthTokens();
-    const result = await apiRequest<PageResult<{ id: string; contractNo: string; familyId: string; studentId: string; startDate: string; endDate: string; payableAmountCents: number; status: string }>>(`/billing/contracts${buildQuery(params)}`, { auth, retryOn401: Boolean(auth.refreshToken) });
+    const [result, lookups] = await Promise.all([
+      apiRequest<PageResult<{ id: string; contractNo: string; familyId: string; studentId: string; startDate: string; endDate: string; payableAmountCents: number; status: string }>>(`/billing/contracts${buildQuery(params)}`, { auth, retryOn401: Boolean(auth.refreshToken) }),
+      fetchBillingLookups(auth),
+    ]);
     return {
       ...result,
       list: result.list.map((item) => ({
         contractId: item.id,
         contractNo: item.contractNo,
-        familyName: item.familyId,
-        studentName: item.studentId,
+        familyName: toLookupName(item.familyId, lookups.familyNameById),
+        studentName: toLookupName(item.studentId, lookups.studentNameById),
         effectiveDate: item.startDate,
         expiryDate: item.endDate,
         contractAmountYuan: toYuan(item.payableAmountCents),
@@ -162,23 +184,26 @@ export const billingService = {
 
   async detailContract(contractId: string) {
     const auth = await getAuthTokens();
-    const detail = await apiRequest<{
-      contract: { contractNo: string; familyId: string; studentId: string; startDate: string; endDate: string; payableAmountCents: number; status: string };
-      items: Array<{ itemName: string; quantity: number; unitPriceCents: number; subtotalCents: number }>;
-      invoices: Array<{ invoiceNo: string; status: string; amountCents: number }>;
-    }>(`/billing/contracts/${contractId}`, { auth, retryOn401: Boolean(auth.refreshToken) });
+    const [detail, lookups] = await Promise.all([
+      apiRequest<{
+        contract: { contractNo: string; familyId: string; studentId: string; startDate: string; endDate: string; payableAmountCents: number; status: string };
+        items: Array<{ itemName: string; quantity: number; unitPriceCents: number; subtotalCents: number }>;
+        invoices: Array<{ invoiceNo: string; status: string; amountCents: number }>;
+      }>(`/billing/contracts/${contractId}`, { auth, retryOn401: Boolean(auth.refreshToken) }),
+      fetchBillingLookups(auth),
+    ]);
 
     return {
       contractNo: detail.contract.contractNo,
       summary: [
-        { name: '合同主体', detail: `${detail.contract.familyId} / ${detail.contract.studentId}` },
+        { name: '合同主体', detail: `${toLookupName(detail.contract.familyId, lookups.familyNameById)} / ${toLookupName(detail.contract.studentId, lookups.studentNameById)}` },
         { name: '金额口径', detail: `${toYuan(detail.contract.payableAmountCents)} / cents -> 元展示` },
         { name: '生命周期', detail: `${detail.contract.status} / ${detail.contract.startDate} -> ${detail.contract.endDate}` },
       ],
       actions: [
-        { name: '合同明细', detail: `${detail.items.length} 条收费项` },
-        { name: '关联账单', detail: `${detail.invoices.length} 张` },
-        { name: '查看支付 / 退款', detail: '支付与退款详情接口已存在。' },
+        { name: '合同明细', detail: detail.items.length ? detail.items.map((item) => `${item.itemName} x${item.quantity} / ${toYuan(item.subtotalCents)}`).join(' / ') : '暂无收费项' },
+        { name: '关联账单', detail: detail.invoices.length ? detail.invoices.map((invoice) => `${invoice.invoiceNo} / ${invoice.status} / ${toYuan(invoice.amountCents)}`).join(' / ') : '暂无关联账单' },
+        { name: '查看支付 / 退款', detail: '支付与退款详情接口已存在；列表聚合接口仍待补齐。' },
       ],
     };
   },
@@ -196,12 +221,15 @@ export const billingService = {
 
   async queryInvoices(params: BillingFilters = {}) {
     const auth = await getAuthTokens();
-    const result = await apiRequest<PageResult<{ id: string; invoiceNo: string; familyId: string; studentId: string; amountCents: number; dueDate: string; status: string }>>(`/billing/invoices${buildQuery(params)}`, { auth, retryOn401: Boolean(auth.refreshToken) });
+    const [result, lookups] = await Promise.all([
+      apiRequest<PageResult<{ id: string; invoiceNo: string; familyId: string; studentId: string; amountCents: number; dueDate: string; status: string }>>(`/billing/invoices${buildQuery(params)}`, { auth, retryOn401: Boolean(auth.refreshToken) }),
+      fetchBillingLookups(auth),
+    ]);
     const invoiceRows: InvoiceItem[] = result.list.map((item) => ({
       invoiceId: item.id,
       invoiceNo: item.invoiceNo,
-      familyName: item.familyId,
-      studentName: item.studentId,
+      familyName: toLookupName(item.familyId, lookups.familyNameById),
+      studentName: toLookupName(item.studentId, lookups.studentNameById),
       receivableYuan: toYuan(item.amountCents),
       dueDate: item.dueDate,
       paidYuan: '待 payment/refund 聚合页',
@@ -240,17 +268,20 @@ export const billingService = {
 
   async queryRenewals(params: BillingFilters = {}): Promise<PageResult<RenewalItem>> {
     const auth = await getAuthTokens();
-    const result = await apiRequest<PageResult<{ id: string; familyId: string; studentId: string; expectedEndDate?: string | null; status: string; ownerUserId?: string | null; nextFollowUpAt?: string | null }>>(`/billing/renewals${buildQuery(params)}`, { auth, retryOn401: Boolean(auth.refreshToken) });
+    const [result, lookups] = await Promise.all([
+      apiRequest<PageResult<{ id: string; familyId: string; studentId: string; expectedEndDate?: string | null; status: string; ownerUserId?: string | null; nextFollowUpAt?: string | null }>>(`/billing/renewals${buildQuery(params)}`, { auth, retryOn401: Boolean(auth.refreshToken) }),
+      fetchBillingLookups(auth),
+    ]);
     return {
       ...result,
       list: result.list.map((item) => ({
         renewalId: item.id,
-        familyName: item.familyId,
-        studentName: item.studentId,
+        familyName: toLookupName(item.familyId, lookups.familyNameById),
+        studentName: toLookupName(item.studentId, lookups.studentNameById),
         contractExpiryDate: item.expectedEndDate ?? '--',
         status: item.status,
-        owner: item.ownerUserId ?? '--',
-        nextFollowUpAt: item.nextFollowUpAt ?? '--',
+        owner: toLookupName(item.ownerUserId, lookups.userNameById),
+        nextFollowUpAt: formatAt(item.nextFollowUpAt),
         actions: '更新跟进 / 新建沟通 / 转创建账单',
       })),
     };

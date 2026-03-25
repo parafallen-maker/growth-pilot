@@ -6,14 +6,17 @@ import { settingsService } from '@/services/settings-service';
 
 export default async function SettingsUsersPage() {
   const currentUser = await requireCurrentUser();
-  const result = await settingsService.query({ pageNo: 1, pageSize: 20, sortBy: 'createdAt', sortOrder: 'desc' });
+  const [result, accessCatalog] = await Promise.all([
+    settingsService.query({ pageNo: 1, pageSize: 20, sortBy: 'createdAt', sortOrder: 'desc' }),
+    settingsService.queryAccessCatalog(),
+  ]);
 
   return (
     <PermissionGuard allowed={currentUser.permissions.includes('users:view')}>
       <div className="stack">
         <PageHeader
           title="用户与角色"
-          description={`真实数据来自 GET /users。query key: ${JSON.stringify(queryKeys.users({ pageNo: 1, pageSize: 20 }))}`}
+          description={`真实数据来自 GET /users；角色列表由真实用户分配聚合，权限点展示当前登录态的真实权限集。query key: ${JSON.stringify(queryKeys.users({ pageNo: 1, pageSize: 20 }))}`}
           actions={<><button className="btn primary">创建用户</button><button className="btn">绑定角色</button><button className="btn danger">重置密码</button></>}
         />
         <TabStrip tabs={['用户列表', '角色列表', '权限点']} active="用户列表" />
@@ -23,9 +26,10 @@ export default async function SettingsUsersPage() {
           rows={result.list.map((item) => [item.id, item.username, item.name, item.role, item.campus, item.status, item.permissionScope])}
         />
         <div className="grid-2">
-          <SummaryPanel title="角色列表" items={[{ name: '当前状态', detail: '后端已返回用户主数据；角色独立列表接口当前未开放。' }]} />
-          <SummaryPanel title="权限点" items={[{ name: '当前状态', detail: '页面权限守卫已生效；权限点明细接口当前未开放。' }]} />
+          <SummaryPanel title="角色列表" items={accessCatalog.roles} />
+          <SummaryPanel title="权限模块" items={accessCatalog.permissionModules} />
         </div>
+        <SummaryPanel title="当前登录态权限样本" items={accessCatalog.currentPermissions} />
       </div>
     </PermissionGuard>
   );

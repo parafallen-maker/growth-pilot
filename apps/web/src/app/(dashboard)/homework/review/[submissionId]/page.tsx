@@ -65,7 +65,9 @@ export default async function HomeworkReviewWorkbenchPage({
               <div className="attachment-card" key={attachment.fileId}>
                 <div className="attachment-preview">{attachment.name}</div>
                 <div className="subtle">{attachment.detail}</div>
+                {attachment.blockedReason ? <div className="subtle" style={{ marginTop: 8 }}>{attachment.blockedReason}</div> : null}
                 <div className="button-row" style={{ marginTop: 12 }}>
+                  {attachment.directHref ? <a className="btn primary" href={attachment.directHref} target="_blank" rel="noreferrer">打开文件</a> : null}
                   <a className="btn" href={attachment.href} target="_blank" rel="noreferrer">查看元数据</a>
                 </div>
               </div>

@@ -62,6 +62,7 @@ export type HomeworkReviewSubmitPayload = Required<Pick<HomeworkReviewDraftPaylo
 const formatAccuracy = (value?: number | null) => (typeof value === 'number' ? `${value}%` : '--');
 const formatAt = (value?: string | null) => (value ? value.replace('T', ' ').slice(0, 16) : '--');
 const reviewStatusLabel = (value?: string | null) => value ?? '--';
+const formatSize = (value?: number | null) => (typeof value === 'number' ? `${(value / 1024).toFixed(value >= 1024 * 1024 ? 1 : 0)} KB` : '--');
 
 function buildQuery(params: Record<string, string | number | undefined>) {
   const query = new URLSearchParams();
@@ -151,6 +152,39 @@ export const homeworkService = {
     const currentIndex = allSubmissions.list.findIndex((item) => item.submissionId === submissionId);
     const prevSubmission = currentIndex >= 0 ? allSubmissions.list[currentIndex - 1] ?? null : null;
     const nextSubmission = currentIndex >= 0 ? allSubmissions.list[currentIndex + 1] ?? null : null;
+    const attachments = await Promise.all(detail.files.map(async (file, index) => {
+      const fileId = file.fileId ?? file.id ?? `file-${index + 1}`;
+
+      try {
+        const fileDetail = await serverApiRequest<{
+          fileId: string;
+          fileName: string;
+          mimeType: string;
+          sizeBytes: number;
+          url?: string | null;
+          storageProvider?: string;
+        }>(`/files/${fileId}`);
+        const canOpenDirectly = typeof fileDetail.url === 'string' && /^https?:\/\//.test(fileDetail.url);
+
+        return {
+          name: fileDetail.fileName,
+          detail: `${fileDetail.mimeType} / ${formatSize(fileDetail.sizeBytes)} / ${fileDetail.storageProvider ?? 'unknown provider'}`,
+          fileId,
+          href: `/api/files/${fileId}`,
+          directHref: canOpenDirectly ? fileDetail.url : null,
+          blockedReason: canOpenDirectly ? null : '当前 storage adapter 返回的仍是非 HTTP 地址，浏览器仅能查看元数据。',
+        };
+      } catch {
+        return {
+          name: fileId,
+          detail: '已关联真实 fileId，但暂时未拉到文件元数据。',
+          fileId,
+          href: `/api/files/${fileId}`,
+          directHref: null,
+          blockedReason: '文件详情请求失败，当前先保留 fileId 元数据入口。',
+        };
+      }
+    }));
 
     return {
       submissionId,
@@ -165,15 +199,7 @@ export const homeworkService = {
         model: detail.latestAiAnalysis?.modelName ?? '--',
         promptVersion: detail.latestAiAnalysis?.promptVersion ?? '--',
       },
-      attachments: detail.files.map((file, index) => {
-        const fileId = file.fileId ?? file.id ?? `file-${index + 1}`;
-        return {
-          name: fileId,
-          detail: '已关联真实 fileId 元数据。',
-          fileId,
-          href: `/api/files/${fileId}`,
-        };
-      }),
+      attachments,
       rawMarkdown: detail.latestAiAnalysis?.rawMarkdown ?? [
         '# AI 批改摘要',
         '',

@@ -20,8 +20,16 @@ function MessageStatusTable({
 export default async function CommunicationMessagesPage() {
   const currentUser = await requireCurrentUser();
   const allowed = hasPermission(currentUser.permissions, communicationPermissions.messagesView);
-  const filters = { pageNo: 1, pageSize: 20, campusId: 'campus-guiyang', channel: 'all', dateFrom: '2026-03-20', dateTo: '2026-03-25', sortBy: 'scheduledAt', sortOrder: 'desc' as const };
-  const result = await communicationService.queryMessages(filters);
+  const filters = { pageNo: 1, pageSize: 20, channel: 'all', sortBy: 'scheduledAt', sortOrder: 'desc' as const };
+  const result = await communicationService.queryMessages(filters).catch(() => ({
+    filters,
+    templates: { list: [], page: { pageNo: 1, pageSize: 20, total: 0 } },
+    drafts: { list: [], page: { pageNo: 1, pageSize: 20, total: 0 } },
+    queued: { list: [], page: { pageNo: 1, pageSize: 20, total: 0 } },
+    sent: { list: [], page: { pageNo: 1, pageSize: 20, total: 0 } },
+    failed: { list: [], page: { pageNo: 1, pageSize: 20, total: 0 } },
+    statusPanels: [{ name: '接口状态', detail: 'message_tasks 或 templates 当前不可用，页面已保留真实结构并降级。' }],
+  }));
   const action = communicationService.actionMessage();
 
   return (
@@ -44,8 +52,8 @@ export default async function CommunicationMessagesPage() {
           { label: '关键词', value: '消息编号 / 家庭 / 学生' },
           { label: '渠道', value: '全部渠道', kind: 'select' },
           { label: '消息状态', value: '全部状态', kind: 'select' },
-          { label: '开始时间', value: '2026-03-20' },
-          { label: '结束时间', value: '2026-03-25' },
+          { label: '开始时间', value: '当前列表未接后端 query 参数' },
+          { label: '结束时间', value: '当前列表未接后端 query 参数' },
         ]} />
         <section className="panel stack">
           <TabStrip tabs={[...messageStatusTabs]} active="模板" />

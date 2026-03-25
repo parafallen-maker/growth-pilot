@@ -37,7 +37,7 @@ export default async function BillingInvoicesPage({
             <span className="badge success">POST /payments</span>
           </div>
           <form className="form-grid" action={createInvoicePayment}>
-            <div className="field form-span-2"><label>账单</label><select className="select" name="invoiceId" required defaultValue="">{result.invoices.list.map((invoice) => <option key={invoice.invoiceId} value={invoice.invoiceId}>{invoice.invoiceNo} / {invoice.familyName} / {invoice.receivableYuan}</option>)}</select></div>
+            <div className="field form-span-2"><label>账单</label><select className="select" name="invoiceId" required defaultValue=""><option value="" disabled>请选择账单</option>{result.invoices.list.map((invoice) => <option key={invoice.invoiceId} value={invoice.invoiceId}>{invoice.invoiceNo} / {invoice.familyName} / {invoice.receivableYuan}</option>)}</select></div>
             <div className="field"><label>支付编号</label><input className="input" name="paymentNo" placeholder="PAY-202603-001" required /></div>
             <div className="field"><label>支付金额（元）</label><input className="input" type="number" min="0" step="0.01" name="paidAmount" required /></div>
             <div className="field"><label>支付时间</label><input className="input" type="datetime-local" name="paymentTime" required /></div>
@@ -45,7 +45,7 @@ export default async function BillingInvoicesPage({
             <div className="field"><label>状态</label><select className="select" name="status" defaultValue="success"><option value="success">success</option><option value="pending">pending</option><option value="failed">failed</option></select></div>
             <div className="field"><label>交易流水号</label><input className="input" name="transactionNo" placeholder="wx_20260325_xxx" /></div>
             <div className="field form-span-2"><label>备注</label><textarea className="textarea" name="remark" placeholder="收款说明、分次支付备注等" /></div>
-            <div className="button-row form-span-2"><button className="btn primary" type="submit">记录收款</button></div>
+            <div className="button-row form-span-2"><button className="btn primary" type="submit" disabled={!result.invoices.list.length}>记录收款</button></div>
           </form>
         </section>
         <FilterBar fields={[
@@ -68,6 +68,7 @@ export default async function BillingInvoicesPage({
           ...result.adjustments,
           { name: '统一动作位', detail: action.actions.join(' / ') },
           { name: '状态流', detail: action.statusFlow },
+          { name: '页面状态', detail: result.invoices.list.length ? '账单列表已接真；支付/退款列表继续明确依赖后端聚合接口。' : '当前无账单结果，已保留真实录入表单并禁用提交。' },
         ].map((item) => ({ name: 'name' in item ? item.name : item.title, detail: item.detail }))} />
       </div>
     </PermissionGuard>
