@@ -16,7 +16,7 @@ test('E2E-03 作业闭环：upload -> submission -> analyze -> review executable
       uploadedBy: 'user-teacher-001',
     });
 
-    const submission = homeworkService.createSubmission({
+    const submission = await homeworkService.createSubmission({
       studentId: 'student-001',
       campusId: 'campus-001',
       termId: 'term-2026-spring',
@@ -32,22 +32,22 @@ test('E2E-03 作业闭环：upload -> submission -> analyze -> review executable
       modelName: 'mock-vision-v1',
       promptVersion: 'homework-review-v3',
     }, 'qa-homework-analysis-001');
-    const detailAfterAnalysis = homeworkService.getSubmissionDetail(submission.id);
-    const reviewResult = homeworkService.submitReview(submission.id, {
+    const detailAfterAnalysis = await homeworkService.getSubmissionDetail(submission.id);
+    const reviewResult = await homeworkService.submitReview(submission.id, {
       reviewerTeacherId: 'teacher-001',
       reviewResult: 'adjusted',
       finalAccuracyPct: 91,
       finalErrorSummary: '计算较稳，仍需二次审题。',
       finalSuggestion: '继续先圈关键词再验算。',
       publishToFamily: true,
-      finalErrorItems: [{ errorTaxonomyId: 'error-taxonomy-001', weight: 2, note: 'placeholder taxonomy' }],
+      finalErrorItems: [{ errorTaxonomyId: 'taxonomy-001', weight: 2, note: 'placeholder taxonomy' }],
     });
 
     assert.ok(analysisJob.jobId.startsWith('job-'));
     assert.equal(detailAfterAnalysis.latestAiAnalysis?.status, 'success');
     assert.equal(reviewResult.reviewStatus, 'published');
-    assert.equal(homeworkRepository.getSubmissionOrThrow(submission.id).reviewStatus, 'published');
-    assert.equal(homeworkEventPublisher.list()[0]?.eventName, 'HomeworkReviewed');
+    assert.equal((await homeworkRepository.getSubmissionOrThrow(submission.id)).reviewStatus, 'published');
+    assert.equal((await homeworkEventPublisher.list())[0]?.eventName, 'HomeworkReviewed');
   });
 
   await t.test('case-analysis-job-center-record-is-queryable', async () => {
@@ -60,7 +60,7 @@ test('E2E-03 作业闭环：upload -> submission -> analyze -> review executable
       sourceType: 'qa_e2e',
       uploadedBy: 'user-teacher-001',
     });
-    const submission = homeworkService.createSubmission({
+    const submission = await homeworkService.createSubmission({
       studentId: 'student-001',
       campusId: 'campus-001',
       termId: 'term-2026-spring',
@@ -93,7 +93,7 @@ test('E2E-03 作业闭环：upload -> submission -> analyze -> review executable
       sourceType: 'qa_e2e',
       uploadedBy: 'user-teacher-001',
     });
-    const submission = homeworkService.createSubmission({
+    const submission = await homeworkService.createSubmission({
       studentId: 'student-001',
       campusId: 'campus-001',
       termId: 'term-2026-spring',
@@ -103,14 +103,14 @@ test('E2E-03 作业闭环：upload -> submission -> analyze -> review executable
       fileIds: [uploaded.fileId],
     });
 
-    homeworkService.submitReview(submission.id, {
+    await homeworkService.submitReview(submission.id, {
       reviewerTeacherId: 'teacher-001',
       reviewResult: 'approved',
       finalAccuracyPct: 95,
       publishToFamily: true,
     });
 
-    assert.throws(() => homeworkService.submitReview(submission.id, {
+    await assert.rejects(() => homeworkService.submitReview(submission.id, {
       reviewerTeacherId: 'teacher-002',
       reviewResult: 'rejected',
       finalAccuracyPct: 60,

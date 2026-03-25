@@ -58,18 +58,13 @@ export class StudentsService {
       }
       if (query.keyword) {
         const keyword = query.keyword.toLowerCase();
-        if (!student.name.toLowerCase().includes(keyword) && !student.studentNo.toLowerCase().includes(keyword)) {
-          continue;
-        }
+        if (!student.name.toLowerCase().includes(keyword) && !student.studentNo.toLowerCase().includes(keyword)) continue;
       }
       filtered.push(student);
     }
 
     const start = (pageNo - 1) * pageSize;
-    return {
-      list: filtered.slice(start, start + pageSize),
-      page: { pageNo, pageSize, total: filtered.length },
-    };
+    return { list: filtered.slice(start, start + pageSize), page: { pageNo, pageSize, total: filtered.length } };
   }
 
   detail(studentId: string): Promise<Student> {
@@ -83,10 +78,10 @@ export class StudentsService {
     const family = student.familyId ? (await this.familiesRepository.findFamilyById(student.familyId)) ?? null : null;
     const guardians = family ? await this.familiesRepository.listGuardiansByFamily(family.id) : [];
 
-    const studentHomework = this.homeworkRepository.listSubmissions().filter((item) => item.studentId === studentId);
-    const studentGrowth = this.growthRepository.listObservations().filter((item) => item.studentId === studentId);
-    const activeGoals = this.growthRepository.listGoals().filter((item) => item.studentId === studentId && item.status === 'active');
-    const studentReports = this.growthRepository.listReports().filter((item) => item.studentId === studentId);
+    const studentHomework = (await this.homeworkRepository.listSubmissions()).filter((item) => item.studentId === studentId);
+    const studentGrowth = (await this.growthRepository.listObservations()).filter((item) => item.studentId === studentId);
+    const activeGoals = (await this.growthRepository.listGoals()).filter((item) => item.studentId === studentId && item.status === 'active');
+    const studentReports = (await this.growthRepository.listReports()).filter((item) => item.studentId === studentId);
     const attendanceEvents = this.attendanceRepository.listEvents().filter((item) => item.studentId === studentId);
     const attendanceStats = this.attendanceRepository.listDailyStats().filter((item) => item.studentId === studentId);
     const studentContracts = this.billingRepository.listContracts().filter((item) => item.studentId === studentId);
@@ -95,14 +90,10 @@ export class StudentsService {
     const studentPayments = this.billingRepository.listPayments().filter((item) => invoiceIds.has(item.invoiceId));
 
     const reviewedHomework = studentHomework.filter((item) => item.finalAccuracyPct != null);
-    const averageAccuracyPct = reviewedHomework.length
-      ? Math.round(reviewedHomework.reduce((sum, item) => sum + (item.finalAccuracyPct ?? 0), 0) / reviewedHomework.length)
-      : null;
+    const averageAccuracyPct = reviewedHomework.length ? Math.round(reviewedHomework.reduce((sum, item) => sum + (item.finalAccuracyPct ?? 0), 0) / reviewedHomework.length) : null;
     const presentAttendance = attendanceEvents.filter((item) => item.eventType === 'checkin');
     const absentAttendance = [] as typeof attendanceEvents;
-    const averageStudyMinutes = attendanceStats.length
-      ? Math.round(attendanceStats.reduce((sum, item) => sum + item.totalMinutes, 0) / attendanceStats.length)
-      : 0;
+    const averageStudyMinutes = attendanceStats.length ? Math.round(attendanceStats.reduce((sum, item) => sum + item.totalMinutes, 0) / attendanceStats.length) : 0;
 
     return {
       student,
@@ -220,21 +211,17 @@ export class StudentsService {
         : []),
     ];
 
-    const homeworkItems: Student360TimelineItem[] = this.homeworkRepository
-      .listSubmissions()
+    const homeworkItems: Student360TimelineItem[] = (await this.homeworkRepository.listSubmissions())
       .filter((item) => item.studentId === studentId)
       .map((item) => ({ id: `timeline-homework-${item.id}`, type: 'homework', title: '作业复核更新', occurredAt: item.updatedAt, status: item.reviewStatus, summary: item.finalErrorSummary ?? undefined }));
-    const growthItems: Student360TimelineItem[] = this.growthRepository
-      .listObservations()
+    const growthItems: Student360TimelineItem[] = (await this.growthRepository.listObservations())
       .filter((item) => item.studentId === studentId)
       .map((item) => ({ id: `timeline-growth-${item.id}`, type: 'growth', title: '成长观察记录', occurredAt: `${item.observationDate}T19:00:00+08:00`, status: 'recorded', summary: item.improvementNotes }));
-    const attendanceItems: Student360TimelineItem[] = this.attendanceRepository
-      .listEvents()
+    const attendanceItems: Student360TimelineItem[] = this.attendanceRepository.listEvents()
       .filter((item) => item.studentId === studentId)
       .slice(0, 1)
       .map((item) => ({ id: `timeline-attendance-${item.id}`, type: 'attendance', title: item.eventType === 'checkin' ? '到校签到' : '出勤异常', occurredAt: item.eventTime, status: item.eventType, summary: item.remark ?? '出勤事件已入库' }));
-    const billingItems: Student360TimelineItem[] = this.billingRepository
-      .listInvoices()
+    const billingItems: Student360TimelineItem[] = this.billingRepository.listInvoices()
       .filter((item) => item.studentId === studentId)
       .map((item) => ({ id: `timeline-billing-${item.id}`, type: 'billing', title: '账单状态更新', occurredAt: `${item.issueDate}T12:00:00+08:00`, status: item.status, summary: `账单金额 ${item.amountCents} 分` }));
 

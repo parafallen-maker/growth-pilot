@@ -25,15 +25,15 @@ function createFixture() {
   return { repository, assembler, reportDraftJob, jobsService, service };
 }
 
-test('growth rubric / observation / goal / report workflows persist to disk', () => {
+test('growth rubric / observation / goal / report workflows persist to disk', async () => {
   resetDataDir();
   const { service, jobsService } = createFixture();
 
-  const rubrics = service.listRubrics({ pageNo: 1, pageSize: 20, status: 'active' });
+  const rubrics = await service.listRubrics({ pageNo: 1, pageSize: 20, status: 'active' });
   assert.equal(rubrics.list.length, 1);
   assert.equal(rubrics.page.total, 1);
 
-  const createdRubric = service.createRubric({
+  const createdRubric = await service.createRubric({
     name: '课堂行为模板',
     status: 'active',
     dimensions: [
@@ -43,7 +43,7 @@ test('growth rubric / observation / goal / report workflows persist to disk', ()
   });
   assert.equal(createdRubric.dimensions.length, 2);
 
-  const observation = service.createObservation({
+  const observation = await service.createObservation({
     studentId: 'student-001',
     teacherId: 'teacher-001',
     templateId: createdRubric.id,
@@ -56,7 +56,7 @@ test('growth rubric / observation / goal / report workflows persist to disk', ()
   });
   assert.equal(observation.totalScore, 7);
 
-  const goal = service.createGoal({
+  const goal = await service.createGoal({
     studentId: 'student-001',
     goalType: 'habit',
     title: '上课先举手再发言',
@@ -64,7 +64,7 @@ test('growth rubric / observation / goal / report workflows persist to disk', ()
     currentValue: 1,
     status: 'active',
   });
-  const checkin = service.createCheckin(goal.id, {
+  const checkin = await service.createCheckin(goal.id, {
     checkinDate: '2026-03-24',
     progressValue: 2,
     progressNote: '提醒后能做到',
@@ -72,20 +72,20 @@ test('growth rubric / observation / goal / report workflows persist to disk', ()
   });
   assert.equal(checkin.progressValue, 2);
 
-  const job = service.generateReportDraft({
+  const job = await service.generateReportDraft({
     reportType: 'weekly',
     periodKey: '2026-W13',
     studentIds: ['student-001'],
     termId: 'term-2026-spring',
   });
-  assert.equal(job.status, 'queued');
+  await new Promise((resolve) => setTimeout(resolve, 10));
   assert.equal(jobsService.getJob(job.jobId).status, 'success');
 
   const reportId = `report-student-001-2026-W13`;
-  const reportDetail = service.getReportDetail(reportId);
+  const reportDetail = await service.getReportDetail(reportId);
   assert.equal(reportDetail.report.status, 'draft');
 
-  const reviewed = service.reviewReport(reportId, {
+  const reviewed = await service.reviewReport(reportId, {
     reviewerUserId: 'advisor-001',
     reviewNote: '结构可发布，补一段家长建议',
     title: '2026-W13 周报',
@@ -93,25 +93,25 @@ test('growth rubric / observation / goal / report workflows persist to disk', ()
   });
   assert.equal(reviewed.status, 'reviewed');
 
-  const published = service.publishReport(reportId, {
+  const published = await service.publishReport(reportId, {
     publisherUserId: 'teacher-001',
     publishNote: '推送到家长群',
     channels: ['family_feed'],
   });
   assert.equal(published.status, 'published');
 
-  const publishedObservations = service.listObservations({ pageNo: 1, pageSize: 20, reportPublished: 'published' });
+  const publishedObservations = await service.listObservations({ pageNo: 1, pageSize: 20, reportPublished: 'published' });
   assert.equal(publishedObservations.list.some((item) => item.id === observation.id), true);
 
-  assert.throws(() => service.publishReport(reportId, { publisherUserId: 'teacher-001' }));
+  await assert.rejects(() => service.publishReport(reportId, { publisherUserId: 'teacher-001' }));
 
   const restartedRepository = new GrowthRepository();
-  const reports = restartedRepository.listReports().filter((item) => item.studentId === 'student-001');
+  const reports = (await restartedRepository.listReports()).filter((item) => item.studentId === 'student-001');
   assert.equal(reports.length, 1);
   assert.equal(reports[0]?.generatedByJobId, job.jobId);
   assert.equal(reports[0]?.status, 'published');
   assert.equal(reports[0]?.publishedAt != null, true);
-  assert.equal(restartedRepository.listRubrics().length, 2);
-  assert.equal(restartedRepository.listObservations().length, 2);
-  assert.equal(restartedRepository.findGoalById(goal.id)?.checkins.length, 1);
+  assert.equal((await restartedRepository.listRubrics()).length, 2);
+  assert.equal((await restartedRepository.listObservations()).length, 2);
+  assert.equal((await restartedRepository.findGoalById(goal.id))?.checkins.length, 1);
 });

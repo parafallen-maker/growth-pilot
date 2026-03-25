@@ -5,8 +5,8 @@ import { createQaFixture } from './e2e-main-flow.fixture';
 test('E2E-04 成长管理闭环：rubric -> observation -> goal -> report draft executable', async (t) => {
   const { growthService, jobsService } = createQaFixture();
 
-  await t.test('smoke: create rubric/observation/goal/checkin and queue report draft', () => {
-    const rubric = growthService.createRubric({
+  await t.test('smoke: create rubric/observation/goal/checkin and queue report draft', async () => {
+    const rubric = await growthService.createRubric({
       campusId: 'campus-001',
       termId: 'term-2026-spring',
       name: 'QA Rubric',
@@ -19,7 +19,7 @@ test('E2E-04 成长管理闭环：rubric -> observation -> goal -> report draft 
       ],
     });
 
-    const observation = growthService.createObservation({
+    const observation = await growthService.createObservation({
       studentId: 'student-001',
       termId: 'term-2026-spring',
       teacherId: 'teacher-001',
@@ -29,14 +29,10 @@ test('E2E-04 成长管理闭环：rubric -> observation -> goal -> report draft 
       strengths: '能主动订正',
       improvementNotes: '先独立完成再求助',
       publishToFamily: false,
-      scores: rubric.dimensions.map((dimension, index) => ({
-        dimensionId: dimension.id,
-        score: index + 3,
-        note: 'qa placeholder',
-      })),
+      scores: rubric.dimensions.map((dimension, index) => ({ dimensionId: dimension.id, score: index + 3, note: 'qa placeholder' })),
     });
 
-    const goal = growthService.createGoal({
+    const goal = await growthService.createGoal({
       studentId: 'student-001',
       termId: 'term-2026-spring',
       goalType: 'habit',
@@ -52,36 +48,38 @@ test('E2E-04 成长管理闭环：rubric -> observation -> goal -> report draft 
       status: 'active',
     });
 
-    const checkin = growthService.createCheckin(goal.id, {
+    const checkin = await growthService.createCheckin(goal.id, {
       checkinDate: '2026-03-26',
       progressValue: 2,
       progressNote: '今天先自己列式',
       nextAction: '继续坚持',
     });
 
-    const reportJob = growthService.generateReportDraft({
+    const reportJob = await growthService.generateReportDraft({
       reportType: 'weekly',
       periodKey: '2026-W13',
       studentIds: ['student-001'],
       termId: 'term-2026-spring',
     });
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
-    const reports = growthService.listReports({ studentId: 'student-001', pageNo: 1, pageSize: 20 });
+    const reports = await growthService.listReports({ studentId: 'student-001', pageNo: 1, pageSize: 20 });
     assert.equal(observation.templateId, rubric.id);
     assert.equal(checkin.goalId, goal.id);
     assert.ok(reportJob.jobId.startsWith('job-growth_report_generate-'));
     assert.equal(reports.list[0]?.status, 'draft');
   });
 
-  await t.test('case-report-job-result-and-material-traceability', () => {
-    const reportJob = growthService.generateReportDraft({
+  await t.test('case-report-job-result-and-material-traceability', async () => {
+    const reportJob = await growthService.generateReportDraft({
       reportType: 'weekly',
       periodKey: '2026-W14',
       studentIds: ['student-001'],
       termId: 'term-2026-spring',
     });
+    await new Promise((resolve) => setTimeout(resolve, 10));
     const jobDetail = jobsService.getJob(reportJob.jobId);
-    const report = growthService.listReports({ studentId: 'student-001', periodKey: '2026-W14', pageNo: 1, pageSize: 20 }).list[0];
+    const report = (await growthService.listReports({ studentId: 'student-001', periodKey: '2026-W14', pageNo: 1, pageSize: 20 })).list[0];
 
     assert.equal(jobDetail.status, 'success');
     assert.equal(jobDetail.result?.reportCount, 1);
@@ -90,15 +88,15 @@ test('E2E-04 成长管理闭环：rubric -> observation -> goal -> report draft 
     assert.ok(Array.isArray(report.summaryJson?.goals));
   });
 
-  await t.test('case-observation-filters-invalid-dimensions-and-goal-progress-persists', () => {
-    const rubric = growthService.createRubric({
+  await t.test('case-observation-filters-invalid-dimensions-and-goal-progress-persists', async () => {
+    const rubric = await growthService.createRubric({
       campusId: 'campus-001',
       termId: 'term-2026-spring',
       name: 'QA Rubric Guard',
       stageScope: 'grade-1',
       dimensions: [{ code: 'focus', name: '专注度', weight: 1, scoreMin: 1, scoreMax: 5 }],
     });
-    const observation = growthService.createObservation({
+    const observation = await growthService.createObservation({
       studentId: 'student-001',
       termId: 'term-2026-spring',
       teacherId: 'teacher-001',
@@ -112,7 +110,7 @@ test('E2E-04 成长管理闭环：rubric -> observation -> goal -> report draft 
         { dimensionId: 'dimension-invalid', score: 1 },
       ],
     });
-    const goal = growthService.createGoal({
+    const goal = await growthService.createGoal({
       studentId: 'student-001',
       termId: 'term-2026-spring',
       goalType: 'habit',
@@ -125,14 +123,14 @@ test('E2E-04 成长管理闭环：rubric -> observation -> goal -> report draft 
       status: 'active',
     });
 
-    growthService.createCheckin(goal.id, {
+    await growthService.createCheckin(goal.id, {
       checkinDate: '2026-03-28',
       progressValue: 4,
       progressNote: '能自己做完前两题',
     });
 
-    const filteredObservations = growthService.listObservations({ studentId: 'student-001', pageNo: 1, pageSize: 20 });
-    const updatedGoal = growthService.listGoals({ studentId: 'student-001', keyword: '连续专注', pageNo: 1, pageSize: 20 }).list[0];
+    const filteredObservations = await growthService.listObservations({ studentId: 'student-001', pageNo: 1, pageSize: 20 });
+    const updatedGoal = (await growthService.listGoals({ studentId: 'student-001', keyword: '连续专注', pageNo: 1, pageSize: 20 })).list[0];
 
     assert.equal(observation.scores.length, 1);
     assert.equal(filteredObservations.list[0]?.studentId, 'student-001');

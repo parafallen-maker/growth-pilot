@@ -6,9 +6,9 @@ import { GrowthRepository } from '../repository/growth.repository';
 export class ReportMaterialAssembler {
   constructor(private readonly growthRepository: GrowthRepository) {}
 
-  assemble(studentId: string, periodKey: string) {
-    const observations = this.growthRepository.listObservations().filter((item) => item.studentId === studentId);
-    const goals = this.growthRepository.listGoals().filter((item) => item.studentId === studentId);
+  async assemble(studentId: string, periodKey: string) {
+    const observations = (await this.growthRepository.listObservations()).filter((item) => item.studentId === studentId);
+    const goals = (await this.growthRepository.listGoals()).filter((item) => item.studentId === studentId);
 
     return {
       studentId,

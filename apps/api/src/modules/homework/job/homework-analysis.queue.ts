@@ -22,7 +22,7 @@ export class HomeworkAnalysisQueue {
     force?: boolean;
     idempotencyKey?: string;
   }) {
-    const submission = this.homeworkRepository.getSubmissionOrThrow(input.submissionId);
+    const submission = await this.homeworkRepository.getSubmissionOrThrow(input.submissionId);
     return this.jobsService.enqueueAndProcess({
       jobType: 'homework_analysis',
       bizType: 'homework_submission',
@@ -35,20 +35,20 @@ export class HomeworkAnalysisQueue {
         promptVersion: input.promptVersion,
       },
     }, async ({ jobId }) => {
-      this.homeworkRepository.updateSubmission(submission.id, { aiStatus: 'running' });
+      await this.homeworkRepository.updateSubmission(submission.id, { aiStatus: 'running' });
 
       try {
         const analysis = await this.homeworkAnalysisAdapter.analyze({
           submissionId: submission.id,
           subject: submission.subject,
           gradeLabel: undefined,
-          imageUrls: this.filesService.resolveFileUrls(
-            this.homeworkRepository.listSubmissionFiles(submission.id).map((item) => item.fileId),
+          imageUrls: await this.filesService.resolveFileUrls(
+            (await this.homeworkRepository.listSubmissionFiles(submission.id)).map((item) => item.fileId),
           ),
           promptVersion: input.promptVersion,
         });
 
-        const savedAnalysis = this.homeworkRepository.createAnalysis({
+        const savedAnalysis = await this.homeworkRepository.createAnalysis({
           submissionId: submission.id,
           jobId,
           provider: input.provider,
@@ -68,14 +68,14 @@ export class HomeworkAnalysisQueue {
           errorMessage: null,
         });
 
-        this.homeworkRepository.updateSubmission(submission.id, {
+        await this.homeworkRepository.updateSubmission(submission.id, {
           aiStatus: 'ready',
           finalAccuracyPct: submission.finalAccuracyPct,
         });
 
         return { analysisId: savedAnalysis.id, submissionId: submission.id };
       } catch (error) {
-        this.homeworkRepository.updateSubmission(submission.id, { aiStatus: 'failed' });
+        await this.homeworkRepository.updateSubmission(submission.id, { aiStatus: 'failed' });
         throw error;
       }
     });

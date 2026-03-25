@@ -20,11 +20,11 @@ export class ReportDraftJob {
       payload: request,
     });
 
-    this.jobsService.processJobSync(job.jobId, ({ jobId }) => {
+    this.jobsService.processJob(job.jobId, async ({ jobId }) => {
       const reportIds: string[] = [];
 
       for (const studentId of request.studentIds) {
-        const materials = this.materialAssembler.assemble(studentId, request.periodKey);
+        const materials = await this.materialAssembler.assemble(studentId, request.periodKey);
         const now = new Date().toISOString();
         const reportId = `report-${studentId}-${request.periodKey}`;
         const report: GrowthReport = {
@@ -42,7 +42,7 @@ export class ReportDraftJob {
           createdAt: now,
           updatedAt: now,
         };
-        this.growthRepository.createReport(report);
+        await this.growthRepository.createReport(report);
         reportIds.push(reportId);
       }
 

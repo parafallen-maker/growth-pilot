@@ -9,11 +9,11 @@ type RenewalRecord = { id: string; campusId?: string | null; termId?: string | n
 export class AnalyticsService {
   constructor(private readonly analyticsRepository: AnalyticsRepository) {}
 
-  getOverview(query: AnalyticsQueryDto) {
+  async getOverview(query: AnalyticsQueryDto) {
     const contracts = this.filterContractsByScope(query);
     const invoices = this.filterInvoicesByScope(query);
     const payments = this.filterPaymentsByScope(query);
-    const homework = this.filterHomeworkSubmissionsByScope(query);
+    const homework = await this.filterHomeworkSubmissionsByScope(query);
     const attendanceEvents = this.filterAttendanceEventsByScope(query);
     const communicationRecords = this.filterCommunicationRecordsByScope(query);
     const messageTasks = this.filterMessageTasksByScope(query);
@@ -40,8 +40,8 @@ export class AnalyticsService {
     };
   }
 
-  getTeaching(query: AnalyticsQueryDto) {
-    const homework = this.filterHomeworkSubmissionsByScope(query);
+  async getTeaching(query: AnalyticsQueryDto) {
+    const homework = await this.filterHomeworkSubmissionsByScope(query);
     const homeworkDailyStats = this.filterHomeworkDailyStatsByScope(query);
     const communicationRecords = this.filterCommunicationRecordsByScope(query);
 
@@ -98,7 +98,7 @@ export class AnalyticsService {
     };
   }
 
-  getBilling(query: AnalyticsQueryDto) {
+  async getBilling(query: AnalyticsQueryDto) {
     const contracts = this.filterContractsByScope(query);
     const invoices = this.filterInvoicesByScope(query);
     const payments = this.filterPaymentsByScope(query);
@@ -109,9 +109,7 @@ export class AnalyticsService {
 
     const paymentById = new Map(payments.map((item) => [item.id, item]));
     const receivedByInvoiceId = new Map<string, number>();
-    for (const payment of payments) {
-      receivedByInvoiceId.set(payment.invoiceId, (receivedByInvoiceId.get(payment.invoiceId) ?? 0) + payment.paidAmountCents);
-    }
+    for (const payment of payments) receivedByInvoiceId.set(payment.invoiceId, (receivedByInvoiceId.get(payment.invoiceId) ?? 0) + payment.paidAmountCents);
     for (const refund of refunds) {
       const payment = paymentById.get(refund.paymentId);
       if (!payment) continue;
@@ -121,13 +119,11 @@ export class AnalyticsService {
     return {
       receivableTrend: this.groupAmountByDate(invoices.map((item) => ({ date: item.issueDate, amountCents: item.amountCents }))),
       receivedTrend: this.groupAmountByDate(payments.filter((item) => item.status === 'success').map((item) => ({ date: item.paymentTime.slice(0, 10), amountCents: item.paidAmountCents }))),
-      agingSummary: [
-        {
-          bucket: 'current',
-          invoiceCount: invoices.filter((item) => (receivedByInvoiceId.get(item.id) ?? 0) < item.amountCents).length,
-          outstandingCents: invoices.reduce((sum, item) => sum + Math.max(item.amountCents - (receivedByInvoiceId.get(item.id) ?? 0), 0), 0),
-        },
-      ],
+      agingSummary: [{
+        bucket: 'current',
+        invoiceCount: invoices.filter((item) => (receivedByInvoiceId.get(item.id) ?? 0) < item.amountCents).length,
+        outstandingCents: invoices.reduce((sum, item) => sum + Math.max(item.amountCents - (receivedByInvoiceId.get(item.id) ?? 0), 0), 0),
+      }],
       renewalFunnel: this.countRenewalStatuses(renewals),
       filtersApplied: this.scope(query),
       contractCount: contracts.length,
@@ -175,9 +171,9 @@ export class AnalyticsService {
     });
   }
 
-  private filterHomeworkSubmissionsByScope(query: AnalyticsQueryDto) {
+  private async filterHomeworkSubmissionsByScope(query: AnalyticsQueryDto) {
     const contractStudents = new Set(this.filterContractsByScope(query).map((item) => item.studentId));
-    return this.analyticsRepository.listHomeworkSubmissions().filter((item) => {
+    return (await this.analyticsRepository.listHomeworkSubmissions()).filter((item) => {
       if (contractStudents.size && !contractStudents.has(item.studentId)) return false;
       return this.matchDate(item.homeworkDate, query.dateFrom, query.dateTo) && (!query.teacherId || item.teacherId === query.teacherId);
     });

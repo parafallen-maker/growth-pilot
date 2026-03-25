@@ -22,9 +22,9 @@ export class HomeworkService {
     private readonly filesService: FilesService,
   ) {}
 
-  listSubmissions(query: HomeworkSubmissionQueryDto): PageResult<HomeworkSubmission> {
+  async listSubmissions(query: HomeworkSubmissionQueryDto): Promise<PageResult<HomeworkSubmission>> {
     const { pageNo, pageSize } = normalizePage(query);
-    const filtered = this.homeworkRepository.listSubmissions().filter((item) => {
+    const filtered = (await this.homeworkRepository.listSubmissions()).filter((item) => {
       if (query.campusId && item.campusId !== query.campusId) return false;
       if (query.termId && item.termId !== query.termId) return false;
       if (query.teacherId && item.teacherId !== query.teacherId) return false;
@@ -43,31 +43,25 @@ export class HomeworkService {
     });
 
     const start = (pageNo - 1) * pageSize;
-    return {
-      list: filtered.slice(start, start + pageSize),
-      page: { pageNo, pageSize, total: filtered.length },
-    };
+    return { list: filtered.slice(start, start + pageSize), page: { pageNo, pageSize, total: filtered.length } };
   }
 
-  getSubmissionDetail(submissionId: string) {
-    const submission = this.homeworkRepository.getSubmissionOrThrow(submissionId);
+  async getSubmissionDetail(submissionId: string) {
+    const submission = await this.homeworkRepository.getSubmissionOrThrow(submissionId);
     return {
       submission,
-      files: this.homeworkRepository.listSubmissionFiles(submissionId),
-      latestAiAnalysis: this.homeworkRepository.getLatestAnalysis(submissionId) ?? null,
-      review: this.homeworkRepository.getReviewBySubmissionId(submissionId) ?? null,
-      reviewDraft: this.homeworkRepository.getReviewDraft(submissionId),
+      files: await this.homeworkRepository.listSubmissionFiles(submissionId),
+      latestAiAnalysis: (await this.homeworkRepository.getLatestAnalysis(submissionId)) ?? null,
+      review: (await this.homeworkRepository.getReviewBySubmissionId(submissionId)) ?? null,
+      reviewDraft: await this.homeworkRepository.getReviewDraft(submissionId),
     };
   }
 
-  createSubmission(payload: CreateHomeworkSubmissionDto) {
-    if (!payload.fileIds?.length) {
-      throw new ConflictException('fileIds is required');
-    }
+  async createSubmission(payload: CreateHomeworkSubmissionDto) {
+    if (!payload.fileIds?.length) throw new ConflictException('fileIds is required');
+    await this.filesService.assertFileAssetsExist(payload.fileIds);
 
-    this.filesService.assertFileAssetsExist(payload.fileIds);
-
-    const submission = this.homeworkRepository.createSubmission({
+    const submission = await this.homeworkRepository.createSubmission({
       studentId: payload.studentId,
       campusId: payload.campusId,
       termId: payload.termId,
@@ -80,13 +74,12 @@ export class HomeworkService {
       uploadedBy: payload.teacherId ?? null,
     });
 
-    this.homeworkRepository.attachFiles(submission.id, payload.fileIds);
-    this.homeworkEventPublisher.publish('HomeworkSubmitted', submission.id, {
+    await this.homeworkRepository.attachFiles(submission.id, payload.fileIds);
+    await this.homeworkEventPublisher.publish('HomeworkSubmitted', submission.id, {
       submissionNo: submission.submissionNo,
       studentId: submission.studentId,
       fileCount: payload.fileIds.length,
     });
-
     return submission;
   }
 
@@ -100,35 +93,28 @@ export class HomeworkService {
       promptVersion: payload.promptVersion ?? 'homework-review-v3',
     });
 
-    return {
-      jobId: job.jobId,
-      status: job.status,
-    };
+    return { jobId: job.jobId, status: job.status };
   }
 
-  getReviewDraft(submissionId: string) {
-    this.homeworkRepository.getSubmissionOrThrow(submissionId);
+  async getReviewDraft(submissionId: string) {
+    await this.homeworkRepository.getSubmissionOrThrow(submissionId);
     return this.homeworkRepository.getReviewDraft(submissionId);
   }
 
-  saveReviewDraft(submissionId: string, payload: HomeworkReviewDraftDto) {
-    return this.homeworkRepository.runInTransaction(() => {
-      const draft = this.homeworkRepository.saveReviewDraft(submissionId, payload);
-      this.homeworkRepository.updateSubmission(submissionId, {
-        reviewStatus: 'reviewing',
-      });
+  async saveReviewDraft(submissionId: string, payload: HomeworkReviewDraftDto) {
+    return this.homeworkRepository.runInTransaction(async () => {
+      const draft = await this.homeworkRepository.saveReviewDraft(submissionId, payload);
+      await this.homeworkRepository.updateSubmission(submissionId, { reviewStatus: 'reviewing' });
       return draft;
     });
   }
 
-  submitReview(submissionId: string, payload: HomeworkReviewDto) {
-    return this.homeworkRepository.runInTransaction(() => {
-      const submission = this.homeworkRepository.getSubmissionOrThrow(submissionId);
-      if (submission.reviewStatus === 'published') {
-        throw new ConflictException('published review can not be overwritten');
-      }
+  async submitReview(submissionId: string, payload: HomeworkReviewDto) {
+    return this.homeworkRepository.runInTransaction(async () => {
+      const submission = await this.homeworkRepository.getSubmissionOrThrow(submissionId);
+      if (submission.reviewStatus === 'published') throw new ConflictException('published review can not be overwritten');
 
-      const review = this.homeworkRepository.replaceReview({
+      const review = await this.homeworkRepository.replaceReview({
         submissionId,
         reviewerTeacherId: payload.reviewerTeacherId ?? submission.teacherId ?? null,
         reviewResult: payload.reviewResult,
@@ -139,39 +125,32 @@ export class HomeworkService {
         publishedAt: payload.publishToFamily ? new Date().toISOString() : null,
       });
 
-      const reviewErrorItems = this.homeworkRepository.replaceReviewErrorItems(
+      const reviewErrorItems = await this.homeworkRepository.replaceReviewErrorItems(
         review.id,
-        (payload.finalErrorItems ?? []).map((item) => ({
-          errorTaxonomyId: item.errorTaxonomyId,
-          weight: item.weight ?? 1,
-          note: item.note,
-        })),
+        (payload.finalErrorItems ?? []).map((item) => ({ errorTaxonomyId: item.errorTaxonomyId, weight: item.weight ?? 1, note: item.note })),
       );
 
-      this.homeworkRepository.updateSubmission(submissionId, {
+      await this.homeworkRepository.updateSubmission(submissionId, {
         reviewStatus: payload.publishToFamily ? 'published' : 'reviewed',
         familyFeedbackStatus: payload.publishToFamily ? 'published' : 'ready',
         finalAccuracyPct: payload.finalAccuracyPct ?? null,
         finalErrorSummary: payload.finalErrorSummary ?? null,
         publishedAt: payload.publishToFamily ? new Date().toISOString() : null,
       });
-      this.homeworkRepository.deleteReviewDraft(submissionId);
+      await this.homeworkRepository.deleteReviewDraft(submissionId);
 
-      this.homeworkEventPublisher.publish('HomeworkReviewed', submissionId, {
+      await this.homeworkEventPublisher.publish('HomeworkReviewed', submissionId, {
         reviewId: review.id,
         reviewResult: payload.reviewResult,
         errorItemCount: reviewErrorItems.length,
       });
 
-      return {
-        reviewId: review.id,
-        reviewStatus: this.homeworkRepository.getSubmissionOrThrow(submissionId).reviewStatus,
-      };
+      return { reviewId: review.id, reviewStatus: (await this.homeworkRepository.getSubmissionOrThrow(submissionId)).reviewStatus };
     });
   }
 
-  listErrorTaxonomies(query: HomeworkErrorTaxonomyQueryDto): HomeworkErrorTaxonomy[] {
-    return this.homeworkRepository.listErrorTaxonomies().filter((item) => {
+  async listErrorTaxonomies(query: HomeworkErrorTaxonomyQueryDto): Promise<HomeworkErrorTaxonomy[]> {
+    return (await this.homeworkRepository.listErrorTaxonomies()).filter((item) => {
       if (query.status && item.status !== query.status) return false;
       if (query.subject && item.subject !== query.subject) return false;
       if (query.keyword) {
@@ -198,8 +177,8 @@ export class HomeworkService {
     return this.homeworkRepository.updateErrorTaxonomy(taxonomyId, payload);
   }
 
-  deleteErrorTaxonomy(taxonomyId: string) {
-    this.homeworkRepository.deleteErrorTaxonomy(taxonomyId);
+  async deleteErrorTaxonomy(taxonomyId: string) {
+    await this.homeworkRepository.deleteErrorTaxonomy(taxonomyId);
     return { deleted: true, taxonomyId };
   }
 

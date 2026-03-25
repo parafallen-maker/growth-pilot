@@ -18,9 +18,7 @@ function createFixture() {
   const attendanceRepository = new AttendanceRepository(join(dir, 'attendance.json'));
   const homeworkRepository = new HomeworkRepository(join(dir, 'homework.json'));
   const billingService = new BillingService(billingRepository);
-  const analyticsService = new AnalyticsService(
-    new AnalyticsRepository(billingRepository, communicationRepository, attendanceRepository, homeworkRepository),
-  );
+  const analyticsService = new AnalyticsService(new AnalyticsRepository(billingRepository, communicationRepository, attendanceRepository, homeworkRepository));
   return { billingService, analyticsService };
 }
 
@@ -42,15 +40,10 @@ test('renewals skeleton supports list/create/status/follow-up with scoped filter
   });
   assert.equal(created.status, 'todo');
 
-  const updatedStatus = billingService.updateRenewalStatus(created.id, {
-    status: 'contacting',
-    lastContactAt: '2026-06-11T18:00:00+08:00',
-  });
+  const updatedStatus = billingService.updateRenewalStatus(created.id, { status: 'contacting', lastContactAt: '2026-06-11T18:00:00+08:00' });
   assert.equal(updatedStatus.status, 'contacting');
 
-  const updatedFollowUp = billingService.updateRenewalFollowUp(created.id, {
-    nextFollowUpAt: '2026-06-13T10:30:00+08:00',
-  });
+  const updatedFollowUp = billingService.updateRenewalFollowUp(created.id, { nextFollowUpAt: '2026-06-13T10:30:00+08:00' });
   assert.equal(updatedFollowUp.nextFollowUpAt, '2026-06-13T10:30:00+08:00');
 
   const filtered = billingService.listRenewals({
@@ -66,7 +59,7 @@ test('renewals skeleton supports list/create/status/follow-up with scoped filter
   assert.equal(filtered.list[0]?.id, created.id);
 });
 
-test('analytics aggregates billing + homework + communication + attendance from repositories', () => {
+test('analytics aggregates billing + homework + communication + attendance from repositories', async () => {
   const { billingService, analyticsService } = createFixture();
 
   const invoice = billingService.createInvoice({
@@ -86,14 +79,9 @@ test('analytics aggregates billing + homework + communication + attendance from 
     channel: 'wechat',
   });
 
-  const scope = {
-    campusId: 'campus-001',
-    termId: 'term-2026-spring',
-    dateFrom: '2026-03-01',
-    dateTo: '2026-03-31',
-  };
+  const scope = { campusId: 'campus-001', termId: 'term-2026-spring', dateFrom: '2026-03-01', dateTo: '2026-03-31' };
 
-  const overview = analyticsService.getOverview(scope);
+  const overview = await analyticsService.getOverview(scope);
   assert.equal(overview.receivableCents, 410000);
   assert.equal(overview.receivedCents, 30000);
   assert.equal(overview.pendingHomeworkCount, 0);
@@ -102,14 +90,14 @@ test('analytics aggregates billing + homework + communication + attendance from 
   assert.equal(overview.trend.renewalTodoCount, 1);
   assert.ok(overview.trend.communicationTouchCount >= 1);
 
-  const billing = analyticsService.getBilling(scope);
+  const billing = await analyticsService.getBilling(scope);
   assert.equal(billing.contractCount, 1);
   assert.equal(billing.filtersApplied.campusId, 'campus-001');
   assert.ok(billing.receivableTrend.some((item) => item.date === '2026-03-25' && item.amountCents === 50000));
   assert.ok(billing.renewalFunnel.some((item) => item.status === 'todo'));
   assert.ok(billing.communicationTouchCount >= 1);
 
-  const teaching = analyticsService.getTeaching({ ...scope, teacherId: 'teacher-001' });
+  const teaching = await analyticsService.getTeaching({ ...scope, teacherId: 'teacher-001' });
   assert.equal(teaching.filtersApplied.termId, 'term-2026-spring');
   assert.equal(teaching.teacherWorkloads[0]?.teacherId, 'teacher-001');
   assert.ok(teaching.subjectAccuracy.some((item) => item.subject === 'math'));

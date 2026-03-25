@@ -23,9 +23,9 @@ export class GrowthService {
     private readonly reportDraftJob: ReportDraftJob,
   ) {}
 
-  listRubrics(query: RubricQueryDto): PageResult<RubricTemplate> {
+  async listRubrics(query: RubricQueryDto): Promise<PageResult<RubricTemplate>> {
     const { pageNo, pageSize } = normalizePage(query);
-    const filtered = this.growthRepository.listRubrics().filter((item) => {
+    const filtered = (await this.growthRepository.listRubrics()).filter((item) => {
       if (query.campusId && item.campusId !== query.campusId) return false;
       if (query.termId && item.termId !== query.termId) return false;
       if (query.status && item.status !== query.status) return false;
@@ -35,16 +35,18 @@ export class GrowthService {
     return this.page(filtered, pageNo, pageSize);
   }
 
-  getRubric(templateId: string) {
-    const template = this.growthRepository.findRubricById(templateId);
+  async getRubric(templateId: string) {
+    const template = await this.growthRepository.findRubricById(templateId);
     if (!template) throw new NotFoundException(`Rubric ${templateId} not found`);
     return template;
   }
 
-  createRubric(payload: CreateRubricTemplateDto) {
+  async createRubric(payload: CreateRubricTemplateDto) {
     const now = new Date().toISOString();
+    const currentRubrics = await this.growthRepository.listRubrics();
+    const templateId = `rubric-${String(currentRubrics.length + 1).padStart(3, '0')}`;
     const template: RubricTemplate = {
-      id: `rubric-${String(this.growthRepository.listRubrics().length + 1).padStart(3, '0')}`,
+      id: templateId,
       campusId: payload.campusId ?? null,
       termId: payload.termId ?? null,
       name: payload.name,
@@ -54,8 +56,8 @@ export class GrowthService {
       createdAt: now,
       updatedAt: now,
       dimensions: payload.dimensions.map((dimension, index) => ({
-        id: `dimension-${String(Date.now())}-${index + 1}`,
-        templateId: `rubric-${String(this.growthRepository.listRubrics().length + 1).padStart(3, '0')}`,
+        id: `dimension-${Date.now()}-${index + 1}`,
+        templateId,
         code: dimension.code,
         name: dimension.name,
         weight: dimension.weight ?? 1,
@@ -68,10 +70,10 @@ export class GrowthService {
     return this.growthRepository.createRubric(template);
   }
 
-  listObservations(query: ObservationQueryDto): PageResult<GrowthObservation> {
+  async listObservations(query: ObservationQueryDto): Promise<PageResult<GrowthObservation>> {
     const { pageNo, pageSize } = normalizePage(query);
-    const publishedObservationIds = this.listPublishedObservationIds();
-    const filtered = this.growthRepository.listObservations().filter((item) => {
+    const publishedObservationIds = await this.listPublishedObservationIds();
+    const filtered = (await this.growthRepository.listObservations()).filter((item) => {
       if (query.studentId && item.studentId !== query.studentId) return false;
       if (query.teacherId && item.teacherId !== query.teacherId) return false;
       if (query.termId && item.termId !== query.termId) return false;
@@ -85,20 +87,22 @@ export class GrowthService {
     return this.page(filtered, pageNo, pageSize);
   }
 
-  createObservation(payload: CreateGrowthObservationDto) {
-    const template = this.getRubric(payload.templateId);
+  async createObservation(payload: CreateGrowthObservationDto) {
+    const template = await this.getRubric(payload.templateId);
     const allowedDimensions = new Set(template.dimensions.map((item) => item.id));
-    const totalScore = payload.scores.reduce((sum, item) => sum + item.score, 0);
+    const scores = payload.scores.filter((item) => allowedDimensions.has(item.dimensionId));
+    const totalScore = scores.reduce((sum, item) => sum + item.score, 0);
     const now = new Date().toISOString();
+    const observations = await this.growthRepository.listObservations();
     const observation: GrowthObservation = {
-      id: `observation-${String(this.growthRepository.listObservations().length + 1).padStart(3, '0')}`,
+      id: `observation-${String(observations.length + 1).padStart(3, '0')}`,
       studentId: payload.studentId,
       termId: payload.termId ?? null,
       teacherId: payload.teacherId ?? null,
       templateId: payload.templateId,
       observationDate: payload.observationDate,
       scene: payload.scene,
-      scores: payload.scores.filter((item) => allowedDimensions.has(item.dimensionId)),
+      scores,
       totalScore,
       strengths: payload.strengths,
       improvementNotes: payload.improvementNotes,
@@ -109,9 +113,9 @@ export class GrowthService {
     return this.growthRepository.createObservation(observation);
   }
 
-  listGoals(query: GoalQueryDto): PageResult<GrowthGoal> {
+  async listGoals(query: GoalQueryDto): Promise<PageResult<GrowthGoal>> {
     const { pageNo, pageSize } = normalizePage(query);
-    const filtered = this.growthRepository.listGoals().filter((item) => {
+    const filtered = (await this.growthRepository.listGoals()).filter((item) => {
       if (query.studentId && item.studentId !== query.studentId) return false;
       if (query.termId && item.termId !== query.termId) return false;
       if (query.goalType && item.goalType !== query.goalType) return false;
@@ -122,10 +126,11 @@ export class GrowthService {
     return this.page(filtered, pageNo, pageSize);
   }
 
-  createGoal(payload: CreateGrowthGoalDto) {
+  async createGoal(payload: CreateGrowthGoalDto) {
     const now = new Date().toISOString();
+    const goals = await this.growthRepository.listGoals();
     const goal: GrowthGoal = {
-      id: `goal-${String(this.growthRepository.listGoals().length + 1).padStart(3, '0')}`,
+      id: `goal-${String(goals.length + 1).padStart(3, '0')}`,
       studentId: payload.studentId,
       termId: payload.termId ?? null,
       goalType: payload.goalType,
@@ -146,8 +151,8 @@ export class GrowthService {
     return this.growthRepository.createGoal(goal);
   }
 
-  createCheckin(goalId: string, payload: CreateGoalCheckinDto) {
-    const goal = this.growthRepository.findGoalById(goalId);
+  async createCheckin(goalId: string, payload: CreateGoalCheckinDto) {
+    const goal = await this.growthRepository.findGoalById(goalId);
     if (!goal) throw new NotFoundException(`Goal ${goalId} not found`);
     const checkin = {
       id: `checkin-${goalId}-${goal.checkins.length + 1}`,
@@ -158,12 +163,12 @@ export class GrowthService {
       nextAction: payload.nextAction,
       createdAt: new Date().toISOString(),
     };
-    return this.growthRepository.addCheckin(checkin)!;
+    return (await this.growthRepository.addCheckin(checkin))!;
   }
 
-  listReports(query: ReportQueryDto): PageResult<GrowthReport> {
+  async listReports(query: ReportQueryDto): Promise<PageResult<GrowthReport>> {
     const { pageNo, pageSize } = normalizePage(query);
-    const filtered = this.growthRepository.listReports().filter((item) => {
+    const filtered = (await this.growthRepository.listReports()).filter((item) => {
       if (query.studentId && item.studentId !== query.studentId) return false;
       if (query.termId && item.termId !== query.termId) return false;
       if (query.reportType && item.reportType !== query.reportType) return false;
@@ -174,25 +179,20 @@ export class GrowthService {
     return this.page(filtered, pageNo, pageSize);
   }
 
-  getReportDetail(reportId: string) {
-    const report = this.growthRepository.findReportById(reportId);
+  async getReportDetail(reportId: string) {
+    const report = await this.growthRepository.findReportById(reportId);
     if (!report) throw new NotFoundException(`Report ${reportId} not found`);
-    return {
-      report,
-      workflow: this.extractWorkflow(report.summaryJson),
-    };
+    return { report, workflow: this.extractWorkflow(report.summaryJson) };
   }
 
   generateReportDraft(payload: GenerateGrowthReportDto) {
     return this.reportDraftJob.queue(payload);
   }
 
-  reviewReport(reportId: string, payload: ReviewGrowthReportDto) {
-    const report = this.growthRepository.findReportById(reportId);
+  async reviewReport(reportId: string, payload: ReviewGrowthReportDto) {
+    const report = await this.growthRepository.findReportById(reportId);
     if (!report) throw new NotFoundException(`Report ${reportId} not found`);
-    if (report.status === 'published') {
-      throw new ConflictException('published report can not be reviewed again');
-    }
+    if (report.status === 'published') throw new ConflictException('published report can not be reviewed again');
 
     const now = new Date().toISOString();
     const summaryJson = {
@@ -206,7 +206,7 @@ export class GrowthService {
       },
     };
 
-    const updated = this.growthRepository.updateReport(reportId, {
+    const updated = await this.growthRepository.updateReport(reportId, {
       status: 'reviewed',
       title: payload.title ?? report.title,
       draftMarkdown: payload.draftMarkdown ?? report.draftMarkdown,
@@ -215,22 +215,14 @@ export class GrowthService {
     });
     if (!updated) throw new NotFoundException(`Report ${reportId} not found`);
 
-    return {
-      reportId,
-      status: updated.status,
-      reviewedAt: now,
-    };
+    return { reportId, status: updated.status, reviewedAt: now };
   }
 
-  publishReport(reportId: string, payload: PublishGrowthReportDto) {
-    const report = this.growthRepository.findReportById(reportId);
+  async publishReport(reportId: string, payload: PublishGrowthReportDto) {
+    const report = await this.growthRepository.findReportById(reportId);
     if (!report) throw new NotFoundException(`Report ${reportId} not found`);
-    if (report.status === 'draft') {
-      throw new ConflictException('report must be reviewed before publish');
-    }
-    if (report.status === 'published') {
-      throw new ConflictException('report already published');
-    }
+    if (report.status === 'draft') throw new ConflictException('report must be reviewed before publish');
+    if (report.status === 'published') throw new ConflictException('report already published');
 
     const now = new Date().toISOString();
     const summaryJson = {
@@ -244,7 +236,7 @@ export class GrowthService {
       },
     };
 
-    const updated = this.growthRepository.updateReport(reportId, {
+    const updated = await this.growthRepository.updateReport(reportId, {
       status: 'published',
       summaryJson,
       publishedAt: now,
@@ -252,16 +244,12 @@ export class GrowthService {
     });
     if (!updated) throw new NotFoundException(`Report ${reportId} not found`);
 
-    return {
-      reportId,
-      status: updated.status,
-      publishedAt: now,
-    };
+    return { reportId, status: updated.status, publishedAt: now };
   }
 
-  private listPublishedObservationIds() {
+  private async listPublishedObservationIds() {
     const ids = new Set<string>();
-    for (const report of this.growthRepository.listReports()) {
+    for (const report of await this.growthRepository.listReports()) {
       if (report.status !== 'published') continue;
       const observationIds = this.extractMaterialObservationIds(report.summaryJson);
       observationIds.forEach((id) => ids.add(id));

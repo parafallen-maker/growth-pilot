@@ -31,7 +31,7 @@ export class FilesService {
       },
     });
 
-    const fileAsset = this.fileAssetRepository.create({
+    const fileAsset = await this.fileAssetRepository.create({
       storageProvider: putResult.provider,
       bucketName: putResult.bucketName,
       objectKey: putResult.objectKey,
@@ -81,16 +81,16 @@ export class FilesService {
     };
   }
 
-  getFileAsset(fileId: string) {
-    return this.toAssetDetail(this.fileAssetRepository.getByIdOrThrow(fileId));
+  async getFileAsset(fileId: string) {
+    return this.toAssetDetail(await this.fileAssetRepository.getByIdOrThrow(fileId));
   }
 
-  resolveFileUrls(fileIds: string[]) {
-    return this.fileAssetRepository.getManyByIds(fileIds).map((asset) => this.objectStorageAdapter.getObjectUrl(asset.bucketName, asset.objectKey));
+  async resolveFileUrls(fileIds: string[]) {
+    return (await this.fileAssetRepository.getManyByIds(fileIds)).map((asset) => this.objectStorageAdapter.getObjectUrl(asset.bucketName, asset.objectKey));
   }
 
-  assertFileAssetsExist(fileIds: string[]) {
-    this.fileAssetRepository.getManyByIds(fileIds);
+  async assertFileAssetsExist(fileIds: string[]) {
+    await this.fileAssetRepository.getManyByIds(fileIds);
   }
 
   private validatePayload(payload: UploadFileDto) {

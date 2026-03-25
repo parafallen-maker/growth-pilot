@@ -20,67 +20,67 @@ export class GrowthController {
   constructor(private readonly growthService: GrowthService) {}
 
   @Get('rubrics')
-  listRubrics(@Query() query: RubricQueryDto) {
-    return ok(this.growthService.listRubrics(query));
+  async listRubrics(@Query() query: RubricQueryDto) {
+    return ok(await this.growthService.listRubrics(query));
   }
 
   @Get('rubrics/:templateId')
-  getRubric(@Param('templateId') templateId: string) {
-    return ok(this.growthService.getRubric(templateId));
+  async getRubric(@Param('templateId') templateId: string) {
+    return ok(await this.growthService.getRubric(templateId));
   }
 
   @Post('rubrics')
-  createRubric(@Body() payload: CreateRubricTemplateDto) {
-    return ok(this.growthService.createRubric(payload));
+  async createRubric(@Body() payload: CreateRubricTemplateDto) {
+    return ok(await this.growthService.createRubric(payload));
   }
 
   @Get('observations')
-  listObservations(@Query() query: ObservationQueryDto) {
-    return ok(this.growthService.listObservations(query));
+  async listObservations(@Query() query: ObservationQueryDto) {
+    return ok(await this.growthService.listObservations(query));
   }
 
   @Post('observations')
-  createObservation(@Body() payload: CreateGrowthObservationDto) {
-    return ok(this.growthService.createObservation(payload));
+  async createObservation(@Body() payload: CreateGrowthObservationDto) {
+    return ok(await this.growthService.createObservation(payload));
   }
 
   @Get('goals')
-  listGoals(@Query() query: GoalQueryDto) {
-    return ok(this.growthService.listGoals(query));
+  async listGoals(@Query() query: GoalQueryDto) {
+    return ok(await this.growthService.listGoals(query));
   }
 
   @Post('goals')
-  createGoal(@Body() payload: CreateGrowthGoalDto) {
-    return ok(this.growthService.createGoal(payload));
+  async createGoal(@Body() payload: CreateGrowthGoalDto) {
+    return ok(await this.growthService.createGoal(payload));
   }
 
   @Post('goals/:goalId/checkins')
-  createCheckin(@Param('goalId') goalId: string, @Body() payload: CreateGoalCheckinDto) {
-    return ok(this.growthService.createCheckin(goalId, payload));
+  async createCheckin(@Param('goalId') goalId: string, @Body() payload: CreateGoalCheckinDto) {
+    return ok(await this.growthService.createCheckin(goalId, payload));
   }
 
   @Get('reports')
-  listReports(@Query() query: ReportQueryDto) {
-    return ok(this.growthService.listReports(query));
+  async listReports(@Query() query: ReportQueryDto) {
+    return ok(await this.growthService.listReports(query));
   }
 
   @Get('reports/:reportId')
-  getReport(@Param('reportId') reportId: string) {
-    return ok(this.growthService.getReportDetail(reportId));
+  async getReport(@Param('reportId') reportId: string) {
+    return ok(await this.growthService.getReportDetail(reportId));
   }
 
   @Post('reports/generate')
-  generateReport(@Body() payload: GenerateGrowthReportDto) {
-    return ok(this.growthService.generateReportDraft(payload));
+  async generateReport(@Body() payload: GenerateGrowthReportDto) {
+    return ok(await this.growthService.generateReportDraft(payload));
   }
 
   @Post('reports/:reportId/review')
-  reviewReport(@Param('reportId') reportId: string, @Body() payload: ReviewGrowthReportDto) {
-    return ok(this.growthService.reviewReport(reportId, payload));
+  async reviewReport(@Param('reportId') reportId: string, @Body() payload: ReviewGrowthReportDto) {
+    return ok(await this.growthService.reviewReport(reportId, payload));
   }
 
   @Post('reports/:reportId/publish')
-  publishReport(@Param('reportId') reportId: string, @Body() payload: PublishGrowthReportDto) {
-    return ok(this.growthService.publishReport(reportId, payload));
+  async publishReport(@Param('reportId') reportId: string, @Body() payload: PublishGrowthReportDto) {
+    return ok(await this.growthService.publishReport(reportId, payload));
   }
 }

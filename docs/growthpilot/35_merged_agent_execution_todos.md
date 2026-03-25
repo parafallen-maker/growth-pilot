@@ -196,9 +196,9 @@
   - 已将 families/guardians 改造成 selectable file/db repository adapter；默认仍为 file，DB 实现已覆盖家庭/监护人读写与 primary guardian 约束。
 - [/] `BE-10` 替换 `teachers` module — teachers/assignments → DB
   - 已将 teachers 改造成 selectable file/db repository adapter，并补上 teacher assignments 的 DB 查询路径；默认仍为 file，development records 写路径待后续 BE-20 一并接真。
-- [ ] `BE-11` 替换 `files` module — file_assets → DB, adapter 保留
-- [ ] `BE-12` 替换 `homework` module — submissions/analyses/reviews → DB
-- [ ] `BE-13` 替换 `growth` module — rubrics/observations/goals/reports → DB
+- [x] `BE-11` 替换 `files` module — file_assets → DB, adapter 保留
+- [/] `BE-12` 替换 `homework` module — submissions/analyses/reviews → DB
+- [/] `BE-13` 替换 `growth` module — rubrics/observations/goals/reports → DB
 - [ ] `BE-14` 替换 `billing` module — products/contracts/invoices/payments/refunds → DB
 - [ ] `BE-15` 替换 `attendance` module → DB
 - [ ] `BE-16` 替换 `communication` module → DB

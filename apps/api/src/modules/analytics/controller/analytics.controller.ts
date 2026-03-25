@@ -13,19 +13,19 @@ export class AnalyticsController {
 
   @Get('overview')
   @RequirePermission('analytics:overview:view')
-  getOverview(@Query() query: AnalyticsQueryDto) {
-    return ok(this.analyticsService.getOverview(query));
+  async getOverview(@Query() query: AnalyticsQueryDto) {
+    return ok(await this.analyticsService.getOverview(query));
   }
 
   @Get('teaching')
   @RequirePermission('analytics:teaching:view')
-  getTeaching(@Query() query: AnalyticsQueryDto) {
-    return ok(this.analyticsService.getTeaching(query));
+  async getTeaching(@Query() query: AnalyticsQueryDto) {
+    return ok(await this.analyticsService.getTeaching(query));
   }
 
   @Get('billing')
   @RequirePermission('analytics:billing:view')
-  getBilling(@Query() query: AnalyticsQueryDto) {
-    return ok(this.analyticsService.getBilling(query));
+  async getBilling(@Query() query: AnalyticsQueryDto) {
+    return ok(await this.analyticsService.getBilling(query));
   }
 }

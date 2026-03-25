@@ -19,18 +19,18 @@ export class HomeworkController {
   constructor(private readonly homeworkService: HomeworkService) {}
 
   @Get('submissions')
-  listSubmissions(@Query() query: HomeworkSubmissionQueryDto) {
-    return ok(this.homeworkService.listSubmissions(query));
+  async listSubmissions(@Query() query: HomeworkSubmissionQueryDto) {
+    return ok(await this.homeworkService.listSubmissions(query));
   }
 
   @Get('submissions/:submissionId')
-  getSubmissionDetail(@Param('submissionId') submissionId: string) {
-    return ok(this.homeworkService.getSubmissionDetail(submissionId));
+  async getSubmissionDetail(@Param('submissionId') submissionId: string) {
+    return ok(await this.homeworkService.getSubmissionDetail(submissionId));
   }
 
   @Post('submissions')
-  createSubmission(@Body() payload: CreateHomeworkSubmissionDto) {
-    return ok(this.homeworkService.createSubmission(payload));
+  async createSubmission(@Body() payload: CreateHomeworkSubmissionDto) {
+    return ok(await this.homeworkService.createSubmission(payload));
   }
 
   @Post('submissions/:submissionId/analyze')
@@ -43,42 +43,42 @@ export class HomeworkController {
   }
 
   @Get('submissions/:submissionId/review-draft')
-  getReviewDraft(@Param('submissionId') submissionId: string) {
-    return ok(this.homeworkService.getReviewDraft(submissionId));
+  async getReviewDraft(@Param('submissionId') submissionId: string) {
+    return ok(await this.homeworkService.getReviewDraft(submissionId));
   }
 
   @Put('submissions/:submissionId/review-draft')
-  saveReviewDraft(@Param('submissionId') submissionId: string, @Body() payload: HomeworkReviewDraftDto) {
-    return ok(this.homeworkService.saveReviewDraft(submissionId, payload));
+  async saveReviewDraft(@Param('submissionId') submissionId: string, @Body() payload: HomeworkReviewDraftDto) {
+    return ok(await this.homeworkService.saveReviewDraft(submissionId, payload));
   }
 
   @Post('submissions/:submissionId/review')
-  submitReview(@Param('submissionId') submissionId: string, @Body() payload: HomeworkReviewDto) {
-    return ok(this.homeworkService.submitReview(submissionId, payload));
+  async submitReview(@Param('submissionId') submissionId: string, @Body() payload: HomeworkReviewDto) {
+    return ok(await this.homeworkService.submitReview(submissionId, payload));
   }
 
   @Get('error-taxonomies')
-  listErrorTaxonomies(@Query() query: HomeworkErrorTaxonomyQueryDto) {
-    return ok(this.homeworkService.listErrorTaxonomies(query));
+  async listErrorTaxonomies(@Query() query: HomeworkErrorTaxonomyQueryDto) {
+    return ok(await this.homeworkService.listErrorTaxonomies(query));
   }
 
   @Post('error-taxonomies')
-  createErrorTaxonomy(@Body() payload: CreateHomeworkErrorTaxonomyDto) {
-    return ok(this.homeworkService.createErrorTaxonomy(payload));
+  async createErrorTaxonomy(@Body() payload: CreateHomeworkErrorTaxonomyDto) {
+    return ok(await this.homeworkService.createErrorTaxonomy(payload));
   }
 
   @Patch('error-taxonomies/:taxonomyId')
-  updateErrorTaxonomy(@Param('taxonomyId') taxonomyId: string, @Body() payload: UpdateHomeworkErrorTaxonomyDto) {
-    return ok(this.homeworkService.updateErrorTaxonomy(taxonomyId, payload));
+  async updateErrorTaxonomy(@Param('taxonomyId') taxonomyId: string, @Body() payload: UpdateHomeworkErrorTaxonomyDto) {
+    return ok(await this.homeworkService.updateErrorTaxonomy(taxonomyId, payload));
   }
 
   @Delete('error-taxonomies/:taxonomyId')
-  deleteErrorTaxonomy(@Param('taxonomyId') taxonomyId: string) {
-    return ok(this.homeworkService.deleteErrorTaxonomy(taxonomyId));
+  async deleteErrorTaxonomy(@Param('taxonomyId') taxonomyId: string) {
+    return ok(await this.homeworkService.deleteErrorTaxonomy(taxonomyId));
   }
 
   @Get('outbox-events')
-  listOutboxEvents() {
-    return ok(this.homeworkService.listOutboxEvents());
+  async listOutboxEvents() {
+    return ok(await this.homeworkService.listOutboxEvents());
   }
 }
