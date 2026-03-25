@@ -31,7 +31,7 @@ export class ReportDraftJob {
     const queued = await this.bullmqJobBroker.enqueue(GROWTH_REPORT_DRAFT_QUEUE, GROWTH_REPORT_DRAFT_JOB, job.jobId, payload);
 
     if (!queued) {
-      void this.executeQueuedJob(payload);
+      void this.executeQueuedJob(payload).catch(() => undefined);
     }
 
     return { jobId: job.jobId, status: job.status };

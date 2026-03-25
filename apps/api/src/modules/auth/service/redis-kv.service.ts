@@ -6,6 +6,7 @@ type RedisClientLike = {
   expire(key: string, seconds: number): Promise<number>;
   get(key: string): Promise<string | null>;
   incr(key: string): Promise<number>;
+  ping?(): Promise<'PONG' | string>;
   quit(): Promise<'OK' | void>;
   set(key: string, value: string, mode: 'EX', ttlSeconds: number): Promise<'OK' | null>;
   ttl?(key: string): Promise<number>;
@@ -13,9 +14,15 @@ type RedisClientLike = {
 
 type RedisCtor = new (url: string, options?: Record<string, unknown>) => RedisClientLike;
 
+export interface RedisKvServiceOptions {
+  loadModule?: typeof loadOptionalModule;
+}
+
 @Injectable()
 export class RedisKvService implements OnModuleDestroy {
   private clientPromise?: Promise<RedisClientLike | null>;
+
+  constructor(private readonly options: RedisKvServiceOptions = {}) {}
 
   async getClient(): Promise<RedisClientLike | null> {
     if (!this.clientPromise) {
@@ -35,18 +42,22 @@ export class RedisKvService implements OnModuleDestroy {
       return null;
     }
 
-    const redisModule = await loadOptionalModule<{ default?: RedisCtor }>('ioredis');
+    const redisModule = await (this.options.loadModule ?? loadOptionalModule)<{ default?: RedisCtor }>('ioredis');
     const Redis = redisModule?.default;
     if (!Redis) {
       return null;
     }
 
+    let client: RedisClientLike | null = null;
     try {
-      return new Redis(redisUrl, {
+      client = new Redis(redisUrl, {
         lazyConnect: false,
         maxRetriesPerRequest: 1,
       });
+      await client.ping?.();
+      return client;
     } catch {
+      await client?.quit().catch(() => undefined);
       return null;
     }
   }

@@ -8,9 +8,15 @@ type PutObjectCommandCtor = new (input: Record<string, unknown>) => unknown;
 type GetObjectCommandCtor = new (input: Record<string, unknown>) => unknown;
 type GetSignedUrl = (client: unknown, command: unknown, options: { expiresIn: number }) => Promise<string>;
 
+export interface S3ObjectStorageAdapterOptions {
+  loadModule?: typeof loadOptionalModule;
+}
+
 @Injectable()
 export class S3ObjectStorageAdapter implements ObjectStorageAdapter {
   private clientPromise?: Promise<unknown>;
+
+  constructor(private readonly options: S3ObjectStorageAdapterOptions = {}) {}
 
   async putObject(input: PutObjectInput) {
     const { S3Client, PutObjectCommand } = await this.loadSdkOrThrow();
@@ -79,12 +85,12 @@ export class S3ObjectStorageAdapter implements ObjectStorageAdapter {
 
   private async loadSdkOrThrow() {
     const [clientModule, presignerModule] = await Promise.all([
-      loadOptionalModule<{
+      (this.options.loadModule ?? loadOptionalModule)<{
         GetObjectCommand?: GetObjectCommandCtor;
         PutObjectCommand?: PutObjectCommandCtor;
         S3Client?: S3ClientCtor;
       }>('@aws-sdk/client-s3'),
-      loadOptionalModule<{ getSignedUrl?: GetSignedUrl }>('@aws-sdk/s3-request-presigner'),
+      (this.options.loadModule ?? loadOptionalModule)<{ getSignedUrl?: GetSignedUrl }>('@aws-sdk/s3-request-presigner'),
     ]);
 
     if (!clientModule?.S3Client || !clientModule.PutObjectCommand || !clientModule.GetObjectCommand || !presignerModule?.getSignedUrl) {
