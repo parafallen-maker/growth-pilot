@@ -184,18 +184,20 @@
 
 #### Phase 2：逐模块替换 Repository（按依赖顺序）
 
-- [/] `BE-05` 替换 `auth` module — session 存 DB 或 Redis
-  - 已新增 `auth_sessions` Drizzle schema、auth session repository 抽象与 file/db selectable adapter；默认仍走 file，设置 `GP_PERSISTENCE_ADAPTER=db` 且提供 `DATABASE_URL` 后可切到 DB。
-- [/] `BE-06` 替换 `users` module — users/roles 从 JSON → DB
-  - 已将 users/roles/permissions 改造成 repository adapter 结构，并提供 Drizzle DB 实现与 seed 基线；当前为了兼容现有同步链路与测试，默认 adapter 仍为 file。
-- [/] `BE-07` 替换 `settings` module — campuses/terms/dictionaries → DB
-  - 已将 campuses/terms/dictionaries 改造成 repository adapter 结构，并提供 Drizzle DB 实现与 seed 基线；默认 adapter 仍为 file，待后续联通 migration/真实数据库验收后切默认值。
-- [/] `BE-08` 替换 `students` module — students/enrollments → DB
-  - 已将 students/enrollments 改造成 selectable file/db repository adapter；默认仍为 file，设置 `GP_PERSISTENCE_ADAPTER=db` 且提供 `DATABASE_URL` 后走 Drizzle PostgreSQL 实现。
-- [/] `BE-09` 替换 `families` module — families/guardians → DB
-  - 已将 families/guardians 改造成 selectable file/db repository adapter；默认仍为 file，DB 实现已覆盖家庭/监护人读写与 primary guardian 约束。
-- [/] `BE-10` 替换 `teachers` module — teachers/assignments → DB
-  - 已将 teachers 改造成 selectable file/db repository adapter，并补上 teacher assignments 的 DB 查询路径；默认仍为 file，development records 写路径待后续 BE-20 一并接真。
+- [x] `BE-05` 替换 `auth` module — session 存 DB 或 Redis
+  - 已将 `auth_sessions` 纳入 Drizzle config 与正式 migration，auth session 的 DB 持久化不再停留在“代码有 schema、数据库无表”的半接真状态；未配置 DB 时 file adapter 仍保留作本地/测试 fallback。
+- [x] `BE-06` 替换 `users` module — users/roles 从 JSON → DB
+  - 已修复 DB 路径的真实缺口：`user_roles` 允许无 `campusId` 角色绑定、权限 seed id 与 repository fallback 对齐、用户列表关键字匹配补齐 `username`，并补上 `campusId` 存在性校验。
+  - 2026-03-25 续跑补丁：将 `user_roles_user_role_campus_uq` 改为 `UNIQUE NULLS NOT DISTINCT`，避免 Postgres 把 system-level 角色绑定里的 `NULL campusId` 视为可重复值。
+- [x] `BE-07` 替换 `settings` module — campuses/terms/dictionaries → DB
+  - 已让 DB seed 与 settings/users 默认基线对齐：校区、学期、字典、默认用户的 campus 绑定不再与 file 默认数据分叉；未配置 DB 时 file adapter 仍保留作 fallback。
+- [x] `BE-08` 替换 `students` module — students/enrollments → DB
+  - 已补齐 DB enrollment 写路径校验（campus / term / teacher 存在性与 term-campus 归属），并修正 student 360 作业汇总对 `reviewed` / `published` 状态的统计。
+- [x] `BE-09` 替换 `families` module — families/guardians → DB
+  - 已完成家庭、监护人、家庭任务的 DB 读写路径，并补齐与 file adapter 一致的结果顺序语义，primary guardian 约束保持生效。
+- [x] `BE-10` 替换 `teachers` module — teachers/assignments → DB
+  - 已完成 teachers / assignments / development records 的 DB 路径，补上教师创建时的 campus 存在性校验，并统一 assignments / development records 的返回顺序语义。
+  - 本轮定向验证已执行：`foundation.test.ts`、`api-gap.test.ts`、`students.test.ts`、`db-seed.test.ts`、`db-migrations.test.ts` 以及 `npm run typecheck --workspace @growthpilot/api`；未在本轮额外启动真实 PostgreSQL 实库联调。
 - [x] `BE-11` 替换 `files` module — file_assets → DB, adapter 保留
 - [x] `BE-12` 替换 `homework` module — submissions/analyses/reviews → DB
   - 已补齐 DB 路径下的 review draft / outbox event 持久化，去掉此前“用正式 review 表伪装 draft”的实现。

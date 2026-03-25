@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { asc, eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import type { Teacher, TeacherDevelopmentRecord } from '@growthpilot/schema/index';
 import { createDb, dbSchema } from '../../../db';
 import { isDbPersistenceEnabled } from '../../../shared/persistence/adapter';
@@ -146,7 +146,7 @@ class DbTeachersRepository implements TeachersRepositoryPort {
   private readonly db = createDb();
 
   async list() {
-    const rows = await this.db.select().from(dbSchema.teachers).orderBy(asc(dbSchema.teachers.createdAt));
+    const rows = await this.db.select().from(dbSchema.teachers).orderBy(desc(dbSchema.teachers.createdAt));
     return rows.map((row) => this.mapTeacher(row));
   }
 
@@ -160,7 +160,7 @@ class DbTeachersRepository implements TeachersRepositoryPort {
       .select()
       .from(dbSchema.teacherAssignments)
       .where(eq(dbSchema.teacherAssignments.teacherId, teacherId))
-      .orderBy(asc(dbSchema.teacherAssignments.createdAt));
+      .orderBy(desc(dbSchema.teacherAssignments.createdAt));
 
     return rows.map((row) => ({
       id: row.id,
@@ -182,7 +182,7 @@ class DbTeachersRepository implements TeachersRepositoryPort {
       .select()
       .from(dbSchema.developmentRecords)
       .where(eq(dbSchema.developmentRecords.teacherId, teacherId))
-      .orderBy(asc(dbSchema.developmentRecords.occurredAt));
+      .orderBy(desc(dbSchema.developmentRecords.occurredAt), desc(dbSchema.developmentRecords.createdAt));
     return rows.map((row) => this.mapDevelopmentRecord(row));
   }
 
@@ -190,6 +190,10 @@ class DbTeachersRepository implements TeachersRepositoryPort {
     const duplicate = await this.db.select({ id: dbSchema.teachers.id }).from(dbSchema.teachers).where(eq(dbSchema.teachers.employeeNo, input.employeeNo)).limit(1);
     if (duplicate[0]) {
       throw new ConflictException({ code: 'DATA_409', message: 'employee_no already exists' });
+    }
+    const campus = await this.db.select({ id: dbSchema.campuses.id }).from(dbSchema.campuses).where(eq(dbSchema.campuses.id, input.campusId)).limit(1);
+    if (!campus[0]) {
+      throw new NotFoundException(`Campus ${input.campusId} not found`);
     }
 
     const now = new Date();

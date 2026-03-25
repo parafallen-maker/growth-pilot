@@ -118,6 +118,7 @@ export class StudentsService {
     const studentPayments = (await this.billingRepository.listPayments()).filter((item) => invoiceIds.has(item.invoiceId));
 
     const reviewedHomework = studentHomework.filter((item) => item.finalAccuracyPct != null);
+    const completedReviewStatuses = new Set(['reviewed', 'published']);
     const averageAccuracyPct = reviewedHomework.length ? Math.round(reviewedHomework.reduce((sum, item) => sum + (item.finalAccuracyPct ?? 0), 0) / reviewedHomework.length) : null;
     const presentAttendance = attendanceEvents.filter((item) => item.eventType === 'checkin');
     const absentAttendance = [] as typeof attendanceEvents;
@@ -131,8 +132,8 @@ export class StudentsService {
       homeworkSummary: {
         latestSubmissionId: studentHomework[0]?.id ?? null,
         latestHomeworkDate: studentHomework[0]?.homeworkDate ?? null,
-        reviewedCount: studentHomework.filter((item) => item.reviewStatus === 'published').length,
-        pendingReviewCount: studentHomework.filter((item) => item.reviewStatus !== 'published').length,
+        reviewedCount: studentHomework.filter((item) => completedReviewStatuses.has(item.reviewStatus)).length,
+        pendingReviewCount: studentHomework.filter((item) => !completedReviewStatuses.has(item.reviewStatus)).length,
         averageAccuracyPct,
         latestFeedback: studentHomework[0]?.finalErrorSummary ?? null,
         trend: studentHomework.filter((item) => item.finalAccuracyPct != null).map((item) => ({ date: item.homeworkDate, accuracyPct: item.finalAccuracyPct ?? 0 })),

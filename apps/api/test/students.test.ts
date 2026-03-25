@@ -72,7 +72,7 @@ test('student 360 aggregate reads persisted student/family/enrollment data', asy
   assert.equal(detail360.recentTimeline.some((item) => item.type === 'enrollment'), true);
 
   assert.equal(detail360.homeworkSummary.reviewedCount, 1);
-  assert.equal(detail360.homeworkSummary.pendingReviewCount, 1);
+  assert.equal(detail360.homeworkSummary.pendingReviewCount, 0);
   assert.equal(detail360.growthSummary.activeGoalCount, 1);
   assert.equal(detail360.attendanceSummary.presentDays, 1);
   assert.equal(detail360.billingSummary.outstandingAmount, 360000);

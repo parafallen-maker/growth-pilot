@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
+import { settingsRepositorySeed } from '../modules/settings/repository/settings.repository';
+import { usersRepositorySeed } from '../modules/users/repository/users.repository';
 import { authSessions, campuses, permissions, roles, schoolTerms, systemDictionaries, userRoles, users } from './schema';
 
 const now = new Date();
@@ -46,85 +48,80 @@ export const defaultDictionaries = [
 ] as const;
 
 export function buildSeedPlan() {
-  const campusId = randomUUID();
-  const adminRoleId = randomUUID();
-  const teacherRoleId = randomUUID();
-  const permissionRows = [
-    { id: randomUUID(), code: 'auth.session.read', name: '读取会话信息', module: 'auth', action: 'read' },
-    { id: randomUUID(), code: 'settings:view', name: '查看设置', module: 'settings', action: 'view' },
-    { id: randomUUID(), code: 'jobs.read', name: '读取任务中心', module: 'jobs', action: 'read' },
-    { id: randomUUID(), code: 'users:view', name: '查看用户', module: 'users', action: 'view' },
-    { id: randomUUID(), code: 'users.read', name: '读取用户（兼容旧约定）', module: 'users', action: 'read' },
-    { id: randomUUID(), code: 'users.role.bind', name: '绑定用户角色', module: 'users', action: 'bind' },
-    { id: randomUUID(), code: 'teachers:view', name: '查看教师', module: 'teachers', action: 'view' },
-    { id: randomUUID(), code: 'students:view', name: '查看学生', module: 'students', action: 'view' },
-    { id: randomUUID(), code: 'families:view', name: '查看家庭', module: 'families', action: 'view' },
-    { id: randomUUID(), code: 'analytics:overview:view', name: '查看总览分析', module: 'analytics', action: 'view' },
-    { id: randomUUID(), code: 'analytics:teaching:view', name: '查看教学分析', module: 'analytics', action: 'view' },
-    { id: randomUUID(), code: 'analytics:billing:view', name: '查看收费分析', module: 'analytics', action: 'view' },
-    { id: randomUUID(), code: 'attendance:board:view', name: '查看签到看板', module: 'attendance', action: 'view' },
-    { id: randomUUID(), code: 'attendance:board:manage', name: '管理签到事件', module: 'attendance', action: 'manage' },
-    { id: randomUUID(), code: 'attendance:devices:view', name: '查看设备', module: 'attendance', action: 'view' },
-    { id: randomUUID(), code: 'attendance:devices:manage', name: '管理设备', module: 'attendance', action: 'manage' },
-    { id: randomUUID(), code: 'attendance:homework-time:view', name: '查看作业时长', module: 'attendance', action: 'view' },
-    { id: randomUUID(), code: 'billing:products:view', name: '查看收费产品', module: 'billing', action: 'view' },
-    { id: randomUUID(), code: 'billing:products:manage', name: '管理收费产品', module: 'billing', action: 'manage' },
-    { id: randomUUID(), code: 'billing:contracts:view', name: '查看合同', module: 'billing', action: 'view' },
-    { id: randomUUID(), code: 'billing:contracts:manage', name: '管理合同', module: 'billing', action: 'manage' },
-    { id: randomUUID(), code: 'billing:invoices:view', name: '查看账单', module: 'billing', action: 'view' },
-    { id: randomUUID(), code: 'billing:payments:manage', name: '管理收款', module: 'billing', action: 'manage' },
-    { id: randomUUID(), code: 'billing:refunds:manage', name: '管理退款', module: 'billing', action: 'manage' },
-    { id: randomUUID(), code: 'billing:renewals:view', name: '查看续费', module: 'billing', action: 'view' },
-    { id: randomUUID(), code: 'billing:renewals:manage', name: '管理续费', module: 'billing', action: 'manage' },
-    { id: randomUUID(), code: 'communication:records:view', name: '查看沟通记录', module: 'communication', action: 'view' },
-    { id: randomUUID(), code: 'communication:records:manage', name: '管理沟通记录', module: 'communication', action: 'manage' },
-    { id: randomUUID(), code: 'communication:templates:view', name: '查看消息模板', module: 'communication', action: 'view' },
-    { id: randomUUID(), code: 'communication:templates:manage', name: '管理消息模板', module: 'communication', action: 'manage' },
-    { id: randomUUID(), code: 'communication:messages:view', name: '查看消息任务', module: 'communication', action: 'view' },
-    { id: randomUUID(), code: 'communication:messages:manage', name: '管理消息任务', module: 'communication', action: 'manage' },
-  ];
-  const adminUserId = randomUUID();
-  const teacherUserId = randomUUID();
+  const roleIdByCode = new Map(usersRepositorySeed.roles.map((role) => [role.code, role.id]));
+  const userIdByUsername = new Map(usersRepositorySeed.users.map((user) => [user.username, user.id]));
 
   return {
-    campuses: defaultCampuses.map((campus) => ({ id: campusId, ...campus })),
+    campuses: settingsRepositorySeed.campuses.map((campus, index) => ({ ...campus, timezone: 'Asia/Shanghai', sortOrder: (index + 1) * 100 })),
     roles: [
-      { id: adminRoleId, code: 'admin', name: '系统管理员', scopeLevel: 'system', status: 'active' },
-      { id: teacherRoleId, code: 'teacher', name: '任课老师', scopeLevel: 'campus', status: 'active' },
+      ...usersRepositorySeed.roles.map((role) => ({
+        id: role.id,
+        code: role.code,
+        name: role.name,
+        scopeLevel: role.scopeLevel,
+        status: role.status,
+      })),
       ...defaultRoles.map((role) => ({ id: randomUUID(), ...role })),
     ],
-    permissions: permissionRows,
-    users: [
-      {
-        id: adminUserId,
-        username: 'admin',
-        passwordHash: 'admin123',
-        displayName: '系统管理员',
-        mobile: '13800000000',
-        email: 'admin@growthpilot.local',
-        status: 'active',
-      },
-      {
-        id: teacherUserId,
-        username: 'teacher.zhang',
-        passwordHash: 'teacher123',
-        displayName: '张老师',
-        mobile: '13800000001',
-        email: 'teacher.zhang@growthpilot.local',
-        status: 'active',
-      },
-    ],
-    userRoles: [
-      { userId: adminUserId, roleId: adminRoleId, campusId },
-      { userId: teacherUserId, roleId: teacherRoleId, campusId },
-    ],
-    schoolTerms: defaultTerms.map((term) => ({ id: randomUUID(), campusId, ...term })),
-    systemDictionaries: defaultDictionaries.map((item) => ({
-      id: randomUUID(),
-      ...item,
-      active: 1,
-      extra: {},
+    permissions: usersRepositorySeed.permissions.map((permission) => ({
+      id: permission.id,
+      code: permission.code,
+      name: permission.name,
+      module: permission.module,
+      action: permission.action,
     })),
+    users: usersRepositorySeed.users.map((user) => ({
+      id: user.id,
+      username: user.username,
+      passwordHash: user.password,
+      displayName: user.displayName,
+      mobile: user.mobile ?? null,
+      email: user.email ?? null,
+      status: user.status,
+    })),
+    userRoles: usersRepositorySeed.users.flatMap((user) => {
+      const userId = userIdByUsername.get(user.username);
+      if (!userId) {
+        return [];
+      }
+
+      return user.roles.flatMap((roleCode) => {
+        const roleId = roleIdByCode.get(roleCode);
+        if (!roleId) {
+          return [];
+        }
+
+        const campusIds = user.campusIds.length ? user.campusIds : [null];
+        return campusIds.map((campusId) => ({ userId, roleId, campusId }));
+      });
+    }),
+    schoolTerms: settingsRepositorySeed.terms.map((term) => ({
+      id: term.id,
+      campusId: term.campusId,
+      code: term.code,
+      name: term.name,
+      startDate: term.startDate,
+      endDate: term.endDate,
+      status: term.status,
+    })),
+    systemDictionaries: [
+      ...settingsRepositorySeed.dictionaries.map((item, index) => ({
+        id: item.id,
+        dictType: item.dictType,
+        code: item.code,
+        label: item.label,
+        value: item.value,
+        sortOrder: (index + 1) * 10,
+        active: 1,
+        extra: {},
+      })),
+      ...defaultDictionaries.map((item) => ({
+        id: randomUUID(),
+        ...item,
+        active: 1,
+        extra: {},
+      })),
+    ],
     authSessions: [] as typeof authSessions.$inferInsert[],
   };
 }
