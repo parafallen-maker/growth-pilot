@@ -92,7 +92,7 @@
 
 **允许编辑**：`docs/growthpilot/`、根目录 `README.md`
 
-- [ ] `SPEC-01` 将以下 `hongji_vibe_docs` 文件复制到 `docs/growthpilot/` 并重命名：
+- [x] `SPEC-01` 将以下 `hongji_vibe_docs` 文件复制到 `docs/growthpilot/` 并重命名：
   | 源文件 | 目标 |
   |---|---|
   | `01_scope_and_principles.md` | `35a_scope_and_principles.md` |
@@ -103,7 +103,7 @@
   | `08_page_prototypes.md` | `35f_page_prototypes.md` |
   | `09_excel_migration.md` | `35g_excel_migration.md` |
 
-- [ ] `SPEC-02` 将以下 5 个**文档有但代码缺失**的接口做出决定并记录：
+- [x] `SPEC-02` 将以下 5 个**文档有但代码缺失**的接口做出决定并记录：
   | 接口 | 建议决定 |
   |---|---|
   | `POST /students/import` | **保留，Wave 1 实现** |
@@ -121,13 +121,13 @@
   - communication: GET /communication/message-tasks, GET /communication/records/{id}, GET /communication/templates, PATCH /communication/message-tasks/{id}/status, PATCH /communication/templates/{id}, POST /communication/message-tasks, POST /communication/templates
   - jobs: GET /jobs
 
-- [ ] `SPEC-04` 更新 `README.md`：
+- [x] `SPEC-04` 更新 `README.md`：
   - 删除"当前是最小可运行脚手架"表述
   - 更新为"Persisted JSON Beta，后端模块完整，前端骨架就绪"
   - 新增 docker-compose 启动说明
   - 新增文档索引（指向本文件）
 
-- [ ] `SPEC-05` 在 `docs/growthpilot/` 创建 `00_start_here_merged.md`：
+- [x] `SPEC-05` 在 `docs/growthpilot/` 创建 `00_start_here_merged.md`：
   - 列出当前文档优先级
   - 列出 Source of Truth 规则
   - 列出推荐阅读顺序
