@@ -1,0 +1,275 @@
+{
+  "batchId": "BATCH-QA-STATEFUL-INVALID",
+  "sourceSystem": "excel",
+  "sourceFile": "mock-history.xlsx",
+  "mode": "db-apply",
+  "plan": {
+    "strategy": [
+      "raw staging",
+      "normalized staging",
+      "final load"
+    ],
+    "rawRows": 4,
+    "normalizedRows": 4,
+    "readyToLoadRows": 1,
+    "rejectedRows": 3
+  },
+  "rejectsByCode": {
+    "CONFLICT_STUDENT_NO": 1,
+    "FK_TEACHER_MISSING": 1,
+    "FK_STUDENT_MISSING": 1,
+    "DICT_SUBJECT_UNMAPPED": 1,
+    "DICT_ERROR_TAXONOMY_UNMAPPED": 1,
+    "BALANCE_CONTRACT_PAYABLE_MISMATCH": 1,
+    "BALANCE_REFUND_EXCEEDS_PAYMENT": 1
+  },
+  "finalLoadPlan": {
+    "layers": {
+      "rawStaging": 4,
+      "normalizedStaging": 4,
+      "finalReady": 1
+    },
+    "loadOrder": [
+      "teachers",
+      "families",
+      "students",
+      "student_enrollments",
+      "student_external_courses",
+      "devices",
+      "student_device_bindings",
+      "homework_submissions",
+      "homework_submission_files",
+      "homework_ai_analyses",
+      "homework_reviews",
+      "growth_observations",
+      "growth_observation_scores",
+      "contracts",
+      "invoices",
+      "payments",
+      "refunds"
+    ],
+    "readyBusinessKeys": [
+      "S-001"
+    ],
+    "readyRowsByDomain": {
+      "students": 1
+    }
+  },
+  "dbPlan": {
+    "enabled": true,
+    "driver": "pg",
+    "schema": "qa_staging",
+    "tables": {
+      "batches": "qa_staging.import_batches",
+      "raw": "qa_staging.staging_raw_rows",
+      "normalized": "qa_staging.staging_normalized_rows",
+      "rejects": "qa_staging.staging_rejects"
+    },
+    "upsertKeys": {
+      "raw": [
+        "batch_id",
+        "source_file",
+        "source_sheet",
+        "source_row_no"
+      ],
+      "normalized": [
+        "batch_id",
+        "source_file",
+        "source_sheet",
+        "source_row_no"
+      ],
+      "rejects": [
+        "batch_id",
+        "source_file",
+        "source_sheet",
+        "source_row_no",
+        "reject_code"
+      ]
+    },
+    "rowCounts": {
+      "raw": 4,
+      "normalized": 4,
+      "rejects": 7,
+      "readyToLoad": 1
+    },
+    "sqlPreview": "create schema if not exists qa_staging;\ncreate table if not exists qa_staging.import_batches (\n  batch_id text primary key,\n  source_system text not null,\n  source_file text not null,\n  mode text not null,\n  raw_row_count integer not null,\n  normalized_row_count integer not null,\n  ready_row_count integer not null,\n  rejected_row_count integer not null,\n  created_at timestamptz not null default now(),\n  updated_at timestamptz not null default now()\n);\ncreate table if not exists qa_staging.staging_raw_rows (\n  batch_id text not null,\n  source_system text not null,\n  source_file text not null,\n  source_sheet text not null,\n  source_row_no integer not null,\n  source_pk text not null,\n  source_hash text not null,\n  idempotency_key text not null,\n  import_status text not null,\n  raw_payload jsonb not null,\n  created_at timestamptz not null default now(),\n  updated_at timestamptz not null default now(),\n  primary key (batch_id, source_file, source_sheet, source_row_no)\n);\ncreate table if not exists qa_staging.staging_normalized_rows (\n  batch_id text not null,\n  source_file text not null,\n  source_sheet text not null,\n  source_row_no integer not null,\n  source_pk text not null,\n  target_domain text not null,\n  business_key text not null,\n  idempotency_key text not null,\n  import_status text not null,\n  normalized_payload jsonb not null,\n  mapping_snapshot jsonb not null,\n  created_at timestamptz not null default now(),\n  updated_at timestamptz not null default now(),\n  primary key (batch_id, source_file, source_sheet, source_row_no)\n);\ncreate table if not exists qa_staging.staging_rejects (\n  batch_id text not null,\n  source_file text not null,\n  source_sheet text not null,\n  source_row_no integer not null,\n  source_pk text not null,\n  target_domain text not null,\n  business_key text not null,\n  reject_code text not null,\n  reject_reason text not null,\n  field_name text not null,\n  raw_value text,\n  expected_rule text not null,\n  suggested_action text not null,\n  owner text not null,\n  status text not null,\n  created_at timestamptz not null default now(),\n  updated_at timestamptz not null default now(),\n  primary key (batch_id, source_file, source_sheet, source_row_no, reject_code)\n);",
+    "execution": {
+      "applied": true,
+      "schema": "qa_staging",
+      "rawRowsUpserted": 4,
+      "normalizedRowsUpserted": 4,
+      "rejectsUpserted": 7
+    }
+  },
+  "validation": {
+    "fieldMapping": {
+      "readyRowCount": 1,
+      "mappedSubjects": 0,
+      "mappedFamilyStructures": 1,
+      "sampleReadyRows": [
+        {
+          "businessKey": "S-001",
+          "targetDomain": "students",
+          "subject": null,
+          "familyStructure": "single_parent"
+        }
+      ]
+    },
+    "idempotency": {
+      "importKeyCount": 4,
+      "uniqueImportKeyCount": 4,
+      "duplicateImportKeys": [],
+      "strategy": "staging upsert by batch/source row identity"
+    },
+    "rejectReport": {
+      "generated": true,
+      "rowCount": 7,
+      "columns": [
+        "batchId",
+        "sourceFile",
+        "sourceSheet",
+        "sourceRowNo",
+        "sourcePk",
+        "targetDomain",
+        "businessKey",
+        "rejectCode",
+        "rejectReason",
+        "fieldName",
+        "rawValue",
+        "expectedRule",
+        "suggestedAction",
+        "owner",
+        "status"
+      ]
+    }
+  },
+  "rejectSamples": [
+    {
+      "batchId": "BATCH-QA-STATEFUL-INVALID",
+      "sourceFile": "mock-history.xlsx",
+      "sourceSheet": "2026上半学年学生信息表",
+      "sourceRowNo": 3,
+      "sourcePk": "student-row-002",
+      "targetDomain": "students",
+      "businessKey": "S-001",
+      "rejectCode": "CONFLICT_STUDENT_NO",
+      "rejectReason": "同一 student_no 对应多个不同学生主体",
+      "fieldName": "studentNo",
+      "rawValue": "S-001",
+      "expectedRule": "student_no 必须稳定指向唯一学生主体",
+      "suggestedAction": "人工重编或补 old->new 编号映射",
+      "owner": "A2/A5",
+      "status": "open"
+    },
+    {
+      "batchId": "BATCH-QA-STATEFUL-INVALID",
+      "sourceFile": "mock-history.xlsx",
+      "sourceSheet": "2026上半学年每日作业完成质量表",
+      "sourceRowNo": 4,
+      "sourcePk": "hw-row-001",
+      "targetDomain": "homework",
+      "businessKey": "S-404",
+      "rejectCode": "FK_TEACHER_MISSING",
+      "rejectReason": "老师主数据未命中教师种子或正式表",
+      "fieldName": "teacherName",
+      "rawValue": "不存在老师",
+      "expectedRule": "teacher 外键必须先命中 teachers 映射",
+      "suggestedAction": "先补 teachers 映射后再回放",
+      "owner": "A5/A6",
+      "status": "open"
+    },
+    {
+      "batchId": "BATCH-QA-STATEFUL-INVALID",
+      "sourceFile": "mock-history.xlsx",
+      "sourceSheet": "2026上半学年每日作业完成质量表",
+      "sourceRowNo": 4,
+      "sourcePk": "hw-row-001",
+      "targetDomain": "homework",
+      "businessKey": "S-404",
+      "rejectCode": "FK_STUDENT_MISSING",
+      "rejectReason": "作业记录未命中 student 主档映射",
+      "fieldName": "studentNo",
+      "rawValue": "S-404",
+      "expectedRule": "student 外键必须先命中 students 映射",
+      "suggestedAction": "先完成 students/families/enrollments 主数据导入",
+      "owner": "A5/A6",
+      "status": "open"
+    },
+    {
+      "batchId": "BATCH-QA-STATEFUL-INVALID",
+      "sourceFile": "mock-history.xlsx",
+      "sourceSheet": "2026上半学年每日作业完成质量表",
+      "sourceRowNo": 4,
+      "sourcePk": "hw-row-001",
+      "targetDomain": "homework",
+      "businessKey": "S-404",
+      "rejectCode": "DICT_SUBJECT_UNMAPPED",
+      "rejectReason": "学科字典未命中标准 subject code",
+      "fieldName": "subjectRaw",
+      "rawValue": "物理",
+      "expectedRule": "学科必须映射为 math/chinese/english",
+      "suggestedAction": "补充 subject 映射表后重放",
+      "owner": "A2/A6",
+      "status": "open"
+    },
+    {
+      "batchId": "BATCH-QA-STATEFUL-INVALID",
+      "sourceFile": "mock-history.xlsx",
+      "sourceSheet": "2026上半学年每日作业完成质量表",
+      "sourceRowNo": 4,
+      "sourcePk": "hw-row-001",
+      "targetDomain": "homework",
+      "businessKey": "S-404",
+      "rejectCode": "DICT_ERROR_TAXONOMY_UNMAPPED",
+      "rejectReason": "错因字典未命中标准 taxonomy code",
+      "fieldName": "errorTaxonomyRaw",
+      "rawValue": "神秘错误",
+      "expectedRule": "错因必须映射为标准 taxonomy code",
+      "suggestedAction": "补错因映射字典或人工标注",
+      "owner": "A2/A6",
+      "status": "open"
+    },
+    {
+      "batchId": "BATCH-QA-STATEFUL-INVALID",
+      "sourceFile": "mock-history.xlsx",
+      "sourceSheet": "历史账单表",
+      "sourceRowNo": 5,
+      "sourcePk": "invoice-row-001",
+      "targetDomain": "billing",
+      "businessKey": "I-001",
+      "rejectCode": "BALANCE_CONTRACT_PAYABLE_MISMATCH",
+      "rejectReason": "应收 payable 必须等于 total - discount",
+      "fieldName": "payableAmountCents",
+      "rawValue": 9500,
+      "expectedRule": "payable_amount_cents = total_amount_cents - discount_amount_cents",
+      "suggestedAction": "修正合同金额链路后重放",
+      "owner": "A7",
+      "status": "open"
+    },
+    {
+      "batchId": "BATCH-QA-STATEFUL-INVALID",
+      "sourceFile": "mock-history.xlsx",
+      "sourceSheet": "历史账单表",
+      "sourceRowNo": 5,
+      "sourcePk": "invoice-row-001",
+      "targetDomain": "billing",
+      "businessKey": "I-001",
+      "rejectCode": "BALANCE_REFUND_EXCEEDS_PAYMENT",
+      "rejectReason": "退款金额不能超过成功支付金额",
+      "fieldName": "refundsAmountCents",
+      "rawValue": 7000,
+      "expectedRule": "refund_amount_cents <= paid_amount_cents",
+      "suggestedAction": "核对 payment/refund 明细",
+      "owner": "A7",
+      "status": "open"
+    }
+  ],
+  "artifacts": {
+    "directory": "/private/tmp/w35-qa-close/docs/growthpilot/artifacts/2026-03-25/stateful-local",
+    "summaryJson": "/private/tmp/w35-qa-close/docs/growthpilot/artifacts/2026-03-25/stateful-local/BATCH-QA-STATEFUL-INVALID.summary.json",
+    "rawNdjson": "/private/tmp/w35-qa-close/docs/growthpilot/artifacts/2026-03-25/stateful-local/BATCH-QA-STATEFUL-INVALID.raw.ndjson",
+    "normalizedNdjson": "/private/tmp/w35-qa-close/docs/growthpilot/artifacts/2026-03-25/stateful-local/BATCH-QA-STATEFUL-INVALID.normalized.ndjson",
+    "rejectReportCsv": "/private/tmp/w35-qa-close/docs/growthpilot/artifacts/2026-03-25/stateful-local/BATCH-QA-STATEFUL-INVALID.reject-report.csv",
+    "dbPlanSql": "/private/tmp/w35-qa-close/docs/growthpilot/artifacts/2026-03-25/stateful-local/BATCH-QA-STATEFUL-INVALID.db-plan.sql"
+  }
+}

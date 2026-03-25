@@ -81,10 +81,6 @@ const summary = buildSummary({
   validation,
 });
 
-if (artifactsDir) {
-  summary.artifacts = writeArtifacts(artifactsDir, summary, rawRows, normalizedRows, rejects, dbPlan);
-}
-
 if (dbApply) {
   const execution = await applyDbPlan({
     dbUrl,
@@ -96,6 +92,10 @@ if (dbApply) {
     rejects,
   });
   summary.dbPlan.execution = execution;
+}
+
+if (artifactsDir) {
+  summary.artifacts = writeArtifacts(artifactsDir, summary, rawRows, normalizedRows, rejects, dbPlan);
 }
 
 console.log(JSON.stringify(summary, null, 2));
@@ -583,13 +583,7 @@ function writeArtifacts(artifactsDir, summary, rawRows, normalizedRows, rejects,
   const rejectPath = join(artifactsDir, `${safeBatchId}.reject-report.csv`);
   const sqlPath = join(artifactsDir, `${safeBatchId}.db-plan.sql`);
 
-  writeFileSync(summaryPath, JSON.stringify(summary, null, 2));
-  writeFileSync(rawPath, rawRows.map((row) => JSON.stringify(row)).join('\n') + (rawRows.length ? '\n' : ''));
-  writeFileSync(normalizedPath, normalizedRows.map((row) => JSON.stringify(row)).join('\n') + (normalizedRows.length ? '\n' : ''));
-  writeFileSync(rejectPath, toCsv(rejects, rejectReportColumns));
-  writeFileSync(sqlPath, dbPlan.sqlPreview);
-
-  return {
+  const artifacts = {
     directory: artifactsDir,
     summaryJson: summaryPath,
     rawNdjson: rawPath,
@@ -597,6 +591,16 @@ function writeArtifacts(artifactsDir, summary, rawRows, normalizedRows, rejects,
     rejectReportCsv: rejectPath,
     dbPlanSql: sqlPath,
   };
+
+  summary.artifacts = artifacts;
+
+  writeFileSync(summaryPath, JSON.stringify(summary, null, 2));
+  writeFileSync(rawPath, rawRows.map((row) => JSON.stringify(row)).join('\n') + (rawRows.length ? '\n' : ''));
+  writeFileSync(normalizedPath, normalizedRows.map((row) => JSON.stringify(row)).join('\n') + (normalizedRows.length ? '\n' : ''));
+  writeFileSync(rejectPath, toCsv(rejects, rejectReportColumns));
+  writeFileSync(sqlPath, dbPlan.sqlPreview);
+
+  return artifacts;
 }
 
 async function applyDbPlan({ dbUrl, dbSchema, pgModule, summary, rawRows, normalizedRows, rejects }) {
