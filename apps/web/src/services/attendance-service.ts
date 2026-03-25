@@ -277,7 +277,7 @@ export const attendanceService = {
       ],
       stats: [
         { name: '日统计', detail: `当前筛选总计 ${totalMinutes} 分钟 / ${totalSessions} 次会话` },
-        { name: '趋势图', detail: '后端暂未提供时间序列专用接口，先用 daily stats 汇总占位。' },
+        { name: '趋势图', detail: '后端暂未提供时间序列专用接口，当前先用 daily stats 汇总做解读。' },
         { name: '学科分布', detail: subjectBreakdown.length ? subjectBreakdown.map((item) => `${item.name} ${item.detail}`).join(' / ') : '暂无数据' },
         { name: '学生排行', detail: topStudents.length ? topStudents.map((item) => `${item.name} ${item.detail}`).join(' / ') : '暂无数据' },
       ],

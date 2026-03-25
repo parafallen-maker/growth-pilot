@@ -162,7 +162,7 @@ export const billingService = {
       invoices: { list: invoiceRows, page: result.page },
       payments: { list: [] as PaymentItem[], page: { pageNo: 1, pageSize: 20, total: 0 } },
       refunds: { list: [] as RefundItem[], page: { pageNo: 1, pageSize: 20, total: 0 } },
-      adjustments: [{ title: 'billing_adjustments', detail: '后端尚未落地，继续保留占位，不装真。' }],
+      adjustments: [{ title: 'billing_adjustments', detail: '后端尚未落地调整项接口，当前明确显示缺口，不伪造数据。' }],
     };
   },
 

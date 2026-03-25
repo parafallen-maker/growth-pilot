@@ -27,7 +27,7 @@ export default async function AttendanceHomeworkTimePage() {
       <div className="stack">
         <PageHeader
           title="作业时长"
-          description={`P19 已从本地占位切到 attendance homework-time daily stats 真接口。query key: ${JSON.stringify(queryKeys.attendanceHomeworkTime(filters))}`}
+          description={`P19 已切到 attendance/homework-time/daily-stats 真接口。query key: ${JSON.stringify(queryKeys.attendanceHomeworkTime(filters))}`}
           actions={<><button className="btn primary">导出统计</button><button className="btn">查看异常会话</button></>}
         />
 
@@ -42,8 +42,8 @@ export default async function AttendanceHomeworkTimePage() {
         ]} />
 
         <div className="grid-2">
-          <SummaryPanel title="日统计 / 趋势图占位" items={detail.stats.slice(0, 2)} />
-          <SummaryPanel title="学科分布 / 学生排行占位" items={detail.stats.slice(2)} />
+          <SummaryPanel title="日统计 / 趋势解读" items={detail.stats.slice(0, 2)} />
+          <SummaryPanel title="学科分布 / 学生排行" items={detail.stats.slice(2)} />
         </div>
 
         <div className="grid-2">

@@ -290,10 +290,14 @@
 - [ ] `FE-11` Homework submissions 列表接真 `GET /homework/submissions`
 - [ ] `FE-12` Homework review 工作台接真 `GET /homework/submissions/{id}` + `PUT review-draft` + `POST review`
 - [ ] `FE-13` Growth rubrics/observations/goals/reports 各页面接真
-- [ ] `FE-14` Billing products/contracts/invoices/renewals 各页面接真
-- [ ] `FE-15` Attendance board/devices/homework-time 各页面接真
-- [ ] `FE-16` Communication records/messages 各页面接真
-- [ ] `FE-17` Analytics overview/teaching/billing 各页面接真图表
+- [/] `FE-14` Billing products/contracts/invoices/renewals 各页面接真
+  - 已接 `billing/products`、`billing/contracts`、`billing/contracts/{id}`、`billing/invoices`、`billing/renewals` 真接口；payments/refunds/adjustments 列表仍受后端接口缺口限制，页面明确显示缺口而不伪造数据。
+- [/] `FE-15` Attendance board/devices/homework-time 各页面接真
+  - 已接 `attendance/events`、`attendance/devices`、`attendance/devices/bindings`、`attendance/homework-time/daily-stats` 真接口；未签到名单 roster、异常修正 workflow、专用趋势序列仍待后端补齐。
+- [/] `FE-16` Communication records/messages 各页面接真
+  - 已接 `communication/records`、`communication/records/{id}`、`communication/templates`、`communication/message-tasks` 真接口；meeting/task 反查聚合与真实渠道发送 adapter 仍待后端。
+- [/] `FE-17` Analytics overview/teaching/billing 各页面接真图表
+  - 已接 `analytics/overview`、`analytics/teaching`、`analytics/billing` 真聚合数据；当前以前端解读卡替代正式图表组件，真实图形化图表与导出仍可继续增强。
 
 #### Phase 3：表单交互（P1）
 

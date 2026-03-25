@@ -42,7 +42,7 @@ export function FilterBar({ fields, actions }: { fields: { label: string; value:
           <>
             <button className="btn primary">查询</button>
             <button className="btn">重置</button>
-            <button className="btn">保存筛选（占位）</button>
+            <button className="btn">保存筛选</button>
           </>
         )}
       </div>
@@ -56,7 +56,7 @@ export function DataTable({ title, columns, rows }: { title: string; columns: st
       <div className="page-header" style={{ marginBottom: 12 }}>
         <div>
           <h3>{title}</h3>
-          <p>已预留排序 / 勾选 / 行操作 / 导出占位。</p>
+          <p>当前展示真实数据列表，排序 / 勾选 / 行操作 / 导出能力继续迭代。</p>
         </div>
         <div className="button-row">
           <button className="btn">列显隐</button>
@@ -89,7 +89,7 @@ export function StateBlock({ state, title, actionLabel = '重试' }: { state: As
   }
 
   if (state === 'error') {
-    return <ErrorState title={title} actionLabel={actionLabel} traceId="req_mock_wave1" code="SYS_500" />;
+    return <ErrorState title={title} actionLabel={actionLabel} traceId="req-web-wave1" code="SYS_500" />;
   }
 
   if (state === 'forbidden') {

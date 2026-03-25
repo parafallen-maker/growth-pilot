@@ -16,13 +16,13 @@ export default async function BillingInvoicesPage() {
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="账单与支付" permissionCode={billingPermissions.invoicesView} />}>
       <div className="stack">
         <PageHeader
-          title="账单 / 支付 / 退款骨架"
-          description={`P22 已铺统一 family/student 过滤器、标签页骨架、金额元展示和动作位。query key: ${JSON.stringify(queryKeys.billingInvoices(filters))}`}
+          title="账单 / 支付 / 退款"
+          description={`P22 已切到 billing/invoices 真接口；payment/refund 列表仍受后端接口缺口限制。query key: ${JSON.stringify(queryKeys.billingInvoices(filters))}`}
           actions={<><button className="btn primary">新建账单</button><button className="btn">记录支付</button><button className="btn">发起退款</button><button className="btn">添加调整</button></>}
         />
         <FilterBar fields={[
-          { label: '家庭筛选', value: '统一 family filter 占位', kind: 'select' },
-          { label: '学生筛选', value: '统一 student filter 占位', kind: 'select' },
+          { label: '家庭筛选', value: '待补统一 family filter', kind: 'select' },
+          { label: '学生筛选', value: '待补统一 student filter', kind: 'select' },
           { label: '关键词', value: '账单编号 / 支付编号' },
           { label: '状态', value: '全部状态', kind: 'select' },
           { label: '截止开始', value: '2026-03-01' },

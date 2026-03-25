@@ -15,15 +15,15 @@ export default async function AnalyticsBillingPage() {
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="Analytics Billing" permissionCode={analyticsPermissions.billingView} />}>
       <div className="stack">
         <PageHeader
-          title="收费分析骨架"
-          description={`P28 已铺统一筛选栏、KPI 卡、图表/排行占位、无数据状态与元金额口径。query key: ${JSON.stringify(queryKeys.analyticsBilling(filters))}`}
-          actions={<><button className="btn primary">导出收费分析（占位）</button><button className="btn">查看金额口径</button></>}
+          title="收费分析"
+          description={`P28 已切到 analytics/billing 真聚合，页面按元展示金额。query key: ${JSON.stringify(queryKeys.analyticsBilling(filters))}`}
+          actions={<><button className="btn primary">导出收费分析</button><button className="btn">查看金额口径</button></>}
         />
         <MetricGrid items={result.metrics} />
         <FilterBar fields={[{ label: '校区', value: '贵阳主校区', kind: 'select' }, { label: '学期', value: '2026 春季', kind: 'select' }, { label: '日期', value: '2026-03-01 ~ 2026-03-24' }]} />
         <div className="grid-2">
-          <SummaryPanel title="图表占位" items={result.chartCards} />
-          <SummaryPanel title="表格 / 排行占位" items={result.tableCards} />
+          <SummaryPanel title="图表解读" items={result.chartCards} />
+          <SummaryPanel title="排行 / 摘要" items={result.tableCards} />
         </div>
         <div className="grid-3">
           <StateBlock state="loading" title="billing analytics loading" />
