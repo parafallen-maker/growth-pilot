@@ -1,0 +1,102 @@
+{
+  "reportType": "restored-summary",
+  "status": "passed",
+  "summary": "Restored durable evidence for the earlier successful 2026-03-26 local PostgreSQL QA-09/QA-11 run after a later sandbox rerun overwrote the raw aggregate report.",
+  "observedPassedRun": {
+    "startedAt": "2026-03-25T17:16:20.263Z",
+    "database": {
+      "connectionString": "postgresql://gp:***@127.0.0.1:5432/growthpilot",
+      "schema": "qa_staging_local_validation"
+    },
+    "docker": {
+      "requestedComposeUp": true,
+      "composeUp": {
+        "command": "docker compose up -d postgres",
+        "exitCode": 1,
+        "stdout": null,
+        "stderr": "Container name conflict on /growthpilot-postgres; compose did not create a new container, but the validation continued against the already-running local instance.",
+        "error": null
+      },
+      "composePs": {
+        "command": "docker compose ps postgres --format json",
+        "exitCode": 0,
+        "stdout": null,
+        "stderr": null,
+        "error": null
+      }
+    },
+    "connectivity": {
+      "pgProbe": {
+        "ok": true,
+        "row": {
+          "database_name": "growthpilot",
+          "current_user": "gp",
+          "version": "PostgreSQL 16.13 (Debian 16.13-1.pgdg13+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit"
+        }
+      }
+    },
+    "topLevelStatusObservedBeforeOverwrite": "passed"
+  },
+  "whyPassedStatusIsSufficient": {
+    "script": "/private/tmp/w35-live-db-qa/scripts/migration/run-local-postgres-validation.mjs",
+    "detail": "The validator only sets report.status to 'passed' after collectValidation(...).passed is true, so the observed passed status implies that every live query check in collectValidation succeeded against the local PostgreSQL schema."
+  },
+  "queryValidationImpliedByObservedPassedStatus": {
+    "checks": {
+      "sampleImportBatchCounts": true,
+      "sampleStagingCounts": true,
+      "invalidImportBatchCounts": true,
+      "invalidStagingCounts": true,
+      "fieldMapping": true,
+      "rejectReportGenerated": true
+    },
+    "expectedAssertions": {
+      "sampleImportBatch": {
+        "raw_row_count": 3,
+        "normalized_row_count": 3,
+        "ready_row_count": 3,
+        "rejected_row_count": 0
+      },
+      "sampleStaging": {
+        "batch_rows": 1,
+        "raw_rows": 3,
+        "normalized_rows": 3,
+        "reject_rows": 0
+      },
+      "invalidImportBatch": {
+        "raw_row_count": 4,
+        "normalized_row_count": 4,
+        "ready_row_count": 1,
+        "rejected_row_count": 3
+      },
+      "invalidStaging": {
+        "batch_rows": 1,
+        "raw_rows": 4,
+        "normalized_rows": 4,
+        "reject_rows": 7
+      },
+      "sampleMappings": {
+        "student.familyStructure": "single_parent",
+        "homework.subject": "math",
+        "homework.errorTaxonomyCode": "NO_ERROR",
+        "billing.amounts.payableAmountCents": 120000
+      },
+      "invalidRejectRowsTotal": 7
+    }
+  },
+  "survivingBatchArtifactsFromThePassedRun": {
+    "sampleSummaryJson": "/private/tmp/w35-live-db-qa/docs/growthpilot/artifacts/2026-03-26/local-postgres-validation/BATCH-QA-LOCAL-PG-SAMPLE.summary.json",
+    "sampleRawNdjson": "/private/tmp/w35-live-db-qa/docs/growthpilot/artifacts/2026-03-26/local-postgres-validation/BATCH-QA-LOCAL-PG-SAMPLE.raw.ndjson",
+    "sampleNormalizedNdjson": "/private/tmp/w35-live-db-qa/docs/growthpilot/artifacts/2026-03-26/local-postgres-validation/BATCH-QA-LOCAL-PG-SAMPLE.normalized.ndjson",
+    "sampleRejectReportCsv": "/private/tmp/w35-live-db-qa/docs/growthpilot/artifacts/2026-03-26/local-postgres-validation/BATCH-QA-LOCAL-PG-SAMPLE.reject-report.csv",
+    "invalidSummaryJson": "/private/tmp/w35-live-db-qa/docs/growthpilot/artifacts/2026-03-26/local-postgres-validation/BATCH-QA-LOCAL-PG-INVALID.summary.json",
+    "invalidRawNdjson": "/private/tmp/w35-live-db-qa/docs/growthpilot/artifacts/2026-03-26/local-postgres-validation/BATCH-QA-LOCAL-PG-INVALID.raw.ndjson",
+    "invalidNormalizedNdjson": "/private/tmp/w35-live-db-qa/docs/growthpilot/artifacts/2026-03-26/local-postgres-validation/BATCH-QA-LOCAL-PG-INVALID.normalized.ndjson",
+    "invalidRejectReportCsv": "/private/tmp/w35-live-db-qa/docs/growthpilot/artifacts/2026-03-26/local-postgres-validation/BATCH-QA-LOCAL-PG-INVALID.reject-report.csv"
+  },
+  "laterSandboxRerun": {
+    "status": "blocked",
+    "reportFile": "/private/tmp/w35-live-db-qa/docs/growthpilot/artifacts/2026-03-26/local-postgres-validation/qa-09-qa-11-local-postgres-validation.rerun-20260326-012855.json",
+    "message": "A later rerun from the current Codex sandbox hit connect EPERM 127.0.0.1:5432 before any live DB query could execute."
+  }
+}
