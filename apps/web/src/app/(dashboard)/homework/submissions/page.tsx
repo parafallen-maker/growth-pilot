@@ -5,9 +5,17 @@ import { homeworkPermissions } from '@/features/homework/constants';
 import { queryKeys } from '@/features/shared/query-keys';
 import { requireCurrentUser } from '@/lib/current-user';
 import { homeworkService } from '@/services/homework-service';
+import { studentService } from '@/services/students-service';
+import { teacherService } from '@/services/teachers-service';
+import { createHomeworkSubmission, submitHomeworkReviewFromList } from './actions';
 
-export default async function HomeworkSubmissionsPage() {
+export default async function HomeworkSubmissionsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ created?: string; fileId?: string; reviewed?: string; error?: string }>;
+}) {
   const currentUser = await requireCurrentUser();
+  const query = await searchParams;
   const filters = {
     pageNo: 1,
     pageSize: 20,
@@ -21,10 +29,16 @@ export default async function HomeworkSubmissionsPage() {
     sortBy: 'submittedAt',
     sortOrder: 'desc' as const,
   };
-  const result = await homeworkService.query(filters);
+  const [result, students, teachers, taxonomies] = await Promise.all([
+    homeworkService.query(filters),
+    studentService.query({ pageNo: 1, pageSize: 50, status: 'active' }),
+    teacherService.query({ pageNo: 1, pageSize: 50, status: 'active' }),
+    homeworkService.taxonomyQuery({ pageNo: 1, pageSize: 20 }),
+  ]);
   const pendingAi = result.list.filter((item) => item.aiStatus === 'pending' || item.aiStatus === 'queued').length;
   const reviewing = result.list.filter((item) => ['reviewing', 'unreviewed', 'draft'].includes(item.reviewStatus)).length;
   const reviewed = result.list.filter((item) => ['reviewed', 'published'].includes(item.reviewStatus)).length;
+  const defaultSubmission = result.list[0];
 
   return (
     <PermissionGuard allowed={currentUser.permissions.includes(homeworkPermissions.submissionsView)}>
@@ -34,12 +48,17 @@ export default async function HomeworkSubmissionsPage() {
           description={`真实列表接口已接：${JSON.stringify(queryKeys.homeworkSubmissions(filters))}`}
           actions={
             <>
-              <button className="btn primary">上传作业</button>
+              <a className="btn primary" href="#homework-upload-form">上传作业</a>
+              <a className="btn" href="#review-submit-form">快速复核</a>
               <button className="btn">批量触发分析</button>
               <button className="btn">导出</button>
             </>
           }
         />
+
+        {query?.created ? <section className="panel"><div className="badge success">作业已上传并生成提交：{query.created} / fileId={query.fileId}</div></section> : null}
+        {query?.reviewed ? <section className="panel"><div className="badge success">复核已提交：{query.reviewed}</div></section> : null}
+        {query?.error ? <section className="panel"><div className="badge warning">{decodeURIComponent(query.error)}</div></section> : null}
 
         <MetricGrid
           items={[
@@ -49,6 +68,48 @@ export default async function HomeworkSubmissionsPage() {
             { label: '已完成', value: String(reviewed), hint: 'reviewed / published' },
           ]}
         />
+
+        <section className="panel stack" id="homework-upload-form">
+          <div className="page-header">
+            <div>
+              <h3>上传作业</h3>
+              <p>FE-19 已接真：先走 POST /files/upload/multipart，再用返回 fileId 调 POST /homework/submissions。</p>
+            </div>
+            <span className="badge success">multipart + create</span>
+          </div>
+          <form className="form-grid" action={createHomeworkSubmission}>
+            <div className="field"><label>学生</label><select className="select" name="studentId" required defaultValue={students.list[0]?.id ?? ''}>{students.list.map((student) => <option key={student.id} value={student.id}>{student.name} / {student.studentNo}</option>)}</select></div>
+            <div className="field"><label>责任老师</label><select className="select" name="teacherId" defaultValue={teachers.list[0]?.id ?? ''}>{teachers.list.map((teacher) => <option key={teacher.id} value={teacher.id}>{teacher.name} / {teacher.subject}</option>)}</select></div>
+            <div className="field"><label>校区 ID（可选）</label><input className="input" name="campusId" placeholder="campus-guiyang" /></div>
+            <div className="field"><label>学期 ID（可选）</label><input className="input" name="termId" placeholder="term-2026-spring" /></div>
+            <div className="field"><label>学科</label><input className="input" name="subject" defaultValue="math" required /></div>
+            <div className="field"><label>作业日期</label><input className="input" type="date" name="homeworkDate" required /></div>
+            <div className="field"><label>来源类型</label><select className="select" name="sourceType" defaultValue="manual_upload"><option value="manual_upload">manual_upload</option><option value="camera_scan">camera_scan</option><option value="wechat">wechat</option></select></div>
+            <div className="field"><label>作业文件</label><input className="input" type="file" name="file" required /></div>
+            <div className="field form-span-2"><label>备注</label><textarea className="textarea" name="remark" placeholder="可填写批次、来源、页面数、特殊说明" /></div>
+            <div className="button-row form-span-2"><button className="btn primary" type="submit">上传并创建提交</button></div>
+          </form>
+        </section>
+
+        <section className="panel stack" id="review-submit-form">
+          <div className="page-header">
+            <div>
+              <h3>快速提交复核</h3>
+              <p>FE-20 已接 POST /homework/submissions/{'{id}'}/review。完整工作台仍保留在详情页，这里补一个高频快口。</p>
+            </div>
+            <span className="badge success">POST /review</span>
+          </div>
+          <form className="form-grid" action={submitHomeworkReviewFromList}>
+            <div className="field"><label>提交单</label><select className="select" name="submissionId" defaultValue={defaultSubmission?.submissionId ?? ''}>{result.list.map((item) => <option key={item.submissionId} value={item.submissionId}>{item.submissionNo} / {item.studentName} / {item.subject}</option>)}</select></div>
+            <div className="field"><label>复核结论</label><select className="select" name="reviewResult" defaultValue="adjusted"><option value="approved">approved</option><option value="adjusted">adjusted</option><option value="rejected">rejected</option></select></div>
+            <div className="field"><label>最终正确率</label><input className="input" type="number" min="0" max="100" name="finalAccuracyPct" defaultValue="92" /></div>
+            <div className="field form-span-2"><label>错因标签</label><div className="chip-row">{taxonomies.list.slice(0, 8).map((taxonomy) => <label className="tab" key={taxonomy.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><input type="checkbox" name="errorTaxonomyId" value={taxonomy.id} defaultChecked={taxonomy.id === taxonomies.list[0]?.id} /><span>{taxonomy.name}</span></label>)}</div></div>
+            <div className="field form-span-2"><label>错因总结</label><textarea className="textarea" name="finalErrorSummary" placeholder="本次主要问题与改进方向" /></div>
+            <div className="field form-span-2"><label>家长反馈建议</label><textarea className="textarea" name="finalSuggestion" placeholder="给家长的建议与陪练提示" /></div>
+            <div className="field form-span-2"><label style={{ display: 'flex', alignItems: 'center', gap: 8 }}><input type="checkbox" name="publishToFamily" /><span>同步发布给家庭</span></label></div>
+            <div className="button-row form-span-2"><button className="btn primary" type="submit">提交复核</button>{defaultSubmission ? <Link className="btn" href={`/homework/review/${defaultSubmission.submissionId}`}>进入完整工作台</Link> : null}</div>
+          </form>
+        </section>
 
         <FilterBar
           fields={[
@@ -65,17 +126,7 @@ export default async function HomeworkSubmissionsPage() {
         <DataTable
           title={`作业提交列表 · 第 ${result.page.pageNo} 页`}
           columns={['提交编号', '学生', '学科', '日期', 'AI 状态', '最终正确率', '复核状态', '责任老师', '行动作']}
-          rows={result.list.map((item) => [
-            item.submissionNo,
-            item.studentName,
-            item.subject,
-            item.submittedAt,
-            item.aiStatus,
-            item.finalAccuracy,
-            item.reviewStatus,
-            item.teacherName,
-            item.actions,
-          ])}
+          rows={result.list.map((item) => [item.submissionNo, item.studentName, item.subject, item.submittedAt, item.aiStatus, item.finalAccuracy, item.reviewStatus, item.teacherName, item.actions])}
         />
 
         <section className="panel">

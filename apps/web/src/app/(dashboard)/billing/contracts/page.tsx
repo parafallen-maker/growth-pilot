@@ -4,12 +4,25 @@ import { billingPermissions } from '@/features/billing/constants';
 import { queryKeys } from '@/features/shared/query-keys';
 import { requireCurrentUser } from '@/lib/current-user';
 import { billingService } from '@/services/billing-service';
+import { familyService } from '@/services/families-service';
+import { studentService } from '@/services/students-service';
+import { createBillingContract } from './actions';
 
-export default async function BillingContractsPage() {
+export default async function BillingContractsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ created?: string; error?: string }>;
+}) {
   const currentUser = await requireCurrentUser();
+  const query = await searchParams;
   const allowed = hasPermission(currentUser.permissions, billingPermissions.contractsView);
   const filters = { pageNo: 1, pageSize: 20, status: 'active', campusId: 'campus-guiyang', termId: '2026-spring', sortBy: 'expiryDate', sortOrder: 'asc' as const };
-  const result = await billingService.queryContracts(filters);
+  const [result, families, students, products] = await Promise.all([
+    billingService.queryContracts(filters),
+    familyService.query({ pageNo: 1, pageSize: 50, status: 'active' }),
+    studentService.query({ pageNo: 1, pageSize: 50, status: 'active' }),
+    billingService.queryProducts({ pageNo: 1, pageSize: 50, status: 'active' }),
+  ]);
   const detail = await billingService.detailContract(result.list[0]?.contractId ?? 'contract-001');
 
   return (
@@ -18,8 +31,37 @@ export default async function BillingContractsPage() {
         <PageHeader
           title="合同列表"
           description={`P21 已切到 billing/contracts + billing/contracts/{id} 真接口。query key: ${JSON.stringify(queryKeys.billingContracts(filters))}`}
-          actions={<><button className="btn primary">新建合同</button><button className="btn">创建账单</button><button className="btn">创建续费任务</button></>}
+          actions={<><a className="btn primary" href="#contract-create-form">新建合同</a><button className="btn">创建账单</button><button className="btn">创建续费任务</button></>}
         />
+        {query?.created ? <section className="panel"><div className="badge success">合同已创建：{query.created}</div></section> : null}
+        {query?.error ? <section className="panel"><div className="badge warning">{decodeURIComponent(query.error)}</div></section> : null}
+        <section className="panel stack" id="contract-create-form">
+          <div className="page-header">
+            <div>
+              <h3>新建合同</h3>
+              <p>FE-22 已接 POST /billing/contracts。首波先支持单条收费项，足够覆盖最常见签约动作。</p>
+            </div>
+            <span className="badge success">POST /billing/contracts</span>
+          </div>
+          <form className="form-grid" action={createBillingContract}>
+            <div className="field"><label>合同编号</label><input className="input" name="contractNo" placeholder="CT-202603-001" required /></div>
+            <div className="field"><label>状态</label><select className="select" name="status" defaultValue="active"><option value="draft">draft</option><option value="active">active</option><option value="expired">expired</option></select></div>
+            <div className="field"><label>家庭</label><select className="select" name="familyId" required defaultValue={families.list[0]?.id ?? ''}>{families.list.map((family) => <option key={family.id} value={family.id}>{family.name} / {family.code}</option>)}</select></div>
+            <div className="field"><label>学生</label><select className="select" name="studentId" required defaultValue={students.list[0]?.id ?? ''}>{students.list.map((student) => <option key={student.id} value={student.id}>{student.name} / {student.studentNo}</option>)}</select></div>
+            <div className="field"><label>校区 ID（可选）</label><input className="input" name="campusId" placeholder="campus-guiyang" /></div>
+            <div className="field"><label>学期 ID（可选）</label><input className="input" name="termId" placeholder="term-2026-spring" /></div>
+            <div className="field"><label>签约日期</label><input className="input" type="date" name="signDate" required /></div>
+            <div className="field"><label>生效日期</label><input className="input" type="date" name="startDate" required /></div>
+            <div className="field"><label>到期日期</label><input className="input" type="date" name="endDate" required /></div>
+            <div className="field"><label>优惠金额（元）</label><input className="input" type="number" step="0.01" min="0" name="discountAmount" defaultValue="0" /></div>
+            <div className="field"><label>收费产品</label><select className="select" name="productId" defaultValue=""><option value="">自定义收费项</option>{products.list.map((product) => <option key={product.productCode} value={product.productCode}>{product.name} / {product.unitPriceYuan}</option>)}</select></div>
+            <div className="field"><label>收费项名称</label><input className="input" name="itemName" placeholder="春季课程包" required /></div>
+            <div className="field"><label>单价（元）</label><input className="input" type="number" step="0.01" min="0" name="unitPrice" defaultValue="0" required /></div>
+            <div className="field"><label>数量</label><input className="input" type="number" min="1" name="quantity" defaultValue="1" required /></div>
+            <div className="field form-span-2"><label>备注</label><textarea className="textarea" name="remark" placeholder="补充约定、折扣说明、签约渠道等" /></div>
+            <div className="button-row form-span-2"><button className="btn primary" type="submit">创建合同</button></div>
+          </form>
+        </section>
         <FilterBar fields={[
           { label: '家庭筛选', value: '待补统一 family filter', kind: 'select' },
           { label: '学生筛选', value: '待补统一 student filter', kind: 'select' },

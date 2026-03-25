@@ -1,4 +1,5 @@
 import { apiRequest, type PageResult } from '@/lib/api-client';
+import { getAuthTokens } from '@/lib/auth-session';
 import type { QueryBase } from '@/features/shared/types';
 
 export type BillingFilters = QueryBase & {
@@ -10,6 +11,36 @@ export type BillingFilters = QueryBase & {
   dueDateFrom?: string;
   dueDateTo?: string;
   tab?: 'invoices' | 'payments' | 'refunds' | 'adjustments';
+  status?: string;
+};
+
+export type CreateContractPayload = {
+  contractNo: string;
+  campusId?: string;
+  termId?: string;
+  familyId: string;
+  studentId: string;
+  signDate: string;
+  startDate: string;
+  endDate: string;
+  discountAmountCents?: number;
+  remark?: string;
+  status?: string;
+  items: Array<{
+    productId?: string;
+    itemName: string;
+    unitPriceCents: number;
+    quantity: number;
+  }>;
+};
+
+export type CreatePaymentPayload = {
+  paymentNo: string;
+  paidAmountCents: number;
+  paymentTime: string;
+  channel: string;
+  transactionNo?: string;
+  remark?: string;
   status?: string;
 };
 
@@ -34,6 +65,7 @@ type ContractItem = {
 };
 
 type InvoiceItem = {
+  invoiceId: string;
   invoiceNo: string;
   familyName: string;
   studentName: string;
@@ -91,7 +123,8 @@ function buildQuery(params: Record<string, string | number | undefined>) {
 
 export const billingService = {
   async queryProducts(params: QueryBase = {}): Promise<PageResult<BillingProductItem>> {
-    const result = await apiRequest<PageResult<{ code: string; name: string; billingMode: string; priceCents: number; status: string }>>(`/billing/products${buildQuery(params)}`);
+    const auth = await getAuthTokens();
+    const result = await apiRequest<PageResult<{ code: string; name: string; billingMode: string; priceCents: number; status: string }>>(`/billing/products${buildQuery(params)}`, { auth, retryOn401: Boolean(auth.refreshToken) });
     return {
       ...result,
       list: result.list.map((item) => ({
@@ -105,7 +138,8 @@ export const billingService = {
   },
 
   async queryContracts(params: BillingFilters = {}): Promise<PageResult<ContractItem>> {
-    const result = await apiRequest<PageResult<{ id: string; contractNo: string; familyId: string; studentId: string; startDate: string; endDate: string; payableAmountCents: number; status: string }>>(`/billing/contracts${buildQuery(params)}`);
+    const auth = await getAuthTokens();
+    const result = await apiRequest<PageResult<{ id: string; contractNo: string; familyId: string; studentId: string; startDate: string; endDate: string; payableAmountCents: number; status: string }>>(`/billing/contracts${buildQuery(params)}`, { auth, retryOn401: Boolean(auth.refreshToken) });
     return {
       ...result,
       list: result.list.map((item) => ({
@@ -123,11 +157,12 @@ export const billingService = {
   },
 
   async detailContract(contractId: string) {
+    const auth = await getAuthTokens();
     const detail = await apiRequest<{
       contract: { contractNo: string; familyId: string; studentId: string; startDate: string; endDate: string; payableAmountCents: number; status: string };
       items: Array<{ itemName: string; quantity: number; unitPriceCents: number; subtotalCents: number }>;
       invoices: Array<{ invoiceNo: string; status: string; amountCents: number }>;
-    }>(`/billing/contracts/${contractId}`);
+    }>(`/billing/contracts/${contractId}`, { auth, retryOn401: Boolean(auth.refreshToken) });
 
     return {
       contractNo: detail.contract.contractNo,
@@ -144,9 +179,22 @@ export const billingService = {
     };
   },
 
+
+  async createContract(payload: CreateContractPayload) {
+    const auth = await getAuthTokens();
+    return apiRequest<{ id: string; contractNo: string }>(`/billing/contracts`, {
+      method: 'POST',
+      body: payload,
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
+  },
+
   async queryInvoices(params: BillingFilters = {}) {
-    const result = await apiRequest<PageResult<{ id: string; invoiceNo: string; familyId: string; studentId: string; amountCents: number; dueDate: string; status: string }>>(`/billing/invoices${buildQuery(params)}`);
+    const auth = await getAuthTokens();
+    const result = await apiRequest<PageResult<{ id: string; invoiceNo: string; familyId: string; studentId: string; amountCents: number; dueDate: string; status: string }>>(`/billing/invoices${buildQuery(params)}`, { auth, retryOn401: Boolean(auth.refreshToken) });
     const invoiceRows: InvoiceItem[] = result.list.map((item) => ({
+      invoiceId: item.id,
       invoiceNo: item.invoiceNo,
       familyName: item.familyId,
       studentName: item.studentId,
@@ -166,6 +214,18 @@ export const billingService = {
     };
   },
 
+
+  async createPayment(invoiceId: string, payload: CreatePaymentPayload, idempotencyKey?: string) {
+    const auth = await getAuthTokens();
+    return apiRequest<{ id: string; paymentNo: string }>(`/billing/invoices/${invoiceId}/payments`, {
+      method: 'POST',
+      body: payload,
+      headers: idempotencyKey ? { 'idempotency-key': idempotencyKey } : undefined,
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
+  },
+
   actionInvoice(invoiceNo: string) {
     return {
       invoiceNo,
@@ -175,7 +235,8 @@ export const billingService = {
   },
 
   async queryRenewals(params: BillingFilters = {}): Promise<PageResult<RenewalItem>> {
-    const result = await apiRequest<PageResult<{ id: string; familyId: string; studentId: string; expectedEndDate?: string | null; status: string; ownerUserId?: string | null; nextFollowUpAt?: string | null }>>(`/billing/renewals${buildQuery(params)}`);
+    const auth = await getAuthTokens();
+    const result = await apiRequest<PageResult<{ id: string; familyId: string; studentId: string; expectedEndDate?: string | null; status: string; ownerUserId?: string | null; nextFollowUpAt?: string | null }>>(`/billing/renewals${buildQuery(params)}`, { auth, retryOn401: Boolean(auth.refreshToken) });
     return {
       ...result,
       list: result.list.map((item) => ({

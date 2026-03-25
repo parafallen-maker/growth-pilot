@@ -35,6 +35,18 @@ export type ErrorTaxonomyItem = {
   actions: string;
 };
 
+export type CreateHomeworkSubmissionPayload = {
+  studentId: string;
+  campusId?: string;
+  termId?: string;
+  teacherId?: string;
+  subject: string;
+  homeworkDate: string;
+  fileIds: string[];
+  sourceType?: string;
+  remark?: string;
+};
+
 export type HomeworkReviewDraftPayload = {
   reviewResult?: 'approved' | 'adjusted' | 'rejected';
   finalAccuracyPct?: number;
@@ -174,6 +186,14 @@ export const homeworkService = {
       reviewDraft: detail.reviewDraft,
       review: detail.review,
     };
+  },
+
+
+  async createSubmission(payload: CreateHomeworkSubmissionPayload) {
+    return serverApiRequest<{ id: string; submissionNo?: string | null }>(`/homework/submissions`, {
+      method: 'POST',
+      body: payload,
+    });
   },
 
   async saveReviewDraft(submissionId: string, payload: HomeworkReviewDraftPayload) {

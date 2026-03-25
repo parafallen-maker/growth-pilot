@@ -12,6 +12,20 @@ type StudentListItem = {
   status: string;
 };
 
+export type CreateStudentPayload = {
+  studentNo: string;
+  name: string;
+  gender?: string;
+  birthDate?: string;
+  schoolName?: string;
+  gradeLabel: string;
+  className?: string;
+  familyId?: string;
+  photoFileId?: string;
+  profileNotes?: string;
+  tags?: string[];
+};
+
 type StudentItem = {
   id: string;
   studentNo: string;
@@ -111,6 +125,16 @@ export const studentService = {
   async detail360(id: string): Promise<Student360Aggregate> {
     const auth = await getAuthTokens();
     return apiRequest<Student360Aggregate>(`/students/${id}/360`, { auth, retryOn401: Boolean(auth.refreshToken) });
+  },
+
+  async create(payload: CreateStudentPayload) {
+    const auth = await getAuthTokens();
+    return apiRequest<{ id: string; studentNo: string; name: string }>(`/students`, {
+      method: 'POST',
+      body: payload,
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
   },
 
   action() {

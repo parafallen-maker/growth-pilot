@@ -12,6 +12,19 @@ export type RubricTemplateItem = {
   updatedAt: string;
 };
 
+export type CreateObservationPayload = {
+  studentId: string;
+  termId?: string;
+  teacherId?: string;
+  templateId: string;
+  observationDate: string;
+  scene: string;
+  scores: Array<{ dimensionId: string; score: number; note?: string }>;
+  strengths?: string;
+  improvementNotes?: string;
+  publishToFamily?: boolean;
+};
+
 export type ObservationItem = {
   observationId: string;
   observedAt: string;
@@ -122,6 +135,13 @@ export const growthService = {
         status: item.publishToFamily ? 'published' : 'draft',
       })),
     };
+  },
+
+  async createObservationEntry(payload: CreateObservationPayload) {
+    return serverApiRequest<{ id: string; studentId: string; templateId: string }>(`/growth/observations`, {
+      method: 'POST',
+      body: payload,
+    });
   },
 
   createObservation() {

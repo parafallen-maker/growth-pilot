@@ -306,12 +306,18 @@
 
 #### Phase 3：表单交互（P1）
 
-- [ ] `FE-18` 新建学生表单 → `POST /students`
-- [ ] `FE-19` 作业上传表单 → `POST /files/upload/multipart` + `POST /homework/submissions`
-- [ ] `FE-20` 复核提交 → `POST /homework/submissions/{id}/review`
-- [ ] `FE-21` 成长观察创建 → `POST /growth/observations`
-- [ ] `FE-22` 合同创建 → `POST /billing/contracts`
-- [ ] `FE-23` 收款记录 → `POST /billing/invoices/{id}/payments`
+- [x] `FE-18` 新建学生表单 → `POST /students`
+  - 学生列表页已新增真实创建表单，提交后回跳列表并展示成功/错误状态。
+- [x] `FE-19` 作业上传表单 → `POST /files/upload/multipart` + `POST /homework/submissions`
+  - 作业队列页已串起文件 multipart 上传 + submission 创建，使用真实 fileId 落库。
+- [x] `FE-20` 复核提交 → `POST /homework/submissions/{id}/review`
+  - 复核工作台正式提交已接真；另补了列表页“快速复核”表单，走同一真实接口。
+- [/] `FE-21` 成长观察创建 → `POST /growth/observations`
+  - 观察页已接真实创建表单；当前先基于首个 active rubric 渲染评分字段，模板切换仍待前端动态化。
+- [/] `FE-22` 合同创建 → `POST /billing/contracts`
+  - 合同页已接真实创建表单；当前先支持单条收费项录入，复杂多收费项编辑待后续增强。
+- [/] `FE-23` 收款记录 → `POST /billing/invoices/{id}/payments`
+  - 账单页已接真实收款表单并透传 idempotency key；支付列表聚合仍受后端接口缺口限制。
 
 #### Phase 4：清理
 
