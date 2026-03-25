@@ -23,7 +23,7 @@ export class HomeworkAnalysisQueue {
     idempotencyKey?: string;
   }) {
     const submission = this.homeworkRepository.getSubmissionOrThrow(input.submissionId);
-    const job = this.jobsService.createJob({
+    return this.jobsService.enqueueAndProcess({
       jobType: 'homework_analysis',
       bizType: 'homework_submission',
       bizId: submission.id,
@@ -34,53 +34,50 @@ export class HomeworkAnalysisQueue {
         modelName: input.modelName,
         promptVersion: input.promptVersion,
       },
+    }, async ({ jobId }) => {
+      this.homeworkRepository.updateSubmission(submission.id, { aiStatus: 'running' });
+
+      try {
+        const analysis = await this.homeworkAnalysisAdapter.analyze({
+          submissionId: submission.id,
+          subject: submission.subject,
+          gradeLabel: undefined,
+          imageUrls: this.filesService.resolveFileUrls(
+            this.homeworkRepository.listSubmissionFiles(submission.id).map((item) => item.fileId),
+          ),
+          promptVersion: input.promptVersion,
+        });
+
+        const savedAnalysis = this.homeworkRepository.createAnalysis({
+          submissionId: submission.id,
+          jobId,
+          provider: input.provider,
+          modelName: input.modelName,
+          modelVersion: analysis.meta?.modelVersion,
+          promptVersion: input.promptVersion,
+          status: 'success',
+          rawMarkdown: analysis.rawMarkdown,
+          structuredOutput: analysis.structured,
+          accuracyPct: analysis.structured.accuracyPct,
+          errorSummaryText: analysis.structured.summary,
+          suggestionText: analysis.structured.suggestion,
+          confidence: analysis.structured.confidence ?? null,
+          durationMs: analysis.meta?.durationMs ?? null,
+          inputTokens: analysis.meta?.inputTokens ?? null,
+          outputTokens: analysis.meta?.outputTokens ?? null,
+          errorMessage: null,
+        });
+
+        this.homeworkRepository.updateSubmission(submission.id, {
+          aiStatus: 'ready',
+          finalAccuracyPct: submission.finalAccuracyPct,
+        });
+
+        return { analysisId: savedAnalysis.id, submissionId: submission.id };
+      } catch (error) {
+        this.homeworkRepository.updateSubmission(submission.id, { aiStatus: 'failed' });
+        throw error;
+      }
     });
-
-    this.jobsService.markRunning(job.jobId);
-    this.homeworkRepository.updateSubmission(submission.id, { aiStatus: 'running' });
-
-    try {
-      const analysis = await this.homeworkAnalysisAdapter.analyze({
-        submissionId: submission.id,
-        subject: submission.subject,
-        gradeLabel: undefined,
-        imageUrls: this.filesService.resolveFileUrls(
-          this.homeworkRepository.listSubmissionFiles(submission.id).map((item) => item.fileId),
-        ),
-        promptVersion: input.promptVersion,
-      });
-
-      const savedAnalysis = this.homeworkRepository.createAnalysis({
-        submissionId: submission.id,
-        jobId: job.jobId,
-        provider: input.provider,
-        modelName: input.modelName,
-        modelVersion: analysis.meta?.modelVersion,
-        promptVersion: input.promptVersion,
-        status: 'success',
-        rawMarkdown: analysis.rawMarkdown,
-        structuredOutput: analysis.structured,
-        accuracyPct: analysis.structured.accuracyPct,
-        errorSummaryText: analysis.structured.summary,
-        suggestionText: analysis.structured.suggestion,
-        confidence: analysis.structured.confidence ?? null,
-        durationMs: analysis.meta?.durationMs ?? null,
-        inputTokens: analysis.meta?.inputTokens ?? null,
-        outputTokens: analysis.meta?.outputTokens ?? null,
-        errorMessage: null,
-      });
-
-      this.homeworkRepository.updateSubmission(submission.id, {
-        aiStatus: 'ready',
-        finalAccuracyPct: submission.finalAccuracyPct,
-      });
-      this.jobsService.markSuccess(job.jobId, { analysisId: savedAnalysis.id, submissionId: submission.id });
-      return job;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'unknown analysis error';
-      this.homeworkRepository.updateSubmission(submission.id, { aiStatus: 'failed' });
-      this.jobsService.markFailed(job.jobId, message);
-      throw error;
-    }
   }
 }

@@ -2,6 +2,15 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { buildPagedResult } from '../../../shared/api-response';
 import { JobsRepository } from '../repository/jobs.repository';
 
+export interface JobExecutionContext {
+  jobId: string;
+  attempt: number;
+  payload?: Record<string, unknown>;
+}
+
+export type JobExecutionHandler<TResult extends Record<string, unknown> = Record<string, unknown>> =
+  (context: JobExecutionContext) => Promise<TResult> | TResult;
+
 @Injectable()
 export class JobsService {
   constructor(private readonly jobsRepository: JobsRepository) {}
@@ -71,6 +80,58 @@ export class JobsService {
       finishedAt: null,
       attempts: job.attempts,
     });
+  }
+
+  processJobSync<TResult extends Record<string, unknown> = Record<string, unknown>>(jobId: string, handler: (context: JobExecutionContext) => TResult) {
+    const running = this.markRunning(jobId);
+
+    try {
+      const result = handler({
+        jobId,
+        attempt: running.attempts,
+        payload: running.payload,
+      });
+      this.markSuccess(jobId, result ?? {});
+      return this.getJob(jobId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown job execution error';
+      this.markFailed(jobId, message);
+      throw error;
+    }
+  }
+
+  async processJob<TResult extends Record<string, unknown> = Record<string, unknown>>(jobId: string, handler: JobExecutionHandler<TResult>) {
+    const running = this.markRunning(jobId);
+
+    try {
+      const result = await handler({
+        jobId,
+        attempt: running.attempts,
+        payload: running.payload,
+      });
+      this.markSuccess(jobId, result ?? {});
+      return this.getJob(jobId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown job execution error';
+      this.markFailed(jobId, message);
+      throw error;
+    }
+  }
+
+  async enqueueAndProcess<TResult extends Record<string, unknown> = Record<string, unknown>>(
+    input: {
+      jobType: string;
+      bizType: string;
+      bizId: string;
+      idempotencyKey?: string;
+      payload?: Record<string, unknown>;
+      force?: boolean;
+    },
+    handler: JobExecutionHandler<TResult>,
+  ) {
+    const job = this.createJob(input);
+    await this.processJob(job.jobId, handler);
+    return this.getJob(job.jobId);
   }
 
   private ensureUpdated(jobId: string, patch: Parameters<JobsRepository['update']>[1]) {

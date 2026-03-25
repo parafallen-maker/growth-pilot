@@ -15,8 +15,8 @@ function createFixture() {
   const dir = mkdtempSync(join(tmpdir(), 'growthpilot-analytics-'));
   const billingRepository = new BillingRepository(join(dir, 'billing.json'));
   const communicationRepository = new CommunicationRepository(join(dir, 'communication.json'));
-  const attendanceRepository = new AttendanceRepository();
-  const homeworkRepository = new HomeworkRepository();
+  const attendanceRepository = new AttendanceRepository(join(dir, 'attendance.json'));
+  const homeworkRepository = new HomeworkRepository(join(dir, 'homework.json'));
   const billingService = new BillingService(billingRepository);
   const analyticsService = new AnalyticsService(
     new AnalyticsRepository(billingRepository, communicationRepository, attendanceRepository, homeworkRepository),
@@ -97,6 +97,9 @@ test('analytics aggregates billing + homework + communication + attendance from 
   assert.equal(overview.receivableCents, 410000);
   assert.equal(overview.receivedCents, 30000);
   assert.equal(overview.pendingHomeworkCount, 0);
+  assert.equal(overview.reportPublishRate, 1);
+  assert.equal(overview.todayAttendanceAnomalyCount, 1);
+  assert.equal(overview.trend.renewalTodoCount, 1);
   assert.ok(overview.trend.communicationTouchCount >= 1);
 
   const billing = analyticsService.getBilling(scope);

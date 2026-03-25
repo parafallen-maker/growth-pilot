@@ -20,8 +20,7 @@ export class ReportDraftJob {
       payload: request,
     });
 
-    try {
-      this.jobsService.markRunning(job.jobId);
+    this.jobsService.processJobSync(job.jobId, ({ jobId }) => {
       const reportIds: string[] = [];
 
       for (const studentId of request.studentIds) {
@@ -38,7 +37,7 @@ export class ReportDraftJob {
           title: `${request.periodKey} ${request.reportType === 'weekly' ? '周报' : '月报'}草稿`,
           draftMarkdown: `# ${request.periodKey} 成长草稿\n\n- 观察数：${materials.growthObservations.length}\n- 目标数：${materials.goals.length}\n- 素材装配：已持久化`,
           summaryJson: materials,
-          generatedByJobId: job.jobId,
+          generatedByJobId: jobId,
           publishedAt: null,
           createdAt: now,
           updatedAt: now,
@@ -47,17 +46,13 @@ export class ReportDraftJob {
         reportIds.push(reportId);
       }
 
-      this.jobsService.markSuccess(job.jobId, {
+      return {
         reportIds,
         reportCount: reportIds.length,
         reportType: request.reportType,
         periodKey: request.periodKey,
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'unknown report draft error';
-      this.jobsService.markFailed(job.jobId, message);
-      throw error;
-    }
+      };
+    });
 
     return { jobId: job.jobId, status: job.status };
   }

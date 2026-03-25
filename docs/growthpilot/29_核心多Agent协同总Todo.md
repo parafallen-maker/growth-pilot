@@ -113,8 +113,10 @@
 - [x] student/family/enrollment 聚合
 - [x] homework/growth/attendance/billing 摘要位接真实仓储
 - [x] recentTimeline 接真实数据源
-- [ ] Student 360 Web 页面（WBS-015 / T-M1-FE-3）
-- [ ] Web 不再前端手拼摘要
+- [x] Student 360 Web 页面（WBS-015 / T-M1-FE-3）
+  - 2026-03-25：已新增 `apps/web/src/app/(dashboard)/students/[studentId]/page.tsx`，直接消费 `GET /students/:id/360` 真聚合。
+- [x] Web 不再前端手拼摘要
+  - 2026-03-25：`apps/web/src/services/students-service.ts` 已从静态 summary stub 改为真实请求 `GET /students` + `GET /students/:id/360`，学生列表与 Student360 页面均以后端聚合结果为准。
 
 #### IMPL-002-3 文件主链路
 - [ ] upload -> fileId -> submission 真闭环
@@ -122,7 +124,8 @@
 
 ### 当前判断
 - 后端主数据已能用
-- 最大缺口在 Web 联调与正式数据库迁移
+- Student360 Web 页面与 students 360 摘要已接真接口，前端在主数据域不再完全空壳
+- 主数据域最大缺口已收敛到正式数据库迁移，以及 students/families/teachers 更完整的前端交互闭环
 
 ---
 
@@ -149,7 +152,8 @@
 - [ ] 真实 provider 配置边界
 - [x] error taxonomy CRUD 后端能力
 
-> 2026-03-25 A6 第二波：已在 `apps/api` 落 review draft 读写接口（`GET/PUT /homework/submissions/:submissionId/review-draft`），草稿持久化到 `apps/api/.data/homework.json`；`HomeworkSubmitted/HomeworkReviewed` 改为写入同文件 outbox 基础队列，支持重启后追踪；并补 `GET/POST/PATCH/DELETE /homework/error-taxonomies` 词典 CRUD 与“被 review 引用不可删”保护。顺手修复了现存 typecheck/test 红灯：`GrowthRepository.updateReport` 返回值、`teacher-002` 默认样本、growth reports 页面类型错误。- [x] homework 页面接真接口（submissions / review / error taxonomies 已接真）
+> 2026-03-25 A6 第二波：已在 `apps/api` 落 review draft 读写接口（`GET/PUT /homework/submissions/:submissionId/review-draft`），草稿持久化到 `apps/api/.data/homework.json`；`HomeworkSubmitted/HomeworkReviewed` 改为写入同文件 outbox 基础队列，支持重启后追踪；并补 `GET/POST/PATCH/DELETE /homework/error-taxonomies` 词典 CRUD 与“被 review 引用不可删”保护。顺手修复了现存 typecheck/test 红灯：`GrowthRepository.updateReport` 返回值、`teacher-002` 默认样本、growth reports 页面类型错误。
+- [x] homework 页面接真接口（submissions / review / error taxonomies 已接真）
 - [x] review workbench 真 detail + 动作闭环（review draft、提交复核、词典维护已可走真链路）
 
 #### IMPL-004 Growth
@@ -192,14 +196,14 @@
 - [x] records/templates/message_tasks 持久化
 - [x] sent/failed/read 状态链路
 - [ ] 真渠道发送 adapter
-- [ ] communication 页面接真接口
+- [~] communication 页面接真接口（records/messages 已切真 `communication/records|templates|message-tasks`；meeting/task 反查聚合与真发送 adapter 仍待后端）
 
 #### IMPL-005 Attendance
 - [x] devices/bindings/events/sessions/dailyStats 持久化
 - [x] active binding / dedupe / daily stats 再生
 - [~] 仓库内唯一性 / 幂等约束硬化（已补 binding 时间重叠、device-campus 校验、session overlap/device-active-binding 保护；DB 级约束仍待正式库）
 - [ ] 真设备 ingestion / 接入链路
-- [ ] attendance 页面接真接口
+- [~] attendance 页面接真接口（board/devices/homework-time 已切真 `attendance/events|devices|bindings|daily-stats`；未签到名单 roster、异常修正 workflow 仍缺后端聚合）
 
 #### IMPL-005 Analytics
 - [x] overview/teaching/billing 仓储聚合
@@ -315,15 +319,19 @@
 ## 5. 当前立刻执行（Now）
 
 ### NOW-A｜A4 基础设施接线
-- [~] 把 `ApiAuthGuard` / `PermissionGuard` 真挂到主要控制器（jobs/files/students/homework/growth 已接；billing/attendance/communication/analytics/users/settings 未全量收口）
+- [x] 把 `ApiAuthGuard` / `PermissionGuard` 真挂到主要控制器
+  - 2026-03-25：已覆盖 `jobs/files/students/homework/growth/analytics/attendance/billing/communication/families/teachers/settings/users`；其中 `analytics/attendance/billing/communication/students/families/teachers/settings/users` 已按现有权限字典补 `@RequirePermission(...)`，未新增任何脱离真源文档的权限码。
 - [x] Web 去掉 `mockCurrentUser` 入口，改接共享 current-user source（优先 `/auth/me`，无 token 时 dev bootstrap login fallback）
 
 ### NOW-B｜A8/A9 Web 去 mock
 - [x] 先打通 homework submissions/review 真接口
 - [x] 再打通 growth reports/observations/goals 真接口
 - [x] 再接 billing/contracts/invoices 与 analytics overview
+- [x] communication records/messages 切真 `communication/records|templates|message-tasks`
+- [x] attendance board/devices/homework-time 切真 `attendance/events|devices|bindings|daily-stats`
 - [~] billing products/renewals、analytics billing/teaching 也已顺手接真接口；payments/refunds/adjustments 详情聚合因后端未给列表接口，暂保留占位块
 - [~] growth rubrics 详情与列表已接真接口；report review/publish API 已落，但前端异步生成态、编辑动作与发布后回跳细节仍待收口
+- [~] attendance/communication 仍留明确缺口：未签到名单 roster、异常修正 workflow、meeting/task 反查聚合、真消息渠道 adapter
 
 ### NOW-C｜A3/A6 教学闭环收口
 - [x] growth report review/publish 契约与实现

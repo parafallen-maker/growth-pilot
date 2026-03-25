@@ -96,3 +96,56 @@ test('attendance binding uniqueness and explicit unbind flow are enforced', () =
   });
   assert.equal(rebound.deviceId, secondDevice.id);
 });
+
+
+test('attendance session overlap/device-campus constraints are enforced', () => {
+  const service = new AttendanceService(new AttendanceRepository());
+
+  assert.throws(() =>
+    service.createEvent({
+      studentId: 'student-001',
+      campusId: 'campus-002',
+      deviceId: 'device-001',
+      eventType: 'checkin',
+      eventTime: '2026-03-25T08:00:00+08:00',
+    }),
+  );
+
+  const session = service.createHomeworkTimeSession({
+    studentId: 'student-001',
+    campusId: 'campus-001',
+    termId: 'term-2026-spring',
+    subject: 'math',
+    deviceId: 'device-001',
+    sourceType: 'device',
+    startTime: '2026-03-25T19:00:00+08:00',
+    endTime: '2026-03-25T19:30:00+08:00',
+  });
+  assert.match(session.id, /^hw-session-/);
+
+  assert.throws(() =>
+    service.createHomeworkTimeSession({
+      studentId: 'student-001',
+      campusId: 'campus-001',
+      termId: 'term-2026-spring',
+      subject: 'math',
+      deviceId: 'device-001',
+      sourceType: 'device',
+      startTime: '2026-03-25T19:10:00+08:00',
+      endTime: '2026-03-25T19:40:00+08:00',
+    }),
+  );
+
+  assert.throws(() =>
+    service.createHomeworkTimeSession({
+      studentId: 'student-002',
+      campusId: 'campus-001',
+      termId: 'term-2026-spring',
+      subject: 'math',
+      deviceId: 'device-001',
+      sourceType: 'device',
+      startTime: '2026-03-25T20:00:00+08:00',
+      endTime: '2026-03-25T20:30:00+08:00',
+    }),
+  );
+});

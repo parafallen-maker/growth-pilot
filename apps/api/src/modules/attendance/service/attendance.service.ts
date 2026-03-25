@@ -56,6 +56,7 @@ export class AttendanceService {
     return this.attendanceRepository.runInTransaction(() => {
       const device = this.attendanceRepository.getDeviceOrThrow(payload.deviceId);
       const targetStatus = payload.status ?? 'active';
+      const boundAt = payload.boundAt ?? new Date().toISOString();
       if (targetStatus === 'active') {
         if (this.attendanceRepository.listActiveBindingsByStudent(payload.studentId).length > 0) {
           throw new ConflictException('student already has an active binding');
@@ -65,11 +66,20 @@ export class AttendanceService {
         }
       }
 
+      const overlappingBinding = this.attendanceRepository.findOverlappingBinding({
+        studentId: payload.studentId,
+        deviceId: payload.deviceId,
+        boundAt,
+      });
+      if (overlappingBinding) {
+        throw new ConflictException('binding times overlap with existing binding history');
+      }
+
       const binding = this.attendanceRepository.createBinding({
         studentId: payload.studentId,
         deviceId: payload.deviceId,
         status: targetStatus,
-        boundAt: payload.boundAt ?? new Date().toISOString(),
+        boundAt,
         unboundAt: null,
         createdBy: payload.createdBy ?? null,
       });
@@ -92,9 +102,24 @@ export class AttendanceService {
         }
       }
 
+      const nextUnboundAt = nextStatus === 'inactive' ? payload.unboundAt ?? new Date().toISOString() : null;
+      if (new Date(nextUnboundAt ?? binding.boundAt).getTime() < new Date(binding.boundAt).getTime()) {
+        throw new ConflictException('unboundAt must be >= boundAt');
+      }
+      const overlappingBinding = this.attendanceRepository.findOverlappingBinding({
+        studentId: binding.studentId,
+        deviceId: binding.deviceId,
+        boundAt: binding.boundAt,
+        unboundAt: nextUnboundAt,
+        excludeBindingId: binding.id,
+      });
+      if (overlappingBinding) {
+        throw new ConflictException('binding times overlap with existing binding history');
+      }
+
       const updated = this.attendanceRepository.updateBinding(bindingId, {
         status: nextStatus,
-        unboundAt: nextStatus === 'inactive' ? payload.unboundAt ?? new Date().toISOString() : null,
+        unboundAt: nextUnboundAt,
       });
       this.refreshDeviceStatus(updated.deviceId);
       return updated;
@@ -125,6 +150,10 @@ export class AttendanceService {
       }
 
       if (payload.deviceId) {
+        const device = this.attendanceRepository.getDeviceOrThrow(payload.deviceId);
+        if (device.campusId && payload.campusId && device.campusId !== payload.campusId) {
+          throw new ConflictException('device campus does not match attendance event campus');
+        }
         const activeBinding = this.attendanceRepository.listActiveBindingsByDevice(payload.deviceId)[0];
         if (activeBinding && activeBinding.studentId !== payload.studentId) {
           throw new ConflictException('device is actively bound to another student');
@@ -173,6 +202,23 @@ export class AttendanceService {
       if (durationMinutes <= 0) {
         throw new ConflictException('homework time session duration must be > 0');
       }
+      if (payload.deviceId && payload.sourceType === 'device') {
+        const activeBinding = this.attendanceRepository.listActiveBindingsByDevice(payload.deviceId)[0];
+        if (!activeBinding || activeBinding.studentId !== payload.studentId) {
+          throw new ConflictException('device session requires an active binding for the same student');
+        }
+      }
+      const overlappingSession = this.attendanceRepository.findOverlappingSession({
+        studentId: payload.studentId,
+        subject: payload.subject,
+        deviceId: payload.deviceId ?? null,
+        startTime: payload.startTime,
+        endTime: payload.endTime,
+      });
+      if (overlappingSession) {
+        throw new ConflictException('homework time session overlaps with existing session');
+      }
+
       const session = this.attendanceRepository.createSession({
         studentId: payload.studentId,
         termId: payload.termId ?? null,

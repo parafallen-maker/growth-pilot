@@ -216,6 +216,31 @@ export class AttendanceRepository {
     return this.state.bindings.filter((item) => item.deviceId === deviceId && item.status === 'active');
   }
 
+  findOverlappingBinding(input: { studentId: string; deviceId: string; boundAt: string; unboundAt?: string | null; excludeBindingId?: string }) {
+    const nextStart = new Date(input.boundAt).getTime();
+    const nextEnd = input.unboundAt ? new Date(input.unboundAt).getTime() : Number.POSITIVE_INFINITY;
+    return this.state.bindings.find((item) => {
+      if (input.excludeBindingId && item.id === input.excludeBindingId) return false;
+      if (item.studentId !== input.studentId && item.deviceId !== input.deviceId) return false;
+      const currentStart = new Date(item.boundAt).getTime();
+      const currentEnd = item.unboundAt ? new Date(item.unboundAt).getTime() : Number.POSITIVE_INFINITY;
+      return currentStart <= nextEnd && nextStart <= currentEnd;
+    });
+  }
+
+  findOverlappingSession(input: { studentId: string; startTime: string; endTime: string; subject?: string; deviceId?: string | null }) {
+    const nextStart = new Date(input.startTime).getTime();
+    const nextEnd = new Date(input.endTime).getTime();
+    return this.state.sessions.find((item) => {
+      if (item.studentId !== input.studentId) return false;
+      if (input.subject && item.subject !== input.subject) return false;
+      if (input.deviceId && item.deviceId && item.deviceId !== input.deviceId) return false;
+      const currentStart = new Date(item.startTime).getTime();
+      const currentEnd = new Date(item.endTime).getTime();
+      return currentStart < nextEnd && nextStart < currentEnd;
+    });
+  }
+
   updateDevice(deviceId: string, patch: Partial<AttendanceDevice>) {
     let updated!: AttendanceDevice;
     this.store.update((state) => {
