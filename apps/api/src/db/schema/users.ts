@@ -1,4 +1,4 @@
-import { createId, pgTable, primaryKey, text, timestamp, uniqueIndex, varchar, activeStatus } from './base';
+import { activeStatus, createId, pgTable, text, timestamp, unique, uniqueIndex, varchar } from './base';
 import { campuses } from './settings';
 
 export const roles = pgTable('roles', {
@@ -36,8 +36,11 @@ export const users = pgTable('users', {
 }, (table) => [uniqueIndex('users_username_uq').on(table.username)]);
 
 export const userRoles = pgTable('user_roles', {
+  id: createId(),
   userId: varchar('user_id', { length: 36 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
   roleId: varchar('role_id', { length: 36 }).notNull().references(() => roles.id, { onDelete: 'cascade' }),
   campusId: varchar('campus_id', { length: 36 }).references(() => campuses.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-}, (table) => [primaryKey({ columns: [table.userId, table.roleId, table.campusId], name: 'user_roles_pk' })]);
+}, (table) => [
+  unique('user_roles_user_role_campus_uq').on(table.userId, table.roleId, table.campusId).nullsNotDistinct(),
+]);

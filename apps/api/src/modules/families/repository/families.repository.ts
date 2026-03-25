@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { asc, eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import type { Family, FamilyTask, Guardian, Student } from '@growthpilot/schema/index';
 import { createDb, dbSchema } from '../../../db';
 import { isDbPersistenceEnabled } from '../../../shared/persistence/adapter';
@@ -184,17 +184,17 @@ class DbFamiliesRepository implements FamiliesRepositoryPort {
   private readonly db = createDb();
 
   async listFamilies() {
-    const rows = await this.db.select().from(dbSchema.families).orderBy(asc(dbSchema.families.createdAt));
+    const rows = await this.db.select().from(dbSchema.families).orderBy(desc(dbSchema.families.createdAt));
     return rows.map((row) => this.mapFamily(row));
   }
 
   async listStudentsByFamily(familyId: string) {
-    const rows = await this.db.select().from(dbSchema.students).where(eq(dbSchema.students.familyId, familyId)).orderBy(asc(dbSchema.students.createdAt));
+    const rows = await this.db.select().from(dbSchema.students).where(eq(dbSchema.students.familyId, familyId)).orderBy(desc(dbSchema.students.createdAt));
     return rows.map((row) => this.mapStudent(row));
   }
 
   async listGuardiansByFamily(familyId: string) {
-    const rows = await this.db.select().from(dbSchema.guardians).where(eq(dbSchema.guardians.familyId, familyId)).orderBy(asc(dbSchema.guardians.createdAt));
+    const rows = await this.db.select().from(dbSchema.guardians).where(eq(dbSchema.guardians.familyId, familyId)).orderBy(desc(dbSchema.guardians.createdAt));
     return rows.map((row) => this.mapGuardian(row));
   }
 
@@ -203,7 +203,7 @@ class DbFamiliesRepository implements FamiliesRepositoryPort {
       .select()
       .from(dbSchema.familyTasks)
       .where(eq(dbSchema.familyTasks.familyId, familyId))
-      .orderBy(asc(dbSchema.familyTasks.createdAt));
+      .orderBy(desc(dbSchema.familyTasks.createdAt));
     return rows.map((row) => this.mapTask(row));
   }
 

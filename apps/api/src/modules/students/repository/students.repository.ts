@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import type { Enrollment, Student } from '@growthpilot/schema/index';
 import { createDb, dbSchema } from '../../../db';
 import { isDbPersistenceEnabled } from '../../../shared/persistence/adapter';
@@ -124,12 +124,12 @@ class DbStudentsRepository implements StudentsRepositoryPort {
   private readonly db = createDb();
 
   async listStudents() {
-    const rows = await this.db.select().from(dbSchema.students).orderBy(asc(dbSchema.students.createdAt));
+    const rows = await this.db.select().from(dbSchema.students).orderBy(desc(dbSchema.students.createdAt));
     return rows.map((row) => this.mapStudent(row));
   }
 
   async listEnrollments() {
-    const rows = await this.db.select().from(dbSchema.studentEnrollments).orderBy(asc(dbSchema.studentEnrollments.createdAt));
+    const rows = await this.db.select().from(dbSchema.studentEnrollments).orderBy(desc(dbSchema.studentEnrollments.createdAt));
     return rows.map((row) => this.mapEnrollment(row));
   }
 
@@ -138,7 +138,7 @@ class DbStudentsRepository implements StudentsRepositoryPort {
       .select()
       .from(dbSchema.studentEnrollments)
       .where(eq(dbSchema.studentEnrollments.studentId, studentId))
-      .orderBy(asc(dbSchema.studentEnrollments.createdAt));
+      .orderBy(desc(dbSchema.studentEnrollments.createdAt));
     return rows.map((row) => this.mapEnrollment(row));
   }
 
@@ -203,6 +203,17 @@ class DbStudentsRepository implements StudentsRepositoryPort {
       if (!teacher[0]) {
         throw new NotFoundException(`Teacher ${input.primaryTeacherId} not found`);
       }
+    }
+    const campus = await this.db.select({ id: dbSchema.campuses.id }).from(dbSchema.campuses).where(eq(dbSchema.campuses.id, input.campusId)).limit(1);
+    if (!campus[0]) {
+      throw new NotFoundException(`Campus ${input.campusId} not found`);
+    }
+    const term = await this.db.select().from(dbSchema.schoolTerms).where(eq(dbSchema.schoolTerms.id, input.termId)).limit(1);
+    if (!term[0]) {
+      throw new NotFoundException(`Term ${input.termId} not found`);
+    }
+    if (term[0].campusId && term[0].campusId !== input.campusId) {
+      throw new ConflictException({ code: 'DATA_409', message: 'term does not belong to campus' });
     }
 
     const now = new Date();

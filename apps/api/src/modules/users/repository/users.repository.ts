@@ -1,5 +1,5 @@
-import { ConflictException, Injectable } from '@nestjs/common';
-import { InferSelectModel, asc, eq, inArray, like } from 'drizzle-orm';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { InferSelectModel, desc, eq, ilike, inArray, or } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { createDb, dbSchema } from '../../../db';
 import { FileJsonStore } from '../../../shared/persistence/file-json-store';
@@ -181,14 +181,18 @@ class DbUsersRepository implements UsersRepositoryPort {
   async list(keyword?: string) {
     const normalized = keyword?.trim();
     const rows = normalized
-      ? await this.db.select().from(dbSchema.users).where(like(dbSchema.users.displayName, `%${normalized}%`))
-      : await this.db.select().from(dbSchema.users).orderBy(asc(dbSchema.users.createdAt));
+      ? await this.db
+        .select()
+        .from(dbSchema.users)
+        .where(or(ilike(dbSchema.users.displayName, `%${normalized}%`), ilike(dbSchema.users.username, `%${normalized}%`)))
+        .orderBy(desc(dbSchema.users.createdAt))
+      : await this.db.select().from(dbSchema.users).orderBy(desc(dbSchema.users.createdAt));
 
     return Promise.all(rows.map((row) => this.enrichUser(row))) as Promise<UserRecord[]>;
   }
 
   async listRoles() {
-    const roleRows = await this.db.select().from(dbSchema.roles).orderBy(asc(dbSchema.roles.code));
+    const roleRows = await this.db.select().from(dbSchema.roles).orderBy(dbSchema.roles.code);
     const fallbackPermissionMap = new Map(defaultRoles.map((role) => [role.code, role.permissionIds]));
     const allPermissionIds = (await this.listPermissions()).map((permission) => permission.id);
 
@@ -203,7 +207,7 @@ class DbUsersRepository implements UsersRepositoryPort {
   }
 
   async listPermissions() {
-    const rows = await this.db.select().from(dbSchema.permissions).orderBy(asc(dbSchema.permissions.code));
+    const rows = await this.db.select().from(dbSchema.permissions).orderBy(dbSchema.permissions.code);
     return rows.map((row) => ({ id: row.id, code: row.code, name: row.name, module: row.module, action: row.action }));
   }
 
@@ -213,13 +217,14 @@ class DbUsersRepository implements UsersRepositoryPort {
       : [];
     const existing = await this.findById(userId);
     if (!existing) return undefined;
+    const campusIds = await this.resolveCampusIds(existing.campusIds);
 
     await this.db.transaction(async (tx) => {
       await tx.delete(dbSchema.userRoles).where(eq(dbSchema.userRoles.userId, userId));
       if (roleRows.length) {
         await tx.insert(dbSchema.userRoles).values(
           roleRows.flatMap((role) =>
-            (existing.campusIds.length ? existing.campusIds : [null]).map((campusId) => ({ userId, roleId: role.id, campusId })),
+            (campusIds.length ? campusIds : [null]).map((campusId) => ({ userId, roleId: role.id, campusId })),
           ),
         );
       }
@@ -237,6 +242,7 @@ class DbUsersRepository implements UsersRepositoryPort {
     const roleRows = input.roles.length
       ? await this.db.select().from(dbSchema.roles).where(inArray(dbSchema.roles.code, input.roles))
       : [];
+    const campusIds = await this.resolveCampusIds(input.campusIds);
     const now = new Date();
     const [created] = await this.db.transaction(async (tx) => {
       const inserted = await tx
@@ -254,10 +260,9 @@ class DbUsersRepository implements UsersRepositoryPort {
         .returning();
 
       if (roleRows.length) {
-        const campusIds = input.campusIds.length ? input.campusIds : [null];
         await tx.insert(dbSchema.userRoles).values(
           roleRows.flatMap((role) =>
-            campusIds.map((campusId) => ({ userId: inserted[0]!.id, roleId: role.id, campusId })),
+            (campusIds.length ? campusIds : [null]).map((campusId) => ({ userId: inserted[0]!.id, roleId: role.id, campusId })),
           ),
         );
       }
@@ -285,6 +290,22 @@ class DbUsersRepository implements UsersRepositoryPort {
       campusIds: [...new Set(assignments.map((assignment) => assignment.campusId).filter((campusId): campusId is string => Boolean(campusId)))],
       status: row.status,
     } satisfies UserRecord;
+  }
+
+  private async resolveCampusIds(campusIds: string[]) {
+    if (!campusIds.length) {
+      return [];
+    }
+
+    const uniqueCampusIds = [...new Set(campusIds)];
+    const campusRows = await this.db.select({ id: dbSchema.campuses.id }).from(dbSchema.campuses).where(inArray(dbSchema.campuses.id, uniqueCampusIds));
+    if (campusRows.length !== uniqueCampusIds.length) {
+      const existingCampusIds = new Set(campusRows.map((campus) => campus.id));
+      const missingCampusIds = uniqueCampusIds.filter((campusId) => !existingCampusIds.has(campusId));
+      throw new NotFoundException(`Campus ${missingCampusIds.join(', ')} not found`);
+    }
+
+    return uniqueCampusIds;
   }
 }
 

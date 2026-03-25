@@ -4,6 +4,7 @@ export default defineConfig({
   schema: [
     './src/db/schema/settings.ts',
     './src/db/schema/users.ts',
+    './src/db/schema/auth.ts',
     './src/db/schema/families.ts',
     './src/db/schema/teachers.ts',
     './src/db/schema/students.ts',
