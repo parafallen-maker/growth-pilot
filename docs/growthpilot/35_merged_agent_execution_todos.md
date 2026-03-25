@@ -666,12 +666,14 @@
 
 #### 数据迁移
 
-- [ ] `QA-20` **迁移脚本生产化**：
+- [x] `QA-20` **迁移脚本生产化**：
   - 从 staging 脚本升级为可连接生产 DB 的正式脚本
   - 支持 `--dry-run` 模式（只输出变更，不写入）
   - 支持 `--report-only` 模式（只生成校验报告）
+  - 已补 `deploy/scripts/run-production-migration.mjs`，统一封装 `dry-run` / `report-only` / `db-apply` 三种发布入口，并在 prod `db-apply` 强制要求 `--confirm-prod`。
+  - 已补 `deploy/scripts/release-ops.test.mjs` 覆盖 release migration wrapper、env validator 与 release workspace scaffolding。
 
-- [ ] `QA-21` **迁移顺序编排**：
+- [x] `QA-21` **迁移顺序编排**：
   1. 基础字典（grade_levels, subjects, error_tags, habit_dimensions, fee_items）
   2. 校区、学期
   3. 教师
@@ -681,54 +683,68 @@
   7. 作业提交 + AI 分析 + 教师复核
   8. 习惯观察 + 成长目标
   9. 设备 + 绑定 + 签到 + 学习时长
+  - 已在 `docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md` 固化顺序、退出条件和批次证据要求。
 
-- [ ] `QA-22` **数据清洗规则确认**：
+- [x] `QA-22` **数据清洗规则确认**：
   - 字段映射对照表（Excel 列名 → DB 字段）
   - 空值处理规则
   - 日期格式统一
   - 手机号/身份证号脱敏或校验
   - 重复数据去重策略（student_no + 姓名 + 学期）
+  - 已在 `docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md` 补齐字段映射、空值/日期/金额/脱敏/去重规则。
 
-- [ ] `QA-23` **全量迁移执行**：
+- [/] `QA-23` **全量迁移执行**：
   - 在 staging 环境执行全量迁移
   - 输出 `migration-report.json`（成功数/失败数/跳过数/reject 列表）
   - 人工校验 reject 数据
+  - 已补 staging/UAT 执行步骤、命令模板与 evidence 清单：`docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md`
+  - 尚未在真实 staging/UAT 库执行全量导入，因此不能记完成。
 
-- [ ] `QA-24` **迁移数据校验**：
+- [/] `QA-24` **迁移数据校验**：
   - 总数核对（Excel 行数 vs DB 记录数）
   - 关键字段抽样（每表抽 10 条核对）
   - 外键完整性检查（学生→家庭→监护人链路）
   - 金额一致性检查（合同金额 = Σ 账单金额）
+  - 已补 SQL 校验模板、抽样口径与金额一致性检查流程：`docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md`
+  - 尚未对真实 staging/UAT 导入批次执行校验。
 
 #### 用户验收测试（UAT）
 
-- [ ] `QA-25` **UAT 测试计划编写**：
+- [x] `QA-25` **UAT 测试计划编写**：
   - 按角色分：super_admin / principal / teacher / finance
   - 每个角色 5-8 个核心场景
   - 预期结果明确
+  - 已补 `docs/growthpilot/templates/uat_execution_template.yaml` 与 `docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md`，覆盖 4 角色核心场景与签收字段。
 
-- [ ] `QA-26` **UAT 环境搭建**：
+- [/] `QA-26` **UAT 环境搭建**：
   - 部署 staging/UAT 环境
   - 导入迁移后的真实数据
   - 创建 UAT 测试账号
+  - 已补 UAT 环境搭建检查项、账号/数据/日志要求：`docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md`
+  - 未在真实环境完成部署、导数与账号创建，保持进行中。
 
-- [ ] `QA-27` **UAT 执行**（需用户参与）：
+- [/] `QA-27` **UAT 执行**（需用户参与）：
   - super_admin 场景：用户管理、角色分配、系统设置
   - principal 场景：Dashboard 总览、学生 360、教师排班、分析报表
   - teacher 场景：作业列表、复核工作台、习惯观察、成长目标
   - finance 场景：合同管理、账单开具、收款记录、退费处理
+  - 已准备执行矩阵、证据要求与签收流程，但尚未组织用户实际跑 UAT。
 
-- [ ] `QA-28` **UAT 问题清单收集与修复**：
+- [/] `QA-28` **UAT 问题清单收集与修复**：
   - 记录所有问题（blocker / major / minor）
   - blocker 必须修复后才可上线
   - major 最迟上线后 3 天内修复
   - minor 归入后续迭代
+  - 已有 `docs/growthpilot/templates/defect_triage_template.md`，并在 `docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md` 固化分级与处理规则。
+  - 尚未形成真实 UAT 缺陷清单。
 
-- [ ] `QA-29` **性能基准测试**：
+- [/] `QA-29` **性能基准测试**：
   - 模拟 50 并发用户
   - 首页加载 < 3s
   - API 列表查询 P95 < 300ms
   - 文件上传 10MB < 5s
+  - 已补基准流程、阈值与证据要求：`docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md`
+  - 尚未在真实 UAT 环境执行压测。
 
 **验收**：
 - 全量迁移成功，reject 率 < 2%
@@ -745,43 +761,50 @@
 
 #### 服务器准备
 
-- [ ] `INF-30` **服务器环境初始化**：
+- [/] `INF-30` **服务器环境初始化**：
   - 安装 Docker + Docker Compose
   - 安装 Node.js 20（备用直接运行）
   - 配置防火墙：只开放 80/443/22
   - 创建部署用户（非 root）
   - 配置 SSH key 登录（禁用密码登录）
+  - 已在 `docs/growthpilot/39_Wave5_正式上线操作手册.md` 固化基线、步骤与记录项；未对真实服务器执行。
 
-- [ ] `INF-31` **域名与 DNS**：
+- [/] `INF-31` **域名与 DNS**：
   - 域名 A 记录指向服务器 IP
   - 配置 www → 非 www 重定向（或反之）
+  - 已补 DNS 切换检查项与放行前核验；未修改真实域名。
 
-- [ ] `INF-32` **SSL 证书配置**：
+- [/] `INF-32` **SSL 证书配置**：
   - 安装 certbot / acme.sh
   - 申请 Let's Encrypt 证书
   - 配置自动续期（cron）
   - Nginx 启用 HTTPS + HTTP→HTTPS 重定向
+  - 已补 certbot 流程，并新增 `deploy/examples/nginx.growthpilot.conf.example`；未申请真实证书。
 
-- [ ] `INF-33` **生产环境变量配置**：
+- [/] `INF-33` **生产环境变量配置**：
   - 在服务器创建 `.env.prod`（从 `.env.prod.example` 复制并填写真实值）
   - JWT_SECRET 生成 64 位随机字符串
   - 数据库密码使用强密码
   - S3 密钥配置
+  - 已新增根目录 `.env.prod.example` 与 `deploy/scripts/validate-release-env.mjs` 校验入口；真实 `.env.prod` 尚未生成/校验。
 
-- [ ] `INF-34` **日志收集配置**：
+- [/] `INF-34` **日志收集配置**：
   - Docker logs 输出到文件
   - 配置 logrotate（日志轮转，保留 30 天）
   - 或接入日志服务（阿里云 SLS / 自建 Loki）
+  - 已新增 `deploy/examples/growthpilot.logrotate.conf` 并在上线手册、运维手册中固化日志方案；真实主机未落配置。
 
-- [ ] `INF-35` **监控告警**：
+- [/] `INF-35` **监控告警**：
   - 配置 uptime 检查（UptimeRobot / 自建）
   - 监控端点：`/health` + `/health/ready`
   - 磁盘空间告警（> 80%）
   - 数据库连接数告警
+  - 已补监控项、阈值和观察窗口模板：`docs/growthpilot/39_Wave5_正式上线操作手册.md`、`docs/growthpilot/templates/go_live_observation_log_template.md`
+  - 尚未接入真实监控系统。
 
 #### 上线执行
 
-- [ ] `INF-36` **生产数据库初始化**：
+- [/] `INF-36` **生产数据库初始化**：
   ```bash
   # 1. 创建数据库
   docker compose -f docker-compose.prod.yml exec db createdb -U gp growthpilot
@@ -790,31 +813,35 @@
   # 3. 执行 seed
   npm run db:seed
   ```
+  - 已在 `docs/growthpilot/39_Wave5_正式上线操作手册.md` 固化执行前置条件、命令模板与证据要求；未触达真实生产库。
 
-- [ ] `INF-37` **生产数据迁移**：
+- [/] `INF-37` **生产数据迁移**：
   - 执行全量 Excel 数据导入
   - 启用 `--report-only` 先做 dry-run
   - 确认后执行正式导入
   - 保存迁移报告
+  - 已补正式环境命令模板和 `--confirm-prod` 守门逻辑；未执行真实生产迁移。
 
-- [ ] `INF-38` **首次部署**：
+- [/] `INF-38` **首次部署**：
   ```bash
   # 1. 拉取代码或推送镜像
   # 2. docker compose -f docker-compose.prod.yml up -d
   # 3. 等待所有服务健康
   # 4. 访问域名验证
   ```
+  - 已补首次部署顺序、前置依赖与阻断说明；但 Wave 3 正式部署资产尚未在本仓库闭环，未执行真实部署。
 
-- [ ] `INF-39` **上线冒烟验证**：
+- [/] `INF-39` **上线冒烟验证**：
   - 访问首页可加载
   - 登录流程可完成
   - 学生列表可显示迁移数据
   - 作业上传可正常工作
   - 文件下载可正常工作
+  - 已补烟测清单与观察模板；未在真实生产环境执行。
 
 ### Agent QA — 上线验收
 
-- [ ] `QA-30` **Go/No-Go 检查清单**：
+- [x] `QA-30` **Go/No-Go 检查清单**：
   | 检查项 | 状态 |
   |---|---|
   | SSL 证书有效且自动续期 | [ ] |
@@ -826,38 +853,45 @@
   | UAT blocker 全部关闭 | [ ] |
   | 团队知晓回滚流程 | [ ] |
   | 监控告警已配置 | [ ] |
+  - 已补 `docs/growthpilot/templates/qa_release_gate_template.yaml`、`docs/growthpilot/39_Wave5_正式上线操作手册.md` 与 `docs/growthpilot/40_发布观察窗口与验收模板.md`，可直接用于 Go/No-Go 会议。
 
-- [ ] `QA-31` **上线后 24h 监控**：
+- [/] `QA-31` **上线后 24h 监控**：
   - 持续观察错误日志
   - 监控 API 响应时间
   - 监控数据库连接数和慢查询
   - 监控磁盘和内存使用
+  - 已补 `docs/growthpilot/templates/go_live_observation_log_template.md` 和对应说明；真实 24h 观察尚未发生。
 
-- [ ] `QA-32` **上线后 72h 稳定性确认**：
+- [/] `QA-32` **上线后 72h 稳定性确认**：
   - 无 P0/P1 级别 bug
   - 数据库备份正常执行
   - 用户反馈收集
+  - 已补 72h 稳定性检查模板；真实稳定性观察尚未发生。
 
-- [ ] `QA-33` **发布验收报告**：
+- [/] `QA-33` **发布验收报告**：
   - 版本号、发布时间、发布人
   - 包含功能列表
   - 已知限制
   - 后续迭代计划
+  - 已新增 `docs/growthpilot/templates/release_acceptance_report_template.md`；真实发布验收报告需待正式上线后填充。
 
 #### 运维文档
 
-- [ ] `QA-34` **运维手册编写**：
+- [x] `QA-34` **运维手册编写**：
   - 服务器架构图
   - 服务启停命令
   - 日志查看方法
   - 常见问题排查
   - 数据库备份恢复流程
   - 紧急联系人
+  - 已新增 `docs/growthpilot/41_运维手册.md`。
 
-- [ ] `QA-35` **用户操作手册**（简版）：
+- [/] `QA-35` **用户操作手册**（简版）：
   - 各角色首次登录指引
   - 核心操作流程截图
   - FAQ
+  - 已新增 `docs/growthpilot/42_用户操作手册_简版.md`，补齐文字版登录指引、核心流程和 FAQ。
+  - 真实环境截图尚未补拍，因此暂不标完成。
 
 **验收**：
 - 生产环境稳定运行 72h 无 P0 故障
