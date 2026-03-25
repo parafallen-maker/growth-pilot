@@ -18,4 +18,4 @@ export type PageResult<T> = {
   };
 };
 
-export type AsyncState = 'loading' | 'empty' | 'error' | 'ready';
+export type AsyncState = 'loading' | 'empty' | 'error' | 'forbidden' | 'ready';

@@ -45,7 +45,7 @@
 ### 本轮新增进契约的路径
 - `GET /growth/rubrics`
 - `POST /growth/rubrics`
-- `GET /growth/rubrics/{rubricId}`
+- `GET /growth/rubrics/{templateId}`
 
 ### 同步补齐的 schema
 - `RubricTemplate`

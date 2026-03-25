@@ -2,11 +2,17 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ApiError, apiRequest } from '@/lib/api-client';
+import { clearAuth, persistAuth } from '@/lib/auth-storage';
+import { ErrorState } from '@/components/business/page-states';
+
+const DEFAULT_USERNAME = 'super_admin@growthpilot.local';
+const DEFAULT_PASSWORD = 'admin123';
 
 export function LoginForm() {
   const router = useRouter();
-  const [username, setUsername] = useState('super_admin@growthpilot.local');
-  const [password, setPassword] = useState('admin123');
+  const [username, setUsername] = useState(DEFAULT_USERNAME);
+  const [password, setPassword] = useState(DEFAULT_PASSWORD);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -16,22 +22,21 @@ export function LoginForm() {
     setError(null);
 
     try {
-      const response = await fetch('/api/auth/session/login', {
+      const result = await apiRequest<{
+        accessToken: string;
+        refreshToken: string;
+      }>('/auth/login', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: { username, password },
+        retryOn401: false,
       });
 
-      const result = (await response.json()) as { ok: boolean; error?: string };
-      if (!response.ok || !result.ok) {
-        setError(result.error ?? '登录失败，请检查账号密码。');
-        return;
-      }
-
-      router.replace('/dashboard');
+      persistAuth({ accessToken: result.accessToken, refreshToken: result.refreshToken });
+      router.push('/dashboard');
       router.refresh();
-    } catch {
-      setError('网络开小差了，稍后再试。');
+    } catch (cause) {
+      clearAuth();
+      setError(cause instanceof ApiError ? cause.message : '登录失败，请检查账号密码后重试');
     } finally {
       setPending(false);
     }
@@ -41,16 +46,16 @@ export function LoginForm() {
     <form className="stack" onSubmit={handleSubmit}>
       <div className="field">
         <label htmlFor="username">用户名</label>
-        <input id="username" className="input" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required />
+        <input id="username" className="input" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" />
       </div>
       <div className="field">
         <label htmlFor="password">密码</label>
-        <input id="password" className="input" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
+        <input id="password" className="input" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" />
       </div>
-      {error ? <div className="code">{error}</div> : null}
       <div className="button-row">
-        <button className="btn primary" type="submit" disabled={pending}>{pending ? '登录中…' : '登录进入 Dashboard'}</button>
+        <button className="btn primary" type="submit" disabled={pending}>{pending ? '登录中...' : '登录进入 Dashboard'}</button>
       </div>
+      {error ? <ErrorState title="登录失败" description={error} actionLabel="重新登录" /> : null}
     </form>
   );
 }

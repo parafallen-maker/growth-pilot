@@ -92,8 +92,7 @@
 
 **允许编辑**：`docs/growthpilot/`、根目录 `README.md`
 
-- [!] `SPEC-01` 将以下 `hongji_vibe_docs` 文件复制到 `docs/growthpilot/` 并重命名：
-  - 阻塞说明：已在 `/Users/kgiot/.openclaw/workspace` 及 `growth-pilot` 邻近目录按文件名与目录名检索，**未找到 `hongji_vibe_docs` 源目录，也未找到所需成套源文件**；按要求不凭空造文档。
+- [ ] `SPEC-01` 将以下 `hongji_vibe_docs` 文件复制到 `docs/growthpilot/` 并重命名：
   | 源文件 | 目标 |
   |---|---|
   | `01_scope_and_principles.md` | `35a_scope_and_principles.md` |
@@ -104,7 +103,7 @@
   | `08_page_prototypes.md` | `35f_page_prototypes.md` |
   | `09_excel_migration.md` | `35g_excel_migration.md` |
 
-- [x] `SPEC-02` 将以下 5 个**文档有但代码缺失**的接口做出决定并记录：
+- [ ] `SPEC-02` 将以下 5 个**文档有但代码缺失**的接口做出决定并记录：
   | 接口 | 建议决定 |
   |---|---|
   | `POST /students/import` | **保留，Wave 1 实现** |
@@ -113,7 +112,7 @@
   | `POST /users` | **保留，Wave 1 实现** |
   | `GET /growth/rubrics/{rubricId}` vs `{templateId}` | **统一为 templateId**，更新文档 |
 
-- [ ] `SPEC-03` 将以下 30+ 个**代码有但文档缺失**的接口补入 `07_OpenAPI.yaml`：
+- [x] `SPEC-03` 将以下 30+ 个**代码有但文档缺失**的接口补入 `07_OpenAPI.yaml`：
   - files: GET /files/{fileId}, POST /files/upload, POST /files/upload/batch, POST /files/upload/multipart
   - homework: DELETE/PATCH /homework/error-taxonomies/{id}, POST /homework/error-taxonomies, GET /homework/outbox-events, GET/PUT /homework/submissions/{id}/review-draft
   - growth: GET /growth/reports/{id}, GET /growth/rubrics/{templateId}, POST /growth/reports/{id}/publish, POST /growth/reports/{id}/review
@@ -122,13 +121,13 @@
   - communication: GET /communication/message-tasks, GET /communication/records/{id}, GET /communication/templates, PATCH /communication/message-tasks/{id}/status, PATCH /communication/templates/{id}, POST /communication/message-tasks, POST /communication/templates
   - jobs: GET /jobs
 
-- [x] `SPEC-04` 更新 `README.md`：
+- [ ] `SPEC-04` 更新 `README.md`：
   - 删除"当前是最小可运行脚手架"表述
   - 更新为"Persisted JSON Beta，后端模块完整，前端骨架就绪"
   - 新增 docker-compose 启动说明
   - 新增文档索引（指向本文件）
 
-- [x] `SPEC-05` 在 `docs/growthpilot/` 创建 `00_start_here_merged.md`：
+- [ ] `SPEC-05` 在 `docs/growthpilot/` 创建 `00_start_here_merged.md`：
   - 列出当前文档优先级
   - 列出 Source of Truth 规则
   - 列出推荐阅读顺序
@@ -153,12 +152,12 @@
 
 #### Phase 1：抽象层 + Drizzle Schema（先做）
 
-- [ ] `BE-01` 在 `apps/api/src/shared/persistence/` 创建 Repository 接口抽象：
+- [x] `BE-01` 在 `apps/api/src/shared/persistence/` 创建 Repository 接口抽象：
   - 定义 `IRepository<T>` 接口（findById, findMany, create, update, delete）
   - 定义 `ITransactionRunner` 接口
   - 让现有 FileJsonStore 实现该接口（兼容模式）
 
-- [ ] `BE-02` 在 `apps/api/src/db/` 创建 Drizzle schema：
+- [x] `BE-02` 在 `apps/api/src/db/` 创建 Drizzle schema：
   - `schema/users.ts` — users, roles, user_roles, permissions
   - `schema/settings.ts` — campuses, terms, dictionaries
   - `schema/students.ts` — students, enrollments, student_labels
@@ -171,12 +170,13 @@
   - `schema/communication.ts` — communication_records, message_templates, message_tasks
   - `schema/jobs.ts` — jobs, file_assets
 
-- [ ] `BE-03` 创建 `apps/api/drizzle.config.ts` + 第一批 migration
+- [!] `BE-03` 创建 `apps/api/drizzle.config.ts` + 第一批 migration
   ```bash
   cd apps/api && npx drizzle-kit generate
   ```
+  - 已创建 `apps/api/drizzle.config.ts` 与手工基线迁移占位；当前本地执行 `drizzle-kit generate` 被 drizzle CLI/runtime 版本检查阻塞，需后续解锁后重新生成正式 migration。
 
-- [ ] `BE-04` 创建 `apps/api/src/db/seed.ts`：
+- [x] `BE-04` 创建 `apps/api/src/db/seed.ts`：
   - 插入默认角色（super_admin, principal, teacher, finance）
   - 插入默认校区、默认学期、基础字典
 

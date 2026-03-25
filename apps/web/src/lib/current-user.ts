@@ -1,8 +1,8 @@
 import 'server-only';
 
 import { cache } from 'react';
-import { redirect } from 'next/navigation';
-import { apiRequest, ApiClientError } from '@/lib/api-client';
+import { cookies } from 'next/headers';
+import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE, apiRequest } from '@/lib/api-client';
 import { rolePermissions, type AppRole } from '@/lib/navigation';
 
 export type CurrentUser = {
@@ -17,7 +17,18 @@ export type CurrentUser = {
   permissions: string[];
 };
 
+async function readServerAuth() {
+  const cookieStore = await cookies();
+  return {
+    accessToken: cookieStore.get(ACCESS_TOKEN_COOKIE)?.value ?? null,
+    refreshToken: cookieStore.get(REFRESH_TOKEN_COOKIE)?.value ?? null,
+  };
+}
+
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
+  const auth = await readServerAuth();
+  if (!auth.accessToken) return null;
+
   try {
     const profile = await apiRequest<{
       id: string;
@@ -26,7 +37,10 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
       roles: string[];
       campusIds: string[];
       permissions: string[];
-    }>('/auth/me');
+    }>('/auth/me', {
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
 
     const primaryRole = profile.roles[0] ?? 'unknown';
     const primaryCampusId = profile.campusIds[0] ?? null;
@@ -37,19 +51,15 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
       role: primaryRole,
       campusName: primaryCampusId === 'campus-guiyang' ? '贵阳主校区' : primaryCampusId ?? '全局',
     };
-  } catch (error) {
-    if (error instanceof ApiClientError && error.status === 401) {
-      return null;
-    }
-
-    throw error;
+  } catch {
+    return null;
   }
 });
 
 export async function requireCurrentUser(): Promise<CurrentUser> {
   const currentUser = await getCurrentUser();
   if (!currentUser) {
-    redirect('/login');
+    throw new Error('authenticated current user is required');
   }
   return currentUser;
 }

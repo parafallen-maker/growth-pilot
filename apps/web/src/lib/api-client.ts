@@ -1,8 +1,3 @@
-import 'server-only';
-
-import { cache } from 'react';
-import { clearAuthTokens, getAuthTokens, persistAuthTokens } from '@/lib/auth-session';
-
 export type ApiEnvelope<T> = {
   code: string;
   message: string;
@@ -21,6 +16,22 @@ export type PageResult<T> = {
   page: PageMeta;
 };
 
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+  traceId?: string;
+
+  constructor(message: string, status: number, code?: string, traceId?: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+    this.traceId = traceId;
+  }
+}
+
+export const ACCESS_TOKEN_COOKIE = 'gp_access_token';
+export const REFRESH_TOKEN_COOKIE = 'gp_refresh_token';
 const DEFAULT_API_BASE_URL = 'http://127.0.0.1:3001/api/v1';
 
 function joinUrl(baseUrl: string, path: string) {
@@ -31,101 +42,82 @@ export function getApiBaseUrl() {
   return process.env.GROWTHPILOT_API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL;
 }
 
-export class ApiClientError extends Error {
-  status: number;
-  code?: string;
-  traceId?: string;
+export type ApiAuth = {
+  accessToken?: string | null;
+  refreshToken?: string | null;
+};
 
-  constructor(message: string, options: { status: number; code?: string; traceId?: string }) {
-    super(message);
-    this.name = 'ApiClientError';
-    this.status = options.status;
-    this.code = options.code;
-    this.traceId = options.traceId;
-  }
-}
+type ApiRequestOptions = Omit<RequestInit, 'body'> & {
+  body?: unknown;
+  auth?: ApiAuth;
+  retryOn401?: boolean;
+  onAuthUpdate?: (auth: Required<ApiAuth>) => Promise<void> | void;
+  onUnauthorized?: () => Promise<void> | void;
+};
 
-async function parseError(response: Response) {
+async function parseResponse<T>(response: Response, path: string): Promise<T> {
   const text = await response.text();
+  const payload = text ? (JSON.parse(text) as Partial<ApiEnvelope<T>>) : null;
 
-  try {
-    const envelope = JSON.parse(text) as Partial<ApiEnvelope<unknown>>;
-    return new ApiClientError(envelope.message ?? `API request failed with ${response.status}`, {
-      status: response.status,
-      code: envelope.code,
-      traceId: envelope.traceId,
-    });
-  } catch {
-    return new ApiClientError(text || `API request failed with ${response.status}`, {
-      status: response.status,
-    });
+  if (!response.ok) {
+    throw new ApiError(
+      payload?.message ?? `API ${path} failed`,
+      response.status,
+      payload?.code,
+      payload?.traceId,
+    );
   }
+
+  return (payload as ApiEnvelope<T>).data;
 }
 
-const refreshAccessToken = cache(async () => {
-  const { refreshToken } = await getAuthTokens();
-  if (!refreshToken) {
-    await clearAuthTokens();
-    return null;
-  }
-
-  const response = await fetch(joinUrl(getApiBaseUrl(), '/auth/refresh'), {
+export async function refreshAccessToken(refreshToken: string) {
+  return apiRequest<{ accessToken: string; refreshToken?: string }>('/auth/refresh', {
     method: 'POST',
-    headers: {
-      accept: 'application/json',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({ refreshToken }),
-    cache: 'no-store',
+    body: { refreshToken },
+    retryOn401: false,
   });
-
-  if (!response.ok) {
-    await clearAuthTokens();
-    return null;
-  }
-
-  const envelope = (await response.json()) as ApiEnvelope<{ accessToken: string; refreshToken: string }>;
-  await persistAuthTokens(envelope.data);
-  return envelope.data.accessToken;
-});
-
-async function performRequest<T>(path: string, init: RequestInit = {}, accessToken?: string) {
-  const response = await fetch(joinUrl(getApiBaseUrl(), path), {
-    ...init,
-    headers: {
-      accept: 'application/json',
-      ...(init.body ? { 'content-type': 'application/json' } : {}),
-      ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
-      ...(init.headers ?? {}),
-    },
-    cache: 'no-store',
-  });
-
-  if (!response.ok) {
-    throw await parseError(response);
-  }
-
-  const envelope = (await response.json()) as ApiEnvelope<T>;
-  return envelope.data;
 }
 
-export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const { accessToken } = await getAuthTokens();
+export async function apiRequest<T>(path: string, init: ApiRequestOptions = {}): Promise<T> {
+  const { auth, body, retryOn401 = true, onAuthUpdate, onUnauthorized, headers, ...rest } = init;
 
-  try {
-    return await performRequest<T>(path, init, accessToken || undefined);
-  } catch (error) {
-    if (!(error instanceof ApiClientError) || error.status !== 401) {
-      throw error;
+  const response = await fetch(joinUrl(getApiBaseUrl(), path), {
+    ...rest,
+    headers: {
+      accept: 'application/json',
+      ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
+      ...(auth?.accessToken ? { authorization: `Bearer ${auth.accessToken}` } : {}),
+      ...(headers ?? {}),
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+    cache: 'no-store',
+  });
+
+  if (response.status === 401 && retryOn401 && auth?.refreshToken) {
+    try {
+      const refreshed = await refreshAccessToken(auth.refreshToken);
+      const nextAuth = {
+        accessToken: refreshed.accessToken,
+        refreshToken: refreshed.refreshToken ?? auth.refreshToken,
+      } satisfies Required<ApiAuth>;
+      await onAuthUpdate?.(nextAuth);
+      return apiRequest<T>(path, {
+        ...init,
+        auth: nextAuth,
+        retryOn401: false,
+      });
+    } catch {
+      await onUnauthorized?.();
+      throw new ApiError('登录状态已失效，请重新登录', 401, 'AUTH_UNAUTHORIZED');
     }
-
-    const refreshedAccessToken = await refreshAccessToken();
-    if (!refreshedAccessToken) {
-      throw error;
-    }
-
-    return performRequest<T>(path, init, refreshedAccessToken);
   }
+
+  if (response.status === 401) {
+    await onUnauthorized?.();
+  }
+
+  return parseResponse<T>(response, path);
 }
 
 export function toPageResult<T>(list: T[]): PageResult<T> {

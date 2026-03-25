@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { AsyncState } from '@/features/shared/types';
+import { EmptyState, ErrorState, ForbiddenState, LoadingState } from '@/components/business/page-states';
 
 export function PageHeader({ title, description, actions }: { title: string; description: string; actions?: ReactNode }) {
   return (
@@ -78,67 +79,21 @@ export function DataTable({ title, columns, rows }: { title: string; columns: st
   );
 }
 
-export function LoadingState({ title, description = '正在加载，请稍候。' }: { title: string; description?: string }) {
-  return (
-    <section className="state-card stack">
-      <h3>{title}</h3>
-      <p>{description}</p>
-      <div className="grid-3">
-        <div className="skeleton-block" />
-        <div className="skeleton-block" />
-        <div className="skeleton-block" />
-      </div>
-      <div className="skeleton-line" />
-      <div className="skeleton-line" />
-    </section>
-  );
-}
-
-export function EmptyState({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
-  return (
-    <section className="state-card">
-      <div className="empty-illustration">🗂️</div>
-      <h3>{title}</h3>
-      <p>{description}</p>
-      {action ? <div className="button-row">{action}</div> : null}
-    </section>
-  );
-}
-
-export function ErrorState({ title, description, action, traceId, code }: { title: string; description: string; action?: ReactNode; traceId?: string; code?: string }) {
-  return (
-    <section className="state-card">
-      <div className="badge danger">Error</div>
-      <h3 style={{ marginTop: 12 }}>{title}</h3>
-      <p>{description}</p>
-      {code || traceId ? <div className="code">{[code ? `code: ${code}` : null, traceId ? `traceId: ${traceId}` : null].filter(Boolean).join('\n')}</div> : null}
-      {action ? <div className="button-row">{action}</div> : null}
-    </section>
-  );
-}
-
-export function ForbiddenState({ title = '没有权限', description = '当前账号缺少访问该模块的权限。', action }: { title?: string; description?: string; action?: ReactNode }) {
-  return (
-    <section className="state-card">
-      <div className="badge danger">403 Forbidden</div>
-      <h3 style={{ marginTop: 12 }}>{title}</h3>
-      <p>{description}</p>
-      {action ? <div className="button-row">{action}</div> : null}
-    </section>
-  );
-}
-
 export function StateBlock({ state, title, actionLabel = '重试' }: { state: AsyncState; title: string; actionLabel?: string }) {
   if (state === 'loading') {
-    return <LoadingState title={title} description="骨架屏已接入统一 LoadingState。" />;
+    return <LoadingState title={title} />;
   }
 
   if (state === 'empty') {
-    return <EmptyState title={title} description="还没有数据。这里会给出空状态文案和引导动作。" action={<button className="btn primary">创建首条数据</button>} />;
+    return <EmptyState title={title} actionLabel="创建首条数据" actionHref="#" />;
   }
 
   if (state === 'error') {
-    return <ErrorState title={title} description="请求失败时，这里会展示 traceId 和重试按钮。" code="SYS_500" traceId="req_mock_wave1" action={<button className="btn danger">{actionLabel}</button>} />;
+    return <ErrorState title={title} actionLabel={actionLabel} traceId="req_mock_wave1" code="SYS_500" />;
+  }
+
+  if (state === 'forbidden') {
+    return <ForbiddenState title={title} />;
   }
 
   return null;

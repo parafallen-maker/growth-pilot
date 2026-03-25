@@ -19,6 +19,8 @@ tags:
   description: 学生主档与在读档
 - name: families
   description: 家庭与监护人
+- name: files
+  description: 文件上传与元数据
 - name: homework
   description: 作业上传、AI、教师复核
 - name: growth
@@ -130,6 +132,19 @@ components:
       in: query
       schema:
         type: string
+    sortBy:
+      name: sortBy
+      in: query
+      schema:
+        type: string
+    sortOrder:
+      name: sortOrder
+      in: query
+      schema:
+        type: string
+        enum:
+        - asc
+        - desc
   schemas:
     ApiResponse:
       type: object
@@ -1944,6 +1959,109 @@ paths:
                         id:
                           type: string
                           format: uuid
+  /files/upload:
+    post:
+      tags:
+      - files
+      summary: 上传单个文件
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /files/upload/multipart:
+    post:
+      tags:
+      - files
+      summary: 分片上传文件
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /files/upload/batch:
+    post:
+      tags:
+      - files
+      summary: 批量上传文件
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /files/{fileId}:
+    get:
+      tags:
+      - files
+      summary: 文件详情
+      parameters:
+      - name: fileId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
   /homework/submissions:
     get:
       tags:
@@ -2163,6 +2281,137 @@ paths:
                                 type: boolean
                         page:
                           $ref: '#/components/schemas/PageResultMeta'
+  /homework/submissions/{submissionId}/review-draft:
+    get:
+      tags:
+      - homework
+      summary: 获取教师复核草稿
+      parameters:
+      - $ref: '#/components/parameters/submissionId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+    put:
+      tags:
+      - homework
+      summary: 保存教师复核草稿
+      parameters:
+      - $ref: '#/components/parameters/submissionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /homework/error-taxonomies/{taxonomyId}:
+    patch:
+      tags:
+      - homework
+      summary: 更新错因词典项
+      parameters:
+      - name: taxonomyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+    delete:
+      tags:
+      - homework
+      summary: 删除错因词典项
+      parameters:
+      - name: taxonomyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /homework/outbox-events:
+    get:
+      tags:
+      - homework
+      summary: 作业事件出箱列表
+      parameters:
+      - $ref: '#/components/parameters/status'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            type: object
+                            additionalProperties: true
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
   /growth/rubrics:
     get:
       tags:
@@ -2217,13 +2466,13 @@ paths:
                   properties:
                     data:
                       $ref: '#/components/schemas/RubricTemplate'
-  /growth/rubrics/{rubricId}:
+  /growth/rubrics/{templateId}:
     get:
       tags:
       - growth
       summary: Rubric 模板详情
       parameters:
-      - name: rubricId
+      - name: templateId
         in: path
         required: true
         schema:
@@ -2503,6 +2752,94 @@ paths:
                           format: uuid
                         status:
                           type: string
+  /growth/reports/{reportId}:
+    get:
+      tags:
+      - growth
+      summary: 成长报告详情
+      parameters:
+      - name: reportId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/GrowthReport'
+  /growth/reports/{reportId}/review:
+    post:
+      tags:
+      - growth
+      summary: 审核成长报告
+      parameters:
+      - name: reportId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /growth/reports/{reportId}/publish:
+    post:
+      tags:
+      - growth
+      summary: 发布成长报告
+      parameters:
+      - name: reportId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
   /attendance/events:
     get:
       tags:
@@ -2634,6 +2971,40 @@ paths:
                         page:
                           $ref: '#/components/schemas/PageResultMeta'
   /attendance/devices/bindings:
+    get:
+      tags:
+      - attendance
+      summary: 设备绑定列表
+      parameters:
+      - $ref: '#/components/parameters/campusId'
+      - name: studentId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/status'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            type: object
+                            additionalProperties: true
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
     post:
       tags:
       - attendance
@@ -2660,6 +3031,38 @@ paths:
                         id:
                           type: string
                           format: uuid
+  /attendance/devices/bindings/{bindingId}:
+    patch:
+      tags:
+      - attendance
+      summary: 更新设备绑定
+      parameters:
+      - name: bindingId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
   /attendance/homework-time/daily-stats:
     get:
       tags:
@@ -3003,6 +3406,76 @@ paths:
                           format: uuid
                         status:
                           type: string
+  /billing/contracts/{contractId}:
+    get:
+      tags:
+      - billing
+      summary: 合同详情
+      parameters:
+      - name: contractId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /billing/payments/{paymentId}:
+    get:
+      tags:
+      - billing
+      summary: 支付详情
+      parameters:
+      - $ref: '#/components/parameters/paymentId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /billing/refunds/{refundId}:
+    get:
+      tags:
+      - billing
+      summary: 退款详情
+      parameters:
+      - name: refundId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
   /billing/renewals:
     get:
       tags:
@@ -3048,6 +3521,94 @@ paths:
                                 nullable: true
                         page:
                           $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - billing
+      summary: 创建续费任务
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /billing/renewals/{renewalId}/status:
+    patch:
+      tags:
+      - billing
+      summary: 更新续费任务状态
+      parameters:
+      - name: renewalId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /billing/renewals/{renewalId}/follow-up:
+    patch:
+      tags:
+      - billing
+      summary: 更新续费任务下次跟进时间
+      parameters:
+      - name: renewalId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
   /communication/records:
     get:
       tags:
@@ -3138,11 +3699,216 @@ paths:
                         id:
                           type: string
                           format: uuid
+  /communication/records/{recordId}:
+    get:
+      tags:
+      - communication
+      summary: 沟通记录详情
+      parameters:
+      - name: recordId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /communication/templates:
+    get:
+      tags:
+      - communication
+      summary: 消息模板列表
+      parameters:
+      - $ref: '#/components/parameters/keyword'
+      - $ref: '#/components/parameters/status'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            type: object
+                            additionalProperties: true
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - communication
+      summary: 创建消息模板
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMessageTemplateRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /communication/templates/{templateId}:
+    patch:
+      tags:
+      - communication
+      summary: 更新消息模板
+      parameters:
+      - name: templateId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMessageTemplateRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /communication/message-tasks:
+    get:
+      tags:
+      - communication
+      summary: 外发消息任务列表（canonical）
+      parameters:
+      - $ref: '#/components/parameters/keyword'
+      - name: familyId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: studentId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/status'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            type: object
+                            additionalProperties: true
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - communication
+      summary: 创建外发消息任务（canonical）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /communication/message-tasks/{taskId}/status:
+    patch:
+      tags:
+      - communication
+      summary: 更新外发消息任务状态（canonical）
+      parameters:
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
   /communication/messages:
     get:
       tags:
       - communication
-      summary: 外发消息列表
+      summary: 外发消息列表（兼容别名，canonical 请使用 /communication/message-tasks）
+      deprecated: true
       parameters:
       - $ref: '#/components/parameters/keyword'
       - name: familyId
@@ -3203,7 +3969,8 @@ paths:
     post:
       tags:
       - communication
-      summary: 创建外发消息
+      summary: 创建外发消息（兼容别名，canonical 请使用 /communication/message-tasks）
+      deprecated: true
       requestBody:
         required: true
         content:
@@ -3364,6 +4131,38 @@ paths:
                           type: array
                           items:
                             type: object
+  /jobs:
+    get:
+      tags:
+      - jobs
+      summary: 异步任务列表
+      parameters:
+      - $ref: '#/components/parameters/status'
+      - name: jobType
+        in: query
+        schema:
+          type: string
+      - name: bizType
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/JobStatus'
   /jobs/{jobId}:
     get:
       tags:

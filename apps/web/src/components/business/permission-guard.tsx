@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { NavSection } from '@/lib/navigation';
-import { ForbiddenState } from '@/components/business/page-blocks';
+import { ForbiddenState } from '@/components/business/page-states';
 
 export function hasPermission(permissions: string[], permissionCode: string) {
   return permissions.includes(permissionCode);
@@ -34,9 +34,10 @@ export function PermissionGuard({
 export function PermissionDeniedState({ resource, permissionCode }: { resource: string; permissionCode: string }) {
   return (
     <ForbiddenState
-      title="你能看见入口，不代表你能进门。"
-      description={`当前账号缺少 ${resource} 所需权限：${permissionCode}`}
-      action={<button className="btn">申请权限（占位）</button>}
+      title="无权限访问"
+      description={
+        `当前账号缺少 ${resource} 所需权限：${permissionCode}`
+      }
     />
   );
 }
