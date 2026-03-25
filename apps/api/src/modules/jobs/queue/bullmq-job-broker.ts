@@ -39,12 +39,18 @@ interface BullmqRuntime {
   Redis: RedisCtor;
 }
 
+export interface BullmqJobBrokerOptions {
+  loadModule?: typeof loadOptionalModule;
+}
+
 @Injectable()
 export class BullmqJobBroker implements OnModuleDestroy {
   private readonly queues = new Map<string, BullmqQueueLike>();
   private readonly workers: BullmqWorkerLike[] = [];
   private readonly connections: Array<{ quit(): Promise<'OK' | void> }> = [];
   private runtimePromise?: Promise<BullmqRuntime | null>;
+
+  constructor(private readonly options: BullmqJobBrokerOptions = {}) {}
 
   async enqueue(queueName: string, jobName: string, jobId: string, data: object) {
     if ((process.env.JOB_QUEUE_DRIVER ?? 'inline') !== 'bullmq') {
@@ -54,8 +60,8 @@ export class BullmqJobBroker implements OnModuleDestroy {
     const queue = await this.getQueue(queueName);
     await queue.add(jobName, data, {
       jobId,
-      removeOnComplete: Number(process.env.JOB_QUEUE_REMOVE_ON_COMPLETE ?? 1000),
-      removeOnFail: Number(process.env.JOB_QUEUE_REMOVE_ON_FAIL ?? 1000),
+      removeOnComplete: this.getRemoveOnComplete(),
+      removeOnFail: this.getRemoveOnFail(),
     });
     return true;
   }
@@ -63,7 +69,7 @@ export class BullmqJobBroker implements OnModuleDestroy {
   async registerWorker(
     queueName: string,
     processor: (data: unknown) => Promise<unknown>,
-    concurrency = Number(process.env.JOB_QUEUE_WORKER_CONCURRENCY ?? 2),
+    concurrency = this.getWorkerConcurrency(),
   ) {
     if ((process.env.JOB_QUEUE_DRIVER ?? 'inline') !== 'bullmq') {
       return false;
@@ -98,8 +104,8 @@ export class BullmqJobBroker implements OnModuleDestroy {
     const queue = new runtime.Queue(queueName, {
       connection: this.createConnection(runtime.Redis),
       defaultJobOptions: {
-        removeOnComplete: Number(process.env.JOB_QUEUE_REMOVE_ON_COMPLETE ?? 1000),
-        removeOnFail: Number(process.env.JOB_QUEUE_REMOVE_ON_FAIL ?? 1000),
+        removeOnComplete: this.getRemoveOnComplete(),
+        removeOnFail: this.getRemoveOnFail(),
       },
     });
     this.queues.set(queueName, queue);
@@ -128,8 +134,8 @@ export class BullmqJobBroker implements OnModuleDestroy {
     }
 
     const [bullmqModule, redisModule] = await Promise.all([
-      loadOptionalModule<{ Queue?: BullmqQueueCtor; Worker?: BullmqWorkerCtor }>('bullmq'),
-      loadOptionalModule<{ default?: RedisCtor }>('ioredis'),
+      (this.options.loadModule ?? loadOptionalModule)<{ Queue?: BullmqQueueCtor; Worker?: BullmqWorkerCtor }>('bullmq'),
+      (this.options.loadModule ?? loadOptionalModule)<{ default?: RedisCtor }>('ioredis'),
     ]);
 
     const Queue = bullmqModule?.Queue;
@@ -155,5 +161,27 @@ export class BullmqJobBroker implements OnModuleDestroy {
     });
     this.connections.push(connection);
     return connection;
+  }
+
+  private getWorkerConcurrency() {
+    return this.parsePositiveInteger(process.env.JOB_QUEUE_WORKER_CONCURRENCY, 2);
+  }
+
+  private getRemoveOnComplete() {
+    return this.parseNonNegativeInteger(process.env.JOB_QUEUE_REMOVE_ON_COMPLETE, 1000);
+  }
+
+  private getRemoveOnFail() {
+    return this.parseNonNegativeInteger(process.env.JOB_QUEUE_REMOVE_ON_FAIL, 1000);
+  }
+
+  private parsePositiveInteger(rawValue: string | undefined, fallback: number) {
+    const value = Number(rawValue);
+    return Number.isInteger(value) && value > 0 ? value : fallback;
+  }
+
+  private parseNonNegativeInteger(rawValue: string | undefined, fallback: number) {
+    const value = Number(rawValue);
+    return Number.isInteger(value) && value >= 0 ? value : fallback;
   }
 }

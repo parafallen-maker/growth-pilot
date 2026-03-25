@@ -228,13 +228,16 @@
 
 - [/] `BE-23` 接入 Redis（session cache / rate limit）
   - 已接入 `RedisKvService`、auth session cache、login/refresh rate limit，并在 refresh rotation / logout 时同步驱逐缓存；未配置 `REDIS_URL` 或未安装 `ioredis` 时自动回退内存实现。
-  - 2026-03-25：已通过 API typecheck/test/build；当前 sandbox 无可用 Redis，且无法在此环境补齐 lockfile/实际安装 `ioredis`，真实 Redis 连通性待外部环境复验。
+  - 2026-03-25：补上 Redis client probe，避免 `REDIS_URL` 已配置但 Redis 不可达时把坏连接注入 auth 链路；新增 `apps/api/test/be23-be25.test.ts`，用 injected Redis-compatible runtime 验证 session cache / rate limit 的 Redis 路径与失联 fallback。
+  - 当前仍保持 `[/]`：本 sandbox 无 Docker socket 权限，且当前已安装 `node_modules` / `package-lock` 中不含 `ioredis`，未能在本地完成真实 Redis 连通性验收。
 - [/] `BE-24` 接入 BullMQ worker（homework AI analyze job / growth report draft job）
   - 已新增 `BullmqJobBroker`、queue constants/types、独立 `worker.ts` / `WorkerModule`，homework analysis 与 growth report draft 在 `JOB_QUEUE_DRIVER=bullmq` 时走队列，默认保留 inline fallback。
-  - 2026-03-25：已验证 inline 模式下 worker 可独立启动；当前 sandbox 无 Redis，且未能在本地实际安装 `bullmq` / `ioredis`，故 live BullMQ worker 消费保持 `[/]`。
+  - 2026-03-25：补上 broker env parsing（`JOB_QUEUE_WORKER_CONCURRENCY` / `REMOVE_ON_*`）、可注入 runtime loader，以及 growth report inline fallback 的拒绝保护；新增 `apps/api/test/be23-be25.test.ts`，用 fake BullMQ runtime 注册真实 worker callback，跑通 homework analysis / growth report draft 的 queue -> worker -> job success 链路。
+  - 当前仍保持 `[/]`：本 sandbox 无 Docker socket 权限，且当前已安装 `node_modules` / `package-lock` 中不含 `bullmq` / `ioredis`，未能在本地完成真实 Redis-backed BullMQ worker 消费验收。
 - [/] `BE-25` files adapter 接入 MinIO/S3 SDK
   - 已新增 `S3ObjectStorageAdapter`，支持 `OBJECT_STORAGE_DRIVER=s3`、MinIO path-style 配置、signed/public URL 解析，并让 files service/controller 全链路支持异步 URL 生成。
-  - 2026-03-25：已补 env/config surface 与单测覆盖；当前 sandbox 无 MinIO/S3，且未能在本地实际安装 AWS SDK 依赖，真实对象写入验收待外部环境补跑。
+  - 2026-03-25：补上可注入 SDK loader，新增 `apps/api/test/be23-be25.test.ts` 验证 `putObject` command 构造、MinIO path-style client config、signed URL 生成，以及 files service 的 file asset 持久化链路。
+  - 当前仍保持 `[/]`：本 sandbox 无 Docker socket 权限，且当前已安装 `node_modules` / `package-lock` 中不含 `@aws-sdk/client-s3` / `@aws-sdk/s3-request-presigner`，未能在本地完成真实 MinIO/S3 对象写入验收。
 
 **验收（Phase 1+2 最低要求）**：
 - `docker compose up -d` 后数据库可连接
