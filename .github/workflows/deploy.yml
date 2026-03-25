@@ -1,0 +1,251 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: false
+        type: string
+        default: production
+      deploy_ref:
+        required: false
+        type: string
+        default: ''
+      image_tag:
+        required: false
+        type: string
+        default: ''
+      skip_build:
+        required: false
+        type: boolean
+        default: false
+      rollback_on_failure:
+        required: false
+        type: boolean
+        default: true
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Deployment target environment
+        required: true
+        type: choice
+        default: staging
+        options:
+          - staging
+          - production
+      deploy_ref:
+        description: Branch, tag, or SHA to deploy
+        required: false
+        type: string
+        default: main
+      image_tag:
+        description: Container image tag to deploy. Defaults to ref name or current SHA.
+        required: false
+        type: string
+        default: ''
+      skip_build:
+        description: Skip image build and push before deployment
+        required: false
+        type: boolean
+        default: false
+      rollback_on_failure:
+        description: Run a remote rollback if the deploy job fails
+        required: false
+        type: boolean
+        default: true
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-${{ github.event_name }}-${{ inputs.environment || (startsWith(github.ref, 'refs/tags/') && 'production' || 'staging') }}
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.resolve.outputs.environment }}
+      deploy_ref: ${{ steps.resolve.outputs.deploy_ref }}
+      image_tag: ${{ steps.resolve.outputs.image_tag }}
+      skip_build: ${{ steps.resolve.outputs.skip_build }}
+      rollback_on_failure: ${{ steps.resolve.outputs.rollback_on_failure }}
+    steps:
+      - name: Resolve deploy inputs
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "workflow_call" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            environment="${{ inputs.environment }}"
+            deploy_ref="${{ inputs.deploy_ref }}"
+            image_tag="${{ inputs.image_tag }}"
+            skip_build="${{ inputs.skip_build }}"
+            rollback_on_failure="${{ inputs.rollback_on_failure }}"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            environment="production"
+            deploy_ref="${{ github.ref_name }}"
+            image_tag="${{ github.ref_name }}"
+            skip_build="false"
+            rollback_on_failure="true"
+          else
+            environment="staging"
+            deploy_ref="${{ github.ref_name }}"
+            image_tag="sha-${GITHUB_SHA::12}"
+            skip_build="false"
+            rollback_on_failure="true"
+          fi
+
+          if [[ -z "$deploy_ref" ]]; then
+            deploy_ref="${{ github.ref_name }}"
+          fi
+
+          if [[ -z "$image_tag" ]]; then
+            if [[ "$deploy_ref" == v* ]]; then
+              image_tag="$deploy_ref"
+            else
+              image_tag="sha-${GITHUB_SHA::12}"
+            fi
+          fi
+
+          {
+            echo "environment=$environment"
+            echo "deploy_ref=$deploy_ref"
+            echo "image_tag=$image_tag"
+            echo "skip_build=$skip_build"
+            echo "rollback_on_failure=$rollback_on_failure"
+          } >> "$GITHUB_OUTPUT"
+
+  build-images:
+    name: Build ${{ matrix.name }}
+    needs: resolve
+    if: needs.resolve.outputs.skip_build != 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            context: .
+            dockerfile: apps/api/Dockerfile
+          - name: web
+            context: .
+            dockerfile: apps/web/Dockerfile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve.outputs.deploy_ref }}
+
+      - name: Detect Dockerfile
+        id: detect
+        shell: bash
+        run: |
+          if [[ -f "${{ matrix.dockerfile }}" ]]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Note skipped build
+        if: steps.detect.outputs.present != 'true'
+        run: echo "Skipping ${{ matrix.name }} image build because ${{ matrix.dockerfile }} is not present in this ref."
+
+      - name: Set up Docker Buildx
+        if: steps.detect.outputs.present == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: steps.detect.outputs.present == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        if: steps.detect.outputs.present == 'true'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/growthpilot-${{ matrix.name }}
+          tags: |
+            type=raw,value=${{ needs.resolve.outputs.image_tag }}
+            type=sha,prefix=sha-
+            type=ref,event=branch
+            type=ref,event=tag
+
+      - name: Build and publish image
+        if: steps.detect.outputs.present == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: false
+
+  deploy:
+    name: Deploy to ${{ needs.resolve.outputs.environment }}
+    needs: [resolve, build-images]
+    if: >
+      always() &&
+      needs.resolve.result == 'success' &&
+      (needs.build-images.result == 'success' || needs.build-images.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: ${{ needs.resolve.outputs.environment }}
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_REF: ${{ needs.resolve.outputs.deploy_ref }}
+          DEPLOY_IMAGE_TAG: ${{ needs.resolve.outputs.image_tag }}
+          DEPLOY_TARGET_PATH: ${{ secrets.DEPLOY_TARGET_PATH }}
+          DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          script_stop: true
+          envs: DEPLOY_REF,DEPLOY_IMAGE_TAG,DEPLOY_TARGET_PATH,DEPLOY_ENVIRONMENT
+          script: |
+            set -euo pipefail
+            cd "$DEPLOY_TARGET_PATH"
+            git fetch --all --tags --prune
+
+            if git show-ref --verify --quiet "refs/tags/$DEPLOY_REF"; then
+              git checkout --force "tags/$DEPLOY_REF"
+            else
+              git checkout --force "$DEPLOY_REF"
+              git pull --ff-only origin "$DEPLOY_REF"
+            fi
+
+            chmod +x deploy/scripts/*.sh deploy/nginx/ssl/self-signed/*.sh
+            DEPLOY_IMAGE_TAG="$DEPLOY_IMAGE_TAG" \
+            DEPLOY_ENVIRONMENT="$DEPLOY_ENVIRONMENT" \
+            DEPLOY_DB_COMMAND_MODE="${DEPLOY_DB_COMMAND_MODE:-compose-run}" \
+            bash deploy/scripts/deploy.sh
+
+      - name: Trigger remote rollback
+        if: failure() && needs.resolve.outputs.rollback_on_failure == 'true'
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_TARGET_PATH: ${{ secrets.DEPLOY_TARGET_PATH }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          script_stop: true
+          envs: DEPLOY_TARGET_PATH
+          script: |
+            set -euo pipefail
+            cd "$DEPLOY_TARGET_PATH"
+            chmod +x deploy/scripts/*.sh
+            bash deploy/scripts/rollback.sh --skip-db-restore

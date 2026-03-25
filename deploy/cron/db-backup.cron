@@ -1,0 +1,1 @@
+0 3 * * * DEPLOY_ENV_FILE=/srv/growthpilot/deploy/.env cd /srv/growthpilot && /bin/bash /srv/growthpilot/deploy/scripts/db-backup.sh --keep-days 30 >> /srv/growthpilot/deploy/logs/db-backup.log 2>&1
