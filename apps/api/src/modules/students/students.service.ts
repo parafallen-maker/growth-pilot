@@ -28,35 +28,42 @@ export class StudentsService {
     private readonly billingRepository: BillingRepository = new BillingRepository(),
   ) {}
 
-  list(query: StudentQueryDto): PageResult<Student> {
+  async list(query: StudentQueryDto): Promise<PageResult<Student>> {
     const { pageNo, pageSize } = normalizePage(query);
-    const filtered = this.studentsRepository.listStudents().filter((student) => {
-      if (query.status && student.status !== query.status) return false;
-      if (query.grade && student.gradeLabel !== query.grade) return false;
+    const students = await this.studentsRepository.listStudents();
+    const enrollmentMap = new Map<string, Enrollment[]>();
+
+    const getEnrollments = async (studentId: string) => {
+      if (!enrollmentMap.has(studentId)) {
+        enrollmentMap.set(studentId, await this.studentsRepository.listEnrollmentsByStudent(studentId));
+      }
+      return enrollmentMap.get(studentId) ?? [];
+    };
+
+    const filtered: Student[] = [];
+    for (const student of students) {
+      if (query.status && student.status !== query.status) continue;
+      if (query.grade && student.gradeLabel !== query.grade) continue;
       if (query.campusId) {
-        const hasCampus = this.studentsRepository
-          .listEnrollmentsByStudent(student.id)
-          .some((enrollment) => enrollment.campusId === query.campusId);
-        if (!hasCampus) return false;
+        const hasCampus = (await getEnrollments(student.id)).some((enrollment) => enrollment.campusId === query.campusId);
+        if (!hasCampus) continue;
       }
       if (query.termId) {
-        const hasTerm = this.studentsRepository
-          .listEnrollmentsByStudent(student.id)
-          .some((enrollment) => enrollment.termId === query.termId);
-        if (!hasTerm) return false;
+        const hasTerm = (await getEnrollments(student.id)).some((enrollment) => enrollment.termId === query.termId);
+        if (!hasTerm) continue;
       }
       if (query.teacherId) {
-        const hasTeacher = this.studentsRepository
-          .listEnrollmentsByStudent(student.id)
-          .some((enrollment) => enrollment.primaryTeacherId === query.teacherId);
-        if (!hasTeacher) return false;
+        const hasTeacher = (await getEnrollments(student.id)).some((enrollment) => enrollment.primaryTeacherId === query.teacherId);
+        if (!hasTeacher) continue;
       }
       if (query.keyword) {
         const keyword = query.keyword.toLowerCase();
-        return student.name.toLowerCase().includes(keyword) || student.studentNo.toLowerCase().includes(keyword);
+        if (!student.name.toLowerCase().includes(keyword) && !student.studentNo.toLowerCase().includes(keyword)) {
+          continue;
+        }
       }
-      return true;
-    });
+      filtered.push(student);
+    }
 
     const start = (pageNo - 1) * pageSize;
     return {
@@ -65,16 +72,16 @@ export class StudentsService {
     };
   }
 
-  detail(studentId: string): Student {
+  detail(studentId: string): Promise<Student> {
     return this.studentsRepository.requireStudentById(studentId);
   }
 
-  detail360(studentId: string): Student360Aggregate {
-    const student = this.detail(studentId);
-    const enrollments = this.studentsRepository.listEnrollmentsByStudent(studentId);
+  async detail360(studentId: string): Promise<Student360Aggregate> {
+    const student = await this.detail(studentId);
+    const enrollments = await this.studentsRepository.listEnrollmentsByStudent(studentId);
     const currentEnrollment = this.pickCurrentEnrollment(enrollments);
-    const family = student.familyId ? this.familiesRepository.findFamilyById(student.familyId) ?? null : null;
-    const guardians = family ? this.familiesRepository.listGuardiansByFamily(family.id) : [];
+    const family = student.familyId ? (await this.familiesRepository.findFamilyById(student.familyId)) ?? null : null;
+    const guardians = family ? await this.familiesRepository.listGuardiansByFamily(family.id) : [];
 
     const studentHomework = this.homeworkRepository.listSubmissions().filter((item) => item.studentId === studentId);
     const studentGrowth = this.growthRepository.listObservations().filter((item) => item.studentId === studentId);
@@ -136,11 +143,11 @@ export class StudentsService {
         balanceAmount: 0,
         latestPaymentDate: [...studentPayments].sort((a, b) => b.paymentTime.localeCompare(a.paymentTime))[0]?.paymentTime?.slice(0, 10) ?? null,
       },
-      recentTimeline: this.buildRecentTimeline(studentId),
+      recentTimeline: await this.buildRecentTimeline(studentId),
     };
   }
 
-  create(payload: CreateStudentDto): Student {
+  create(payload: CreateStudentDto): Promise<Student> {
     return this.studentsRepository.createStudent({
       studentNo: payload.studentNo,
       name: payload.name,
@@ -156,7 +163,7 @@ export class StudentsService {
     });
   }
 
-  createEnrollment(studentId: string, payload: CreateEnrollmentDto): Enrollment {
+  createEnrollment(studentId: string, payload: CreateEnrollmentDto): Promise<Enrollment> {
     return this.studentsRepository.createEnrollment(studentId, {
       campusId: payload.campusId,
       termId: payload.termId,
@@ -174,17 +181,13 @@ export class StudentsService {
   }
 
   private pickCurrentEnrollment(enrollments: Enrollment[]): Enrollment | null {
-    return (
-      enrollments.find((item) => item.status === 'active') ??
-      [...enrollments].sort((a, b) => b.enrollDate.localeCompare(a.enrollDate))[0] ??
-      null
-    );
+    return enrollments.find((item) => item.status === 'active') ?? [...enrollments].sort((a, b) => b.enrollDate.localeCompare(a.enrollDate))[0] ?? null;
   }
 
-  private buildRecentTimeline(studentId: string): Student360TimelineItem[] {
-    const student = this.studentsRepository.requireStudentById(studentId);
-    const enrollment = this.pickCurrentEnrollment(this.studentsRepository.listEnrollmentsByStudent(studentId));
-    const family = student.familyId ? this.familiesRepository.findFamilyById(student.familyId) : null;
+  private async buildRecentTimeline(studentId: string): Promise<Student360TimelineItem[]> {
+    const student = await this.studentsRepository.requireStudentById(studentId);
+    const enrollment = this.pickCurrentEnrollment(await this.studentsRepository.listEnrollmentsByStudent(studentId));
+    const family = student.familyId ? await this.familiesRepository.findFamilyById(student.familyId) : null;
 
     const masterDataItems: Student360TimelineItem[] = [
       {

@@ -33,18 +33,18 @@ function buildServices(storePath?: string) {
   };
 }
 
-test('student list/detail/enrollment persistence works', () => {
+test('student list/detail/enrollment persistence works', async () => {
   const fixture = buildServices();
   const { service, filePath } = fixture;
 
-  const page = service.list({ pageNo: 1, pageSize: 20, status: 'active' });
+  const page = await service.list({ pageNo: 1, pageSize: 20, status: 'active' });
   assert.equal(page.list.length, 1);
   assert.equal(page.page.total, 1);
 
-  const student = service.detail('student-001');
+  const student = await service.detail('student-001');
   assert.equal(student.name, '小明');
 
-  const enrollment = service.createEnrollment('student-001', {
+  const enrollment = await service.createEnrollment('student-001', {
     campusId: 'campus-002',
     termId: 'term-2026-summer',
     primaryTeacherId: 'teacher-001',
@@ -52,16 +52,16 @@ test('student list/detail/enrollment persistence works', () => {
     status: 'active',
   });
   assert.equal(enrollment.studentId, 'student-001');
-  assert.equal(service.listEnrollmentsByStudent('student-001').length, 2);
+  assert.equal((await service.listEnrollmentsByStudent('student-001')).length, 2);
 
   const reloaded = buildServices(filePath).service;
-  assert.equal(reloaded.listEnrollmentsByStudent('student-001').length, 2);
+  assert.equal((await reloaded.listEnrollmentsByStudent('student-001')).length, 2);
 });
 
-test('student 360 aggregate reads persisted student/family/enrollment data', () => {
+test('student 360 aggregate reads persisted student/family/enrollment data', async () => {
   const { service } = buildServices();
 
-  const detail360 = service.detail360('student-001');
+  const detail360 = await service.detail360('student-001');
 
   assert.equal(detail360.student.id, 'student-001');
   assert.equal(detail360.currentEnrollment?.id, 'enrollment-001');
@@ -78,10 +78,10 @@ test('student 360 aggregate reads persisted student/family/enrollment data', () 
   assert.equal(detail360.billingSummary.outstandingAmount, 360000);
 });
 
-test('master-data uniqueness rules are enforced via persisted repositories', () => {
+test('master-data uniqueness rules are enforced via persisted repositories', async () => {
   const { service, familiesService } = buildServices();
 
-  assert.throws(() =>
+  await assert.rejects(() =>
     service.create({
       studentNo: 'S001',
       name: '重复学号',
@@ -89,14 +89,14 @@ test('master-data uniqueness rules are enforced via persisted repositories', () 
     }),
   );
 
-  assert.throws(() =>
+  await assert.rejects(() =>
     familiesService.create({
       familyCode: 'F001',
       familyName: '重复家庭',
     }),
   );
 
-  assert.throws(() =>
+  await assert.rejects(() =>
     service.createEnrollment('student-001', {
       campusId: 'campus-001',
       termId: 'term-2026-spring',

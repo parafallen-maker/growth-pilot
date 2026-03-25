@@ -15,23 +15,23 @@ export class FamiliesController {
 
   @Get()
   @RequirePermission('families:view')
-  list(@Query() query: FamilyQueryDto) {
-    return ok(this.familiesService.list(query));
+  async list(@Query() query: FamilyQueryDto) {
+    return ok(await this.familiesService.list(query));
   }
 
   @Get(':familyId')
   @RequirePermission('families:view')
-  detail(@Param('familyId') familyId: string) {
-    return ok(this.familiesService.detail(familyId));
+  async detail(@Param('familyId') familyId: string) {
+    return ok(await this.familiesService.detail(familyId));
   }
 
   @Post()
-  create(@Body() payload: CreateFamilyDto) {
-    return ok(this.familiesService.create(payload));
+  async create(@Body() payload: CreateFamilyDto) {
+    return ok(await this.familiesService.create(payload));
   }
 
   @Post(':familyId/guardians')
-  createGuardian(@Param('familyId') familyId: string, @Body() payload: CreateGuardianDto) {
-    return ok(this.familiesService.createGuardian(familyId, payload));
+  async createGuardian(@Param('familyId') familyId: string, @Body() payload: CreateGuardianDto) {
+    return ok(await this.familiesService.createGuardian(familyId, payload));
   }
 }

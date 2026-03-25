@@ -17,9 +17,10 @@ interface TeacherDetail {
 export class TeachersService {
   constructor(private readonly teachersRepository: TeachersRepository = new TeachersRepository()) {}
 
-  list(query: TeacherQueryDto): PageResult<Teacher> {
+  async list(query: TeacherQueryDto): Promise<PageResult<Teacher>> {
     const { pageNo, pageSize } = normalizePage(query);
-    const filtered = this.teachersRepository.list().filter((teacher) => {
+    const teachers = await this.teachersRepository.list();
+    const filtered = teachers.filter((teacher) => {
       if (query.campusId && teacher.campusId !== query.campusId) return false;
       if (query.status && teacher.status !== query.status) return false;
       if (query.subject && teacher.leadSubject !== query.subject) return false;
@@ -37,20 +38,25 @@ export class TeachersService {
     };
   }
 
-  detail(teacherId: string): TeacherDetail {
-    const teacher = this.teachersRepository.requireById(teacherId);
+  async detail(teacherId: string): Promise<TeacherDetail> {
+    const teacher = await this.teachersRepository.requireById(teacherId);
+    const shifts = await this.teachersRepository.listAssignmentsByTeacher(teacherId);
 
     return {
       teacher,
-      subjects: teacher.leadSubject
-        ? [{ subject: teacher.leadSubject, gradeRange: 'G1-G6', level: 'core' }]
-        : [],
-      shifts: [],
+      subjects: teacher.leadSubject ? [{ subject: teacher.leadSubject, gradeRange: 'G1-G6', level: 'core' }] : [],
+      shifts: shifts.map((shift) => ({
+        id: shift.id,
+        weekday: shift.weekday,
+        startTime: shift.startTime,
+        endTime: shift.endTime,
+        shiftType: shift.shiftType,
+      })),
       developmentRecords: [],
     };
   }
 
-  create(payload: CreateTeacherDto): Teacher {
+  create(payload: CreateTeacherDto): Promise<Teacher> {
     return this.teachersRepository.create({
       campusId: payload.campusId,
       employeeNo: payload.employeeNo,

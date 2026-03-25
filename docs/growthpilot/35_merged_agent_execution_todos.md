@@ -190,9 +190,12 @@
   - 已将 users/roles/permissions 改造成 repository adapter 结构，并提供 Drizzle DB 实现与 seed 基线；当前为了兼容现有同步链路与测试，默认 adapter 仍为 file。
 - [/] `BE-07` 替换 `settings` module — campuses/terms/dictionaries → DB
   - 已将 campuses/terms/dictionaries 改造成 repository adapter 结构，并提供 Drizzle DB 实现与 seed 基线；默认 adapter 仍为 file，待后续联通 migration/真实数据库验收后切默认值。
-- [ ] `BE-08` 替换 `students` module — students/enrollments → DB
-- [ ] `BE-09` 替换 `families` module — families/guardians → DB
-- [ ] `BE-10` 替换 `teachers` module — teachers/assignments → DB
+- [/] `BE-08` 替换 `students` module — students/enrollments → DB
+  - 已将 students/enrollments 改造成 selectable file/db repository adapter；默认仍为 file，设置 `GP_PERSISTENCE_ADAPTER=db` 且提供 `DATABASE_URL` 后走 Drizzle PostgreSQL 实现。
+- [/] `BE-09` 替换 `families` module — families/guardians → DB
+  - 已将 families/guardians 改造成 selectable file/db repository adapter；默认仍为 file，DB 实现已覆盖家庭/监护人读写与 primary guardian 约束。
+- [/] `BE-10` 替换 `teachers` module — teachers/assignments → DB
+  - 已将 teachers 改造成 selectable file/db repository adapter，并补上 teacher assignments 的 DB 查询路径；默认仍为 file，development records 写路径待后续 BE-20 一并接真。
 - [ ] `BE-11` 替换 `files` module — file_assets → DB, adapter 保留
 - [ ] `BE-12` 替换 `homework` module — submissions/analyses/reviews → DB
 - [ ] `BE-13` 替换 `growth` module — rubrics/observations/goals/reports → DB

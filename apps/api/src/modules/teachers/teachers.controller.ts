@@ -14,18 +14,18 @@ export class TeachersController {
 
   @Get()
   @RequirePermission('teachers:view')
-  list(@Query() query: TeacherQueryDto) {
-    return ok(this.teachersService.list(query));
+  async list(@Query() query: TeacherQueryDto) {
+    return ok(await this.teachersService.list(query));
   }
 
   @Get(':teacherId')
   @RequirePermission('teachers:view')
-  detail(@Param('teacherId') teacherId: string) {
-    return ok(this.teachersService.detail(teacherId));
+  async detail(@Param('teacherId') teacherId: string) {
+    return ok(await this.teachersService.detail(teacherId));
   }
 
   @Post()
-  create(@Body() payload: CreateTeacherDto) {
-    return ok(this.teachersService.create(payload));
+  async create(@Body() payload: CreateTeacherDto) {
+    return ok(await this.teachersService.create(payload));
   }
 }

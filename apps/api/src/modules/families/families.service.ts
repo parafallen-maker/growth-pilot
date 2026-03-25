@@ -11,9 +11,10 @@ import { FamiliesRepository } from './repository/families.repository';
 export class FamiliesService {
   constructor(private readonly familiesRepository: FamiliesRepository = new FamiliesRepository()) {}
 
-  list(query: FamilyQueryDto): PageResult<Family> {
+  async list(query: FamilyQueryDto): Promise<PageResult<Family>> {
     const { pageNo, pageSize } = normalizePage(query);
-    const filtered = this.familiesRepository.listFamilies().filter((family) => {
+    const families = await this.familiesRepository.listFamilies();
+    const filtered = families.filter((family) => {
       if (query.status && family.status !== query.status) return false;
       if (query.keyword) {
         const keyword = query.keyword.toLowerCase();
@@ -31,21 +32,22 @@ export class FamiliesService {
     };
   }
 
-  detail(familyId: string) {
-    const family = this.familiesRepository.requireFamilyById(familyId);
+  async detail(familyId: string) {
+    const family = await this.familiesRepository.requireFamilyById(familyId);
 
     return {
       family,
-      guardians: this.familiesRepository.listGuardiansByFamily(familyId),
-      students: this.familiesRepository.listStudentsByFamily(familyId),
+      guardians: await this.familiesRepository.listGuardiansByFamily(familyId),
+      students: await this.familiesRepository.listStudentsByFamily(familyId),
       billingSummary: {},
       tasks: [],
       communications: [],
     };
   }
 
-  create(payload: CreateFamilyDto): Family {
-    const nextCode = payload.familyCode ?? `F${String(this.familiesRepository.listFamilies().length + 1).padStart(3, '0')}`;
+  async create(payload: CreateFamilyDto): Promise<Family> {
+    const families = await this.familiesRepository.listFamilies();
+    const nextCode = payload.familyCode ?? `F${String(families.length + 1).padStart(3, '0')}`;
     return this.familiesRepository.createFamily({
       familyCode: nextCode,
       familyName: payload.familyName,
@@ -59,7 +61,7 @@ export class FamiliesService {
     });
   }
 
-  createGuardian(familyId: string, payload: CreateGuardianDto): Guardian {
+  createGuardian(familyId: string, payload: CreateGuardianDto): Promise<Guardian> {
     return this.familiesRepository.createGuardian(familyId, {
       name: payload.name,
       relation: payload.relation,
