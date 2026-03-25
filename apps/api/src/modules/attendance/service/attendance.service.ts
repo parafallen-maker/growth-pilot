@@ -16,9 +16,9 @@ import { AttendanceRepository } from '../repository/attendance.repository';
 export class AttendanceService {
   constructor(private readonly attendanceRepository: AttendanceRepository) {}
 
-  listDevices(query: DeviceQueryDto): PageResult<AttendanceDevice> {
+  async listDevices(query: DeviceQueryDto): Promise<PageResult<AttendanceDevice>> {
     const { pageNo, pageSize } = normalizePage(query);
-    const filtered = this.attendanceRepository.listDevices().filter((item) => {
+    const filtered = (await this.attendanceRepository.listDevices()).filter((item) => {
       if (query.campusId && item.campusId !== query.campusId) return false;
       if (query.status && item.status !== query.status) return false;
       if (query.deviceType && item.deviceType !== query.deviceType) return false;
@@ -31,8 +31,8 @@ export class AttendanceService {
     return this.page(filtered, pageNo, pageSize);
   }
 
-  createDevice(payload: CreateDeviceDto) {
-    return this.attendanceRepository.createDevice({
+  async createDevice(payload: CreateDeviceDto) {
+    return await this.attendanceRepository.createDevice({
       campusId: payload.campusId ?? null,
       serialNo: payload.serialNo,
       deviceType: payload.deviceType ?? 'beacon',
@@ -41,9 +41,9 @@ export class AttendanceService {
     });
   }
 
-  listBindings(query: DeviceBindingQueryDto): PageResult<StudentDeviceBinding> {
+  async listBindings(query: DeviceBindingQueryDto): Promise<PageResult<StudentDeviceBinding>> {
     const { pageNo, pageSize } = normalizePage(query);
-    const filtered = this.attendanceRepository.listBindings().filter((item) => {
+    const filtered = (await this.attendanceRepository.listBindings()).filter((item) => {
       if (query.studentId && item.studentId !== query.studentId) return false;
       if (query.deviceId && item.deviceId !== query.deviceId) return false;
       if (query.status && item.status !== query.status) return false;
@@ -52,21 +52,21 @@ export class AttendanceService {
     return this.page(filtered, pageNo, pageSize);
   }
 
-  createBinding(payload: CreateDeviceBindingDto) {
-    return this.attendanceRepository.runInTransaction(() => {
-      const device = this.attendanceRepository.getDeviceOrThrow(payload.deviceId);
+  async createBinding(payload: CreateDeviceBindingDto) {
+    return this.attendanceRepository.runInTransaction(async () => {
+      const device = await this.attendanceRepository.getDeviceOrThrow(payload.deviceId);
       const targetStatus = payload.status ?? 'active';
       const boundAt = payload.boundAt ?? new Date().toISOString();
       if (targetStatus === 'active') {
-        if (this.attendanceRepository.listActiveBindingsByStudent(payload.studentId).length > 0) {
+        if ((await this.attendanceRepository.listActiveBindingsByStudent(payload.studentId)).length > 0) {
           throw new ConflictException('student already has an active binding');
         }
-        if (this.attendanceRepository.listActiveBindingsByDevice(payload.deviceId).length > 0) {
+        if ((await this.attendanceRepository.listActiveBindingsByDevice(payload.deviceId)).length > 0) {
           throw new ConflictException('device already has an active binding');
         }
       }
 
-      const overlappingBinding = this.attendanceRepository.findOverlappingBinding({
+      const overlappingBinding = await this.attendanceRepository.findOverlappingBinding({
         studentId: payload.studentId,
         deviceId: payload.deviceId,
         boundAt,
@@ -75,7 +75,7 @@ export class AttendanceService {
         throw new ConflictException('binding times overlap with existing binding history');
       }
 
-      const binding = this.attendanceRepository.createBinding({
+      const binding = await this.attendanceRepository.createBinding({
         studentId: payload.studentId,
         deviceId: payload.deviceId,
         status: targetStatus,
@@ -84,20 +84,20 @@ export class AttendanceService {
         createdBy: payload.createdBy ?? null,
       });
 
-      this.attendanceRepository.updateDevice(device.id, { status: binding.status === 'active' ? 'bound' : device.status });
+      await this.attendanceRepository.updateDevice(device.id, { status: binding.status === 'active' ? 'bound' : device.status });
       return binding;
     });
   }
 
-  updateBinding(bindingId: string, payload: UpdateDeviceBindingDto) {
-    return this.attendanceRepository.runInTransaction(() => {
-      const binding = this.attendanceRepository.getBindingOrThrow(bindingId);
+  async updateBinding(bindingId: string, payload: UpdateDeviceBindingDto) {
+    return this.attendanceRepository.runInTransaction(async () => {
+      const binding = await this.attendanceRepository.getBindingOrThrow(bindingId);
       const nextStatus = payload.status ?? binding.status;
       if (binding.status !== 'active' && nextStatus === 'active') {
-        if (this.attendanceRepository.listActiveBindingsByStudent(binding.studentId).some((item) => item.id !== binding.id)) {
+        if ((await this.attendanceRepository.listActiveBindingsByStudent(binding.studentId)).some((item) => item.id !== binding.id)) {
           throw new ConflictException('student already has another active binding');
         }
-        if (this.attendanceRepository.listActiveBindingsByDevice(binding.deviceId).some((item) => item.id !== binding.id)) {
+        if ((await this.attendanceRepository.listActiveBindingsByDevice(binding.deviceId)).some((item) => item.id !== binding.id)) {
           throw new ConflictException('device already has another active binding');
         }
       }
@@ -106,7 +106,7 @@ export class AttendanceService {
       if (new Date(nextUnboundAt ?? binding.boundAt).getTime() < new Date(binding.boundAt).getTime()) {
         throw new ConflictException('unboundAt must be >= boundAt');
       }
-      const overlappingBinding = this.attendanceRepository.findOverlappingBinding({
+      const overlappingBinding = await this.attendanceRepository.findOverlappingBinding({
         studentId: binding.studentId,
         deviceId: binding.deviceId,
         boundAt: binding.boundAt,
@@ -117,18 +117,18 @@ export class AttendanceService {
         throw new ConflictException('binding times overlap with existing binding history');
       }
 
-      const updated = this.attendanceRepository.updateBinding(bindingId, {
+      const updated = await this.attendanceRepository.updateBinding(bindingId, {
         status: nextStatus,
         unboundAt: nextUnboundAt,
       });
-      this.refreshDeviceStatus(updated.deviceId);
+      await this.refreshDeviceStatus(updated.deviceId);
       return updated;
     });
   }
 
-  listEvents(query: AttendanceEventQueryDto): PageResult<AttendanceEvent> {
+  async listEvents(query: AttendanceEventQueryDto): Promise<PageResult<AttendanceEvent>> {
     const { pageNo, pageSize } = normalizePage(query);
-    const filtered = this.attendanceRepository.listEvents().filter((item) => {
+    const filtered = (await this.attendanceRepository.listEvents()).filter((item) => {
       if (query.studentId && item.studentId !== query.studentId) return false;
       if (query.campusId && item.campusId !== query.campusId) return false;
       if (query.deviceId && item.deviceId !== query.deviceId) return false;
@@ -141,26 +141,26 @@ export class AttendanceService {
     return this.page(filtered, pageNo, pageSize);
   }
 
-  createEvent(payload: CreateAttendanceEventDto, idempotencyKey?: string) {
-    return this.attendanceRepository.runInTransaction(() => {
+  async createEvent(payload: CreateAttendanceEventDto, idempotencyKey?: string) {
+    return this.attendanceRepository.runInTransaction(async () => {
       const dedupeKey = this.buildEventDedupeKey(payload.deviceId, payload.eventTime, payload.eventType, idempotencyKey);
-      const existing = this.attendanceRepository.findEventByDedupeKey(dedupeKey);
+      const existing = await this.attendanceRepository.findEventByDedupeKey(dedupeKey);
       if (existing) {
         return { ...existing, replayed: true };
       }
 
       if (payload.deviceId) {
-        const device = this.attendanceRepository.getDeviceOrThrow(payload.deviceId);
+        const device = await this.attendanceRepository.getDeviceOrThrow(payload.deviceId);
         if (device.campusId && payload.campusId && device.campusId !== payload.campusId) {
           throw new ConflictException('device campus does not match attendance event campus');
         }
-        const activeBinding = this.attendanceRepository.listActiveBindingsByDevice(payload.deviceId)[0];
+        const activeBinding = (await this.attendanceRepository.listActiveBindingsByDevice(payload.deviceId))[0];
         if (activeBinding && activeBinding.studentId !== payload.studentId) {
           throw new ConflictException('device is actively bound to another student');
         }
       }
 
-      return this.attendanceRepository.createEvent({
+      return await this.attendanceRepository.createEvent({
         studentId: payload.studentId,
         campusId: payload.campusId,
         deviceId: payload.deviceId ?? null,
@@ -173,9 +173,9 @@ export class AttendanceService {
     });
   }
 
-  getHomeworkTimeDailyStats(query: HomeworkTimeDailyStatsQueryDto): PageResult<HomeworkTimeDailyStat> {
+  async getHomeworkTimeDailyStats(query: HomeworkTimeDailyStatsQueryDto): Promise<PageResult<HomeworkTimeDailyStat>> {
     const { pageNo, pageSize } = normalizePage(query);
-    const filtered = this.attendanceRepository.listDailyStats().filter((item) => {
+    const filtered = (await this.attendanceRepository.listDailyStats()).filter((item) => {
       if (query.studentId && item.studentId !== query.studentId) return false;
       if (query.subject && item.subject !== query.subject) return false;
       if (query.dateFrom && item.statDate < query.dateFrom) return false;
@@ -197,18 +197,18 @@ export class AttendanceService {
     createdBy?: string;
     remark?: string;
   }) {
-    return this.attendanceRepository.runInTransaction(() => {
+    return this.attendanceRepository.runInTransaction(async () => {
       const durationMinutes = Math.max(0, Math.round((new Date(payload.endTime).getTime() - new Date(payload.startTime).getTime()) / 60000));
       if (durationMinutes <= 0) {
         throw new ConflictException('homework time session duration must be > 0');
       }
       if (payload.deviceId && payload.sourceType === 'device') {
-        const activeBinding = this.attendanceRepository.listActiveBindingsByDevice(payload.deviceId)[0];
+        const activeBinding = (await this.attendanceRepository.listActiveBindingsByDevice(payload.deviceId))[0];
         if (!activeBinding || activeBinding.studentId !== payload.studentId) {
           throw new ConflictException('device session requires an active binding for the same student');
         }
       }
-      const overlappingSession = this.attendanceRepository.findOverlappingSession({
+      const overlappingSession = await this.attendanceRepository.findOverlappingSession({
         studentId: payload.studentId,
         subject: payload.subject,
         deviceId: payload.deviceId ?? null,
@@ -219,7 +219,7 @@ export class AttendanceService {
         throw new ConflictException('homework time session overlaps with existing session');
       }
 
-      const session = this.attendanceRepository.createSession({
+      const session = await this.attendanceRepository.createSession({
         studentId: payload.studentId,
         termId: payload.termId ?? null,
         campusId: payload.campusId ?? null,
@@ -232,13 +232,13 @@ export class AttendanceService {
         createdBy: payload.createdBy ?? null,
         remark: payload.remark,
       });
-      this.regenerateDailyStats(payload.studentId, session.subject, session.startTime.slice(0, 10));
+      await this.regenerateDailyStats(payload.studentId, session.subject, session.startTime.slice(0, 10));
       return session;
     });
   }
 
-  regenerateDailyStats(studentId: string, subject?: string, statDate?: string) {
-    const sessions = this.attendanceRepository.listSessions().filter((item) => {
+  async regenerateDailyStats(studentId: string, subject?: string, statDate?: string) {
+    const sessions = (await this.attendanceRepository.listSessions()).filter((item) => {
       if (item.studentId !== studentId) return false;
       if (subject && item.subject !== subject) return false;
       if (statDate && item.startTime.slice(0, 10) !== statDate) return false;
@@ -260,12 +260,12 @@ export class AttendanceService {
       buckets.set(key, bucket);
     }
 
-    return Array.from(buckets.values()).map((item) => this.attendanceRepository.replaceDailyStat(item));
+    return Promise.all(Array.from(buckets.values()).map((item) => this.attendanceRepository.replaceDailyStat(item)));
   }
 
-  private refreshDeviceStatus(deviceId: string) {
-    const active = this.attendanceRepository.listActiveBindingsByDevice(deviceId);
-    this.attendanceRepository.updateDevice(deviceId, { status: active.length ? 'bound' : 'idle' });
+  private async refreshDeviceStatus(deviceId: string) {
+    const active = await this.attendanceRepository.listActiveBindingsByDevice(deviceId);
+    await this.attendanceRepository.updateDevice(deviceId, { status: active.length ? 'bound' : 'idle' });
   }
 
   private buildEventDedupeKey(deviceId: string | undefined, eventTime: string, eventType: string, idempotencyKey?: string) {

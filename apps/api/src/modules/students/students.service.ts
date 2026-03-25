@@ -82,12 +82,12 @@ export class StudentsService {
     const studentGrowth = (await this.growthRepository.listObservations()).filter((item) => item.studentId === studentId);
     const activeGoals = (await this.growthRepository.listGoals()).filter((item) => item.studentId === studentId && item.status === 'active');
     const studentReports = (await this.growthRepository.listReports()).filter((item) => item.studentId === studentId);
-    const attendanceEvents = this.attendanceRepository.listEvents().filter((item) => item.studentId === studentId);
-    const attendanceStats = this.attendanceRepository.listDailyStats().filter((item) => item.studentId === studentId);
-    const studentContracts = this.billingRepository.listContracts().filter((item) => item.studentId === studentId);
-    const studentInvoices = this.billingRepository.listInvoices().filter((item) => item.studentId === studentId);
+    const attendanceEvents = (await this.attendanceRepository.listEvents()).filter((item) => item.studentId === studentId);
+    const attendanceStats = (await this.attendanceRepository.listDailyStats()).filter((item) => item.studentId === studentId);
+    const studentContracts = (await this.billingRepository.listContracts()).filter((item) => item.studentId === studentId);
+    const studentInvoices = (await this.billingRepository.listInvoices()).filter((item) => item.studentId === studentId);
     const invoiceIds = new Set(studentInvoices.map((item) => item.id));
-    const studentPayments = this.billingRepository.listPayments().filter((item) => invoiceIds.has(item.invoiceId));
+    const studentPayments = (await this.billingRepository.listPayments()).filter((item) => invoiceIds.has(item.invoiceId));
 
     const reviewedHomework = studentHomework.filter((item) => item.finalAccuracyPct != null);
     const averageAccuracyPct = reviewedHomework.length ? Math.round(reviewedHomework.reduce((sum, item) => sum + (item.finalAccuracyPct ?? 0), 0) / reviewedHomework.length) : null;
@@ -217,11 +217,11 @@ export class StudentsService {
     const growthItems: Student360TimelineItem[] = (await this.growthRepository.listObservations())
       .filter((item) => item.studentId === studentId)
       .map((item) => ({ id: `timeline-growth-${item.id}`, type: 'growth', title: '成长观察记录', occurredAt: `${item.observationDate}T19:00:00+08:00`, status: 'recorded', summary: item.improvementNotes }));
-    const attendanceItems: Student360TimelineItem[] = this.attendanceRepository.listEvents()
+    const attendanceItems: Student360TimelineItem[] = (await this.attendanceRepository.listEvents())
       .filter((item) => item.studentId === studentId)
       .slice(0, 1)
       .map((item) => ({ id: `timeline-attendance-${item.id}`, type: 'attendance', title: item.eventType === 'checkin' ? '到校签到' : '出勤异常', occurredAt: item.eventTime, status: item.eventType, summary: item.remark ?? '出勤事件已入库' }));
-    const billingItems: Student360TimelineItem[] = this.billingRepository.listInvoices()
+    const billingItems: Student360TimelineItem[] = (await this.billingRepository.listInvoices())
       .filter((item) => item.studentId === studentId)
       .map((item) => ({ id: `timeline-billing-${item.id}`, type: 'billing', title: '账单状态更新', occurredAt: `${item.issueDate}T12:00:00+08:00`, status: item.status, summary: `账单金额 ${item.amountCents} 分` }));
 

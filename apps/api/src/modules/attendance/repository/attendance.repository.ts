@@ -1,270 +1,79 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import type {
-  AttendanceDevice,
-  AttendanceEvent,
-  HomeworkTimeDailyStat,
-  HomeworkTimeSession,
-  StudentDeviceBinding,
-} from '@growthpilot/schema/index';
+import { asc, eq } from 'drizzle-orm';
+import type { AttendanceDevice, AttendanceEvent, HomeworkTimeDailyStat, HomeworkTimeSession, StudentDeviceBinding } from '@growthpilot/schema/index';
 import { PersistentJsonStore } from '../../../common/persistent-json.store';
+import { createDb, dbSchema } from '../../../db';
+import { isDbPersistenceEnabled } from '../../../shared/persistence/adapter';
 
-interface AttendanceState {
-  devices: AttendanceDevice[];
-  bindings: StudentDeviceBinding[];
-  events: AttendanceEvent[];
-  sessions: HomeworkTimeSession[];
-  dailyStats: HomeworkTimeDailyStat[];
+interface AttendanceState { devices: AttendanceDevice[]; bindings: StudentDeviceBinding[]; events: AttendanceEvent[]; sessions: HomeworkTimeSession[]; dailyStats: HomeworkTimeDailyStat[]; }
+interface AttendanceRepositoryPort {
+  listDevices(): Promise<AttendanceDevice[]>; listBindings(): Promise<StudentDeviceBinding[]>; listEvents(): Promise<AttendanceEvent[]>; listSessions(): Promise<HomeworkTimeSession[]>; listDailyStats(): Promise<HomeworkTimeDailyStat[]>;
+  getDeviceOrThrow(deviceId: string): Promise<AttendanceDevice>; getBindingOrThrow(bindingId: string): Promise<StudentDeviceBinding>;
+  createDevice(input: Omit<AttendanceDevice, 'id' | 'createdAt' | 'updatedAt'>): Promise<AttendanceDevice>; createBinding(input: Omit<StudentDeviceBinding, 'id' | 'createdAt' | 'updatedAt'>): Promise<StudentDeviceBinding>; updateBinding(bindingId: string, patch: Partial<StudentDeviceBinding>): Promise<StudentDeviceBinding>;
+  createEvent(input: Omit<AttendanceEvent, 'id' | 'createdAt'>): Promise<AttendanceEvent>; findEventByDedupeKey(dedupeKey: string): Promise<AttendanceEvent | undefined>;
+  replaceDailyStat(record: Omit<HomeworkTimeDailyStat, 'id' | 'generatedAt'>): Promise<HomeworkTimeDailyStat>; createSession(input: Omit<HomeworkTimeSession, 'id' | 'createdAt'>): Promise<HomeworkTimeSession>;
+  listActiveBindingsByStudent(studentId: string): Promise<StudentDeviceBinding[]>; listActiveBindingsByDevice(deviceId: string): Promise<StudentDeviceBinding[]>;
+  findOverlappingBinding(input: { studentId: string; deviceId: string; boundAt: string; unboundAt?: string | null; excludeBindingId?: string }): Promise<StudentDeviceBinding | undefined>;
+  findOverlappingSession(input: { studentId: string; startTime: string; endTime: string; subject?: string; deviceId?: string | null }): Promise<HomeworkTimeSession | undefined>;
+  updateDevice(deviceId: string, patch: Partial<AttendanceDevice>): Promise<AttendanceDevice>; runInTransaction<T>(runner: () => Promise<T> | T): Promise<T>;
 }
-
+const createInitialState = (): AttendanceState => ({ devices: [{ id: 'device-001', campusId: 'campus-001', serialNo: 'BEACON-001', deviceType: 'beacon', status: 'bound', note: '前台签到设备', createdAt: '2026-03-24T08:00:00+08:00', updatedAt: '2026-03-24T08:00:00+08:00' }], bindings: [{ id: 'binding-001', studentId: 'student-001', deviceId: 'device-001', status: 'active', boundAt: '2026-03-24T08:10:00+08:00', unboundAt: null, createdBy: 'user-admin-001', createdAt: '2026-03-24T08:10:00+08:00', updatedAt: '2026-03-24T08:10:00+08:00' }], events: [{ id: 'attendance-event-001', studentId: 'student-001', campusId: 'campus-001', deviceId: 'device-001', eventType: 'checkin', eventTime: '2026-03-24T16:00:00+08:00', operatorUserId: null, remark: '样例签到', dedupeKey: 'device-001|2026-03-24T08:00:00.000Z|checkin', createdAt: '2026-03-24T16:00:01+08:00' }], sessions: [{ id: 'hw-session-001', studentId: 'student-001', termId: 'term-2026-spring', campusId: 'campus-001', subject: 'math', deviceId: 'device-001', sourceType: 'device', startTime: '2026-03-24T19:00:00+08:00', endTime: '2026-03-24T19:45:00+08:00', durationMinutes: 45, createdBy: 'user-teacher-001', remark: '样例作业时长', createdAt: '2026-03-24T19:45:00+08:00' }], dailyStats: [{ id: 'hw-stat-001', studentId: 'student-001', statDate: '2026-03-24', subject: 'math', totalMinutes: 45, sessionCount: 1, generatedAt: '2026-03-24T19:45:00+08:00' }] });
+class FileAttendanceRepository implements AttendanceRepositoryPort {
+  private readonly store: PersistentJsonStore<AttendanceState>;
+  constructor(filePath = '.data/attendance.json') { this.store = new PersistentJsonStore<AttendanceState>(filePath, createInitialState); }
+  private get state() { return this.store.get(); }
+  async listDevices() { return [...this.state.devices]; } async listBindings() { return [...this.state.bindings]; } async listEvents() { return [...this.state.events]; } async listSessions() { return [...this.state.sessions]; } async listDailyStats() { return [...this.state.dailyStats]; }
+  async getDeviceOrThrow(deviceId: string) { const device = this.state.devices.find((item) => item.id === deviceId); if (!device) throw new NotFoundException(`device ${deviceId} not found`); return device; }
+  async getBindingOrThrow(bindingId: string) { const binding = this.state.bindings.find((item) => item.id === bindingId); if (!binding) throw new NotFoundException(`binding ${bindingId} not found`); return binding; }
+  async createDevice(input: Omit<AttendanceDevice, 'id' | 'createdAt' | 'updatedAt'>) { this.ensureUnique('serialNo', this.state.devices.some((item) => item.serialNo === input.serialNo)); const now = new Date().toISOString(); const device: AttendanceDevice = { ...input, id: `device-${String(this.state.devices.length + 1).padStart(3, '0')}`, createdAt: now, updatedAt: now }; this.store.update((state) => { state.devices.unshift(device); }); return device; }
+  async createBinding(input: Omit<StudentDeviceBinding, 'id' | 'createdAt' | 'updatedAt'>) { const now = new Date().toISOString(); const binding: StudentDeviceBinding = { ...input, id: `binding-${String(this.state.bindings.length + 1).padStart(3, '0')}`, createdAt: now, updatedAt: now }; this.store.update((state) => { state.bindings.unshift(binding); }); return binding; }
+  async updateBinding(bindingId: string, patch: Partial<StudentDeviceBinding>) { let updated!: StudentDeviceBinding; this.store.update((state) => { const binding = state.bindings.find((item) => item.id === bindingId); if (!binding) throw new NotFoundException(`binding ${bindingId} not found`); Object.assign(binding, patch, { updatedAt: new Date().toISOString() }); updated = binding; }); return updated; }
+  async createEvent(input: Omit<AttendanceEvent, 'id' | 'createdAt'>) { const event: AttendanceEvent = { ...input, id: `attendance-event-${String(this.state.events.length + 1).padStart(3, '0')}`, createdAt: new Date().toISOString() }; this.store.update((state) => { state.events.unshift(event); }); return event; }
+  async findEventByDedupeKey(dedupeKey: string) { return this.state.events.find((item) => item.dedupeKey === dedupeKey); }
+  async replaceDailyStat(record: Omit<HomeworkTimeDailyStat, 'id' | 'generatedAt'>) { const existing = this.state.dailyStats.find((item) => item.studentId === record.studentId && item.statDate === record.statDate && item.subject === record.subject); const now = new Date().toISOString(); let updated: HomeworkTimeDailyStat | undefined; if (existing) { this.store.update((state) => { const target = state.dailyStats.find((item) => item.studentId === record.studentId && item.statDate === record.statDate && item.subject === record.subject); if (!target) return; Object.assign(target, record, { generatedAt: now }); updated = target; }); return updated!; } const stat: HomeworkTimeDailyStat = { ...record, id: `hw-stat-${String(this.state.dailyStats.length + 1).padStart(3, '0')}`, generatedAt: now }; this.store.update((state) => { state.dailyStats.unshift(stat); }); return stat; }
+  async createSession(input: Omit<HomeworkTimeSession, 'id' | 'createdAt'>) { const session: HomeworkTimeSession = { ...input, id: `hw-session-${String(this.state.sessions.length + 1).padStart(3, '0')}`, createdAt: new Date().toISOString() }; this.store.update((state) => { state.sessions.unshift(session); }); return session; }
+  async listActiveBindingsByStudent(studentId: string) { return this.state.bindings.filter((item) => item.studentId === studentId && item.status === 'active'); }
+  async listActiveBindingsByDevice(deviceId: string) { return this.state.bindings.filter((item) => item.deviceId === deviceId && item.status === 'active'); }
+  async findOverlappingBinding(input: { studentId: string; deviceId: string; boundAt: string; unboundAt?: string | null; excludeBindingId?: string }) { const nextStart = new Date(input.boundAt).getTime(); const nextEnd = input.unboundAt ? new Date(input.unboundAt).getTime() : Number.POSITIVE_INFINITY; return this.state.bindings.find((item) => { if (input.excludeBindingId && item.id === input.excludeBindingId) return false; if (item.studentId !== input.studentId && item.deviceId !== input.deviceId) return false; const currentStart = new Date(item.boundAt).getTime(); const currentEnd = item.unboundAt ? new Date(item.unboundAt).getTime() : Number.POSITIVE_INFINITY; return currentStart <= nextEnd && nextStart <= currentEnd; }); }
+  async findOverlappingSession(input: { studentId: string; startTime: string; endTime: string; subject?: string; deviceId?: string | null }) { const nextStart = new Date(input.startTime).getTime(); const nextEnd = new Date(input.endTime).getTime(); return this.state.sessions.find((item) => { if (item.studentId !== input.studentId) return false; if (input.subject && item.subject !== input.subject) return false; if (input.deviceId && item.deviceId && item.deviceId !== input.deviceId) return false; const currentStart = new Date(item.startTime).getTime(); const currentEnd = new Date(item.endTime).getTime(); return currentStart < nextEnd && nextStart < currentEnd; }); }
+  async updateDevice(deviceId: string, patch: Partial<AttendanceDevice>) { let updated!: AttendanceDevice; this.store.update((state) => { const device = state.devices.find((item) => item.id === deviceId); if (!device) throw new NotFoundException(`device ${deviceId} not found`); Object.assign(device, patch, { updatedAt: new Date().toISOString() }); updated = device; }); return updated; }
+  async runInTransaction<T>(runner: () => Promise<T> | T) { const snapshot = this.store.snapshot(); try { return await runner(); } catch (error) { this.store.replace(snapshot); throw error; } }
+  private ensureUnique(field: string, exists: boolean) { if (exists) throw new ConflictException({ code: 'DATA_409', message: `${field} already exists` }); }
+}
+class DbAttendanceRepository implements AttendanceRepositoryPort {
+  private readonly db = createDb();
+  async listDevices() { const rows = await this.db.select().from(dbSchema.devices).orderBy(asc(dbSchema.devices.createdAt)); return rows.map((row) => ({ id: row.id, campusId: row.campusId ?? null, serialNo: row.serialNo, deviceType: row.deviceType as AttendanceDevice['deviceType'], status: row.status as AttendanceDevice['status'], note: row.note ?? undefined, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() })); }
+  async listBindings() { const rows = await this.db.select().from(dbSchema.deviceBindings).orderBy(asc(dbSchema.deviceBindings.createdAt)); return rows.map((row) => ({ id: row.id, studentId: row.studentId, deviceId: row.deviceId, status: row.status as StudentDeviceBinding['status'], boundAt: row.boundAt.toISOString(), unboundAt: row.unboundAt?.toISOString() ?? null, createdBy: row.createdBy ?? null, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() })); }
+  async listEvents() { const rows = await this.db.select().from(dbSchema.attendanceEvents).orderBy(asc(dbSchema.attendanceEvents.createdAt)); return rows.map((row) => ({ id: row.id, studentId: row.studentId, campusId: row.campusId, deviceId: row.deviceId ?? null, eventType: row.eventType as AttendanceEvent['eventType'], eventTime: row.eventTime.toISOString(), operatorUserId: row.operatorUserId ?? null, remark: row.remark ?? undefined, dedupeKey: `${row.deviceId ?? 'manual'}|${row.eventTime.toISOString()}|${row.eventType}`, createdAt: row.createdAt.toISOString() })); }
+  async listSessions() { const rows = await this.db.select().from(dbSchema.homeworkTimeSessions).orderBy(asc(dbSchema.homeworkTimeSessions.createdAt)); return rows.map((row) => ({ id: row.id, studentId: row.studentId, termId: row.termId ?? null, campusId: row.campusId ?? null, subject: row.subject, deviceId: row.deviceId ?? null, sourceType: row.sourceType as HomeworkTimeSession['sourceType'], startTime: row.startTime.toISOString(), endTime: row.endTime.toISOString(), durationMinutes: row.durationMinutes, createdBy: row.createdBy ?? null, remark: row.remark ?? undefined, createdAt: row.createdAt.toISOString() })); }
+  async listDailyStats() { const rows = await this.db.select().from(dbSchema.homeworkTimeDailyStats).orderBy(asc(dbSchema.homeworkTimeDailyStats.generatedAt)); return rows.map((row) => ({ id: row.id, studentId: row.studentId, statDate: row.statDate, subject: row.subject, totalMinutes: row.totalMinutes, sessionCount: row.sessionCount, generatedAt: row.generatedAt.toISOString() })); }
+  async getDeviceOrThrow(deviceId: string) { const item = (await this.listDevices()).find((row) => row.id === deviceId); if (!item) throw new NotFoundException(`device ${deviceId} not found`); return item; }
+  async getBindingOrThrow(bindingId: string) { const item = (await this.listBindings()).find((row) => row.id === bindingId); if (!item) throw new NotFoundException(`binding ${bindingId} not found`); return item; }
+  async createDevice(input: Omit<AttendanceDevice, 'id' | 'createdAt' | 'updatedAt'>) { const [row] = await this.db.insert(dbSchema.devices).values({ campusId: input.campusId ?? null, serialNo: input.serialNo, deviceType: input.deviceType, status: input.status, note: input.note ?? null, createdAt: new Date(), updatedAt: new Date() }).returning(); return this.getDeviceOrThrow(row.id); }
+  async createBinding(input: Omit<StudentDeviceBinding, 'id' | 'createdAt' | 'updatedAt'>) { const [row] = await this.db.insert(dbSchema.deviceBindings).values({ studentId: input.studentId, deviceId: input.deviceId, status: input.status, boundAt: new Date(input.boundAt), unboundAt: input.unboundAt ? new Date(input.unboundAt) : null, createdBy: input.createdBy ?? null, createdAt: new Date(), updatedAt: new Date() }).returning(); return this.getBindingOrThrow(row.id); }
+  async updateBinding(bindingId: string, patch: Partial<StudentDeviceBinding>) { await this.db.update(dbSchema.deviceBindings).set({ status: patch.status, unboundAt: patch.unboundAt === undefined ? undefined : (patch.unboundAt ? new Date(patch.unboundAt) : null), updatedAt: new Date() }).where(eq(dbSchema.deviceBindings.id, bindingId)); return this.getBindingOrThrow(bindingId); }
+  async createEvent(input: Omit<AttendanceEvent, 'id' | 'createdAt'>) { const [row] = await this.db.insert(dbSchema.attendanceEvents).values({ studentId: input.studentId, campusId: input.campusId, deviceId: input.deviceId ?? null, eventType: input.eventType, eventTime: new Date(input.eventTime), operatorUserId: input.operatorUserId ?? null, remark: input.remark ?? null, createdAt: new Date() }).returning(); return (await this.listEvents()).find((item) => item.id === row.id)!; }
+  async findEventByDedupeKey(dedupeKey: string) { return (await this.listEvents()).find((item) => item.dedupeKey === dedupeKey); }
+  async replaceDailyStat(record: Omit<HomeworkTimeDailyStat, 'id' | 'generatedAt'>) { const existing = (await this.listDailyStats()).find((item) => item.studentId === record.studentId && item.statDate === record.statDate && item.subject === record.subject); if (existing) { await this.db.update(dbSchema.homeworkTimeDailyStats).set({ totalMinutes: record.totalMinutes, sessionCount: record.sessionCount, generatedAt: new Date() }).where(eq(dbSchema.homeworkTimeDailyStats.id, existing.id)); return (await this.listDailyStats()).find((item) => item.id === existing.id)!; } const [row] = await this.db.insert(dbSchema.homeworkTimeDailyStats).values({ studentId: record.studentId, statDate: record.statDate, subject: record.subject, totalMinutes: record.totalMinutes, sessionCount: record.sessionCount, generatedAt: new Date() }).returning(); return (await this.listDailyStats()).find((item) => item.id === row.id)!; }
+  async createSession(input: Omit<HomeworkTimeSession, 'id' | 'createdAt'>) { const [row] = await this.db.insert(dbSchema.homeworkTimeSessions).values({ studentId: input.studentId, termId: input.termId ?? null, campusId: input.campusId ?? null, subject: input.subject, deviceId: input.deviceId ?? null, sourceType: input.sourceType, startTime: new Date(input.startTime), endTime: new Date(input.endTime), durationMinutes: input.durationMinutes, createdBy: input.createdBy ?? null, remark: input.remark ?? null, createdAt: new Date() }).returning(); return (await this.listSessions()).find((item) => item.id === row.id)!; }
+  async listActiveBindingsByStudent(studentId: string) { return (await this.listBindings()).filter((item) => item.studentId === studentId && item.status === 'active'); }
+  async listActiveBindingsByDevice(deviceId: string) { return (await this.listBindings()).filter((item) => item.deviceId === deviceId && item.status === 'active'); }
+  async findOverlappingBinding(input: { studentId: string; deviceId: string; boundAt: string; unboundAt?: string | null; excludeBindingId?: string }) { const nextStart = new Date(input.boundAt).getTime(); const nextEnd = input.unboundAt ? new Date(input.unboundAt).getTime() : Number.POSITIVE_INFINITY; return (await this.listBindings()).find((item) => { if (input.excludeBindingId && item.id === input.excludeBindingId) return false; if (item.studentId !== input.studentId && item.deviceId !== input.deviceId) return false; const currentStart = new Date(item.boundAt).getTime(); const currentEnd = item.unboundAt ? new Date(item.unboundAt).getTime() : Number.POSITIVE_INFINITY; return currentStart <= nextEnd && nextStart <= currentEnd; }); }
+  async findOverlappingSession(input: { studentId: string; startTime: string; endTime: string; subject?: string; deviceId?: string | null }) { const nextStart = new Date(input.startTime).getTime(); const nextEnd = new Date(input.endTime).getTime(); return (await this.listSessions()).find((item) => { if (item.studentId !== input.studentId) return false; if (input.subject && item.subject !== input.subject) return false; if (input.deviceId && item.deviceId && item.deviceId !== input.deviceId) return false; const currentStart = new Date(item.startTime).getTime(); const currentEnd = new Date(item.endTime).getTime(); return currentStart < nextEnd && nextStart < currentEnd; }); }
+  async updateDevice(deviceId: string, patch: Partial<AttendanceDevice>) { await this.db.update(dbSchema.devices).set({ status: patch.status, note: patch.note, campusId: patch.campusId, updatedAt: new Date() }).where(eq(dbSchema.devices.id, deviceId)); return this.getDeviceOrThrow(deviceId); }
+  async runInTransaction<T>(runner: () => Promise<T> | T) { return runner(); }
+}
 @Injectable()
 export class AttendanceRepository {
-  private readonly store: PersistentJsonStore<AttendanceState>;
-
-  constructor() {
-    this.store = new PersistentJsonStore<AttendanceState>('.data/attendance.json', () => ({
-    devices: [
-      {
-        id: 'device-001',
-        campusId: 'campus-001',
-        serialNo: 'BEACON-001',
-        deviceType: 'beacon',
-        status: 'bound',
-        note: '前台签到设备',
-        createdAt: '2026-03-24T08:00:00+08:00',
-        updatedAt: '2026-03-24T08:00:00+08:00',
-      },
-    ],
-    bindings: [
-      {
-        id: 'binding-001',
-        studentId: 'student-001',
-        deviceId: 'device-001',
-        status: 'active',
-        boundAt: '2026-03-24T08:10:00+08:00',
-        unboundAt: null,
-        createdBy: 'user-admin-001',
-        createdAt: '2026-03-24T08:10:00+08:00',
-        updatedAt: '2026-03-24T08:10:00+08:00',
-      },
-    ],
-    events: [
-      {
-        id: 'attendance-event-001',
-        studentId: 'student-001',
-        campusId: 'campus-001',
-        deviceId: 'device-001',
-        eventType: 'checkin',
-        eventTime: '2026-03-24T16:00:00+08:00',
-        operatorUserId: null,
-        remark: '样例签到',
-        dedupeKey: 'device-001|2026-03-24T08:00:00.000Z|checkin',
-        createdAt: '2026-03-24T16:00:01+08:00',
-      },
-    ],
-    sessions: [
-      {
-        id: 'hw-session-001',
-        studentId: 'student-001',
-        termId: 'term-2026-spring',
-        campusId: 'campus-001',
-        subject: 'math',
-        deviceId: 'device-001',
-        sourceType: 'device',
-        startTime: '2026-03-24T19:00:00+08:00',
-        endTime: '2026-03-24T19:45:00+08:00',
-        durationMinutes: 45,
-        createdBy: 'user-teacher-001',
-        remark: '样例作业时长',
-        createdAt: '2026-03-24T19:45:00+08:00',
-      },
-    ],
-    dailyStats: [
-      {
-        id: 'hw-stat-001',
-        studentId: 'student-001',
-        statDate: '2026-03-24',
-        subject: 'math',
-        totalMinutes: 45,
-        sessionCount: 1,
-        generatedAt: '2026-03-24T19:45:00+08:00',
-      },
-    ],
-  }));
-  }
-
-  private get state() { return this.store.get(); }
-
-  listDevices() { return [...this.state.devices]; }
-  listBindings() { return [...this.state.bindings]; }
-  listEvents() { return [...this.state.events]; }
-  listSessions() { return [...this.state.sessions]; }
-  listDailyStats() { return [...this.state.dailyStats]; }
-
-  getDeviceOrThrow(deviceId: string) {
-    const device = this.state.devices.find((item) => item.id === deviceId);
-    if (!device) throw new NotFoundException(`device ${deviceId} not found`);
-    return device;
-  }
-
-  getBindingOrThrow(bindingId: string) {
-    const binding = this.state.bindings.find((item) => item.id === bindingId);
-    if (!binding) throw new NotFoundException(`binding ${bindingId} not found`);
-    return binding;
-  }
-
-  createDevice(input: Omit<AttendanceDevice, 'id' | 'createdAt' | 'updatedAt'>) {
-    this.ensureUnique('serialNo', this.state.devices.some((item) => item.serialNo === input.serialNo));
-    const now = new Date().toISOString();
-    const device: AttendanceDevice = {
-      ...input,
-      id: `device-${String(this.state.devices.length + 1).padStart(3, '0')}`,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.store.update((state) => {
-      state.devices.unshift(device);
-    });
-    return device;
-  }
-
-  createBinding(input: Omit<StudentDeviceBinding, 'id' | 'createdAt' | 'updatedAt'>) {
-    const now = new Date().toISOString();
-    const binding: StudentDeviceBinding = {
-      ...input,
-      id: `binding-${String(this.state.bindings.length + 1).padStart(3, '0')}`,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.store.update((state) => {
-      state.bindings.unshift(binding);
-    });
-    return binding;
-  }
-
-  updateBinding(bindingId: string, patch: Partial<StudentDeviceBinding>) {
-    let updated!: StudentDeviceBinding;
-    this.store.update((state) => {
-      const binding = state.bindings.find((item) => item.id === bindingId);
-      if (!binding) throw new NotFoundException(`binding ${bindingId} not found`);
-      Object.assign(binding, patch, { updatedAt: new Date().toISOString() });
-      updated = binding;
-    });
-    return updated;
-  }
-
-  createEvent(input: Omit<AttendanceEvent, 'id' | 'createdAt'>) {
-    const event: AttendanceEvent = {
-      ...input,
-      id: `attendance-event-${String(this.state.events.length + 1).padStart(3, '0')}`,
-      createdAt: new Date().toISOString(),
-    };
-    this.store.update((state) => {
-      state.events.unshift(event);
-    });
-    return event;
-  }
-
-  findEventByDedupeKey(dedupeKey: string) {
-    return this.state.events.find((item) => item.dedupeKey === dedupeKey);
-  }
-
-  replaceDailyStat(record: Omit<HomeworkTimeDailyStat, 'id' | 'generatedAt'>) {
-    const existing = this.state.dailyStats.find(
-      (item) => item.studentId === record.studentId && item.statDate === record.statDate && item.subject === record.subject,
-    );
-    const now = new Date().toISOString();
-    let updated: HomeworkTimeDailyStat | undefined;
-    if (existing) {
-      this.store.update((state) => {
-        const target = state.dailyStats.find(
-          (item) => item.studentId === record.studentId && item.statDate === record.statDate && item.subject === record.subject,
-        );
-        if (!target) return;
-        Object.assign(target, record, { generatedAt: now });
-        updated = target;
-      });
-      return updated!;
-    }
-    const stat: HomeworkTimeDailyStat = {
-      ...record,
-      id: `hw-stat-${String(this.state.dailyStats.length + 1).padStart(3, '0')}`,
-      generatedAt: now,
-    };
-    this.store.update((state) => {
-      state.dailyStats.unshift(stat);
-    });
-    return stat;
-  }
-
-  createSession(input: Omit<HomeworkTimeSession, 'id' | 'createdAt'>) {
-    const session: HomeworkTimeSession = {
-      ...input,
-      id: `hw-session-${String(this.state.sessions.length + 1).padStart(3, '0')}`,
-      createdAt: new Date().toISOString(),
-    };
-    this.store.update((state) => {
-      state.sessions.unshift(session);
-    });
-    return session;
-  }
-
-  listActiveBindingsByStudent(studentId: string) {
-    return this.state.bindings.filter((item) => item.studentId === studentId && item.status === 'active');
-  }
-
-  listActiveBindingsByDevice(deviceId: string) {
-    return this.state.bindings.filter((item) => item.deviceId === deviceId && item.status === 'active');
-  }
-
-  findOverlappingBinding(input: { studentId: string; deviceId: string; boundAt: string; unboundAt?: string | null; excludeBindingId?: string }) {
-    const nextStart = new Date(input.boundAt).getTime();
-    const nextEnd = input.unboundAt ? new Date(input.unboundAt).getTime() : Number.POSITIVE_INFINITY;
-    return this.state.bindings.find((item) => {
-      if (input.excludeBindingId && item.id === input.excludeBindingId) return false;
-      if (item.studentId !== input.studentId && item.deviceId !== input.deviceId) return false;
-      const currentStart = new Date(item.boundAt).getTime();
-      const currentEnd = item.unboundAt ? new Date(item.unboundAt).getTime() : Number.POSITIVE_INFINITY;
-      return currentStart <= nextEnd && nextStart <= currentEnd;
-    });
-  }
-
-  findOverlappingSession(input: { studentId: string; startTime: string; endTime: string; subject?: string; deviceId?: string | null }) {
-    const nextStart = new Date(input.startTime).getTime();
-    const nextEnd = new Date(input.endTime).getTime();
-    return this.state.sessions.find((item) => {
-      if (item.studentId !== input.studentId) return false;
-      if (input.subject && item.subject !== input.subject) return false;
-      if (input.deviceId && item.deviceId && item.deviceId !== input.deviceId) return false;
-      const currentStart = new Date(item.startTime).getTime();
-      const currentEnd = new Date(item.endTime).getTime();
-      return currentStart < nextEnd && nextStart < currentEnd;
-    });
-  }
-
-  updateDevice(deviceId: string, patch: Partial<AttendanceDevice>) {
-    let updated!: AttendanceDevice;
-    this.store.update((state) => {
-      const device = state.devices.find((item) => item.id === deviceId);
-      if (!device) throw new NotFoundException(`device ${deviceId} not found`);
-      Object.assign(device, patch, { updatedAt: new Date().toISOString() });
-      updated = device;
-    });
-    return updated;
-  }
-
-  runInTransaction<T>(runner: () => T): T {
-    const snapshot = this.store.snapshot();
-    try {
-      return runner();
-    } catch (error) {
-      this.store.replace(snapshot);
-      throw error;
-    }
-  }
-
-  private ensureUnique(field: string, exists: boolean) {
-    if (exists) {
-      throw new ConflictException({ code: 'DATA_409', message: `${field} already exists` });
-    }
-  }
+  private readonly adapter: AttendanceRepositoryPort;
+  constructor(filePath?: string) { this.adapter = isDbPersistenceEnabled() ? new DbAttendanceRepository() : new FileAttendanceRepository(filePath); }
+  listDevices() { return this.adapter.listDevices(); } listBindings() { return this.adapter.listBindings(); } listEvents() { return this.adapter.listEvents(); } listSessions() { return this.adapter.listSessions(); } listDailyStats() { return this.adapter.listDailyStats(); }
+  getDeviceOrThrow(deviceId: string) { return this.adapter.getDeviceOrThrow(deviceId); } getBindingOrThrow(bindingId: string) { return this.adapter.getBindingOrThrow(bindingId); }
+  createDevice(input: Omit<AttendanceDevice, 'id' | 'createdAt' | 'updatedAt'>) { return this.adapter.createDevice(input); } createBinding(input: Omit<StudentDeviceBinding, 'id' | 'createdAt' | 'updatedAt'>) { return this.adapter.createBinding(input); } updateBinding(bindingId: string, patch: Partial<StudentDeviceBinding>) { return this.adapter.updateBinding(bindingId, patch); }
+  createEvent(input: Omit<AttendanceEvent, 'id' | 'createdAt'>) { return this.adapter.createEvent(input); } findEventByDedupeKey(dedupeKey: string) { return this.adapter.findEventByDedupeKey(dedupeKey); }
+  replaceDailyStat(record: Omit<HomeworkTimeDailyStat, 'id' | 'generatedAt'>) { return this.adapter.replaceDailyStat(record); } createSession(input: Omit<HomeworkTimeSession, 'id' | 'createdAt'>) { return this.adapter.createSession(input); }
+  listActiveBindingsByStudent(studentId: string) { return this.adapter.listActiveBindingsByStudent(studentId); } listActiveBindingsByDevice(deviceId: string) { return this.adapter.listActiveBindingsByDevice(deviceId); }
+  findOverlappingBinding(input: { studentId: string; deviceId: string; boundAt: string; unboundAt?: string | null; excludeBindingId?: string }) { return this.adapter.findOverlappingBinding(input); }
+  findOverlappingSession(input: { studentId: string; startTime: string; endTime: string; subject?: string; deviceId?: string | null }) { return this.adapter.findOverlappingSession(input); }
+  updateDevice(deviceId: string, patch: Partial<AttendanceDevice>) { return this.adapter.updateDevice(deviceId, patch); } runInTransaction<T>(runner: () => Promise<T> | T) { return this.adapter.runInTransaction(runner); }
 }

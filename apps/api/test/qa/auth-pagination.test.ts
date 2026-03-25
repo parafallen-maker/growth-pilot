@@ -69,10 +69,10 @@ test('QA-08 paged services keep pageNo/pageSize/total shape consistent', async (
     await fixture.growthService.listObservations(query),
     await fixture.growthService.listGoals(query),
     await fixture.growthService.listReports(query),
-    fixture.billingService.listProducts(query),
-    fixture.billingService.listContracts(query),
-    fixture.billingService.listInvoices(query),
-    fixture.billingService.listRenewals(query),
+    await fixture.billingService.listProducts(query),
+    await fixture.billingService.listContracts(query),
+    await fixture.billingService.listInvoices(query),
+    await fixture.billingService.listRenewals(query),
   ];
 
   for (const page of pages) {

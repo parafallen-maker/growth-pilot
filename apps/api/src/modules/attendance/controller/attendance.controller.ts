@@ -20,49 +20,49 @@ export class AttendanceController {
 
   @Get('devices')
   @RequirePermission('attendance:devices:view')
-  listDevices(@Query() query: DeviceQueryDto) {
-    return ok(this.attendanceService.listDevices(query));
+  async listDevices(@Query() query: DeviceQueryDto) {
+    return ok(await this.attendanceService.listDevices(query));
   }
 
   @Post('devices')
   @RequirePermission('attendance:devices:manage')
-  createDevice(@Body() payload: CreateDeviceDto) {
-    return ok(this.attendanceService.createDevice(payload));
+  async createDevice(@Body() payload: CreateDeviceDto) {
+    return ok(await this.attendanceService.createDevice(payload));
   }
 
   @Get('devices/bindings')
   @RequirePermission('attendance:devices:view')
-  listBindings(@Query() query: DeviceBindingQueryDto) {
-    return ok(this.attendanceService.listBindings(query));
+  async listBindings(@Query() query: DeviceBindingQueryDto) {
+    return ok(await this.attendanceService.listBindings(query));
   }
 
   @Post('devices/bindings')
   @RequirePermission('attendance:devices:manage')
-  createBinding(@Body() payload: CreateDeviceBindingDto) {
-    return ok(this.attendanceService.createBinding(payload));
+  async createBinding(@Body() payload: CreateDeviceBindingDto) {
+    return ok(await this.attendanceService.createBinding(payload));
   }
 
   @Patch('devices/bindings/:bindingId')
   @RequirePermission('attendance:devices:manage')
-  updateBinding(@Param('bindingId') bindingId: string, @Body() payload: UpdateDeviceBindingDto) {
-    return ok(this.attendanceService.updateBinding(bindingId, payload));
+  async updateBinding(@Param('bindingId') bindingId: string, @Body() payload: UpdateDeviceBindingDto) {
+    return ok(await this.attendanceService.updateBinding(bindingId, payload));
   }
 
   @Get('events')
   @RequirePermission('attendance:board:view')
-  listEvents(@Query() query: AttendanceEventQueryDto) {
-    return ok(this.attendanceService.listEvents(query));
+  async listEvents(@Query() query: AttendanceEventQueryDto) {
+    return ok(await this.attendanceService.listEvents(query));
   }
 
   @Post('events')
   @RequirePermission('attendance:board:manage')
-  createEvent(@Body() payload: CreateAttendanceEventDto, @Headers('idempotency-key') idempotencyKey?: string) {
-    return ok(this.attendanceService.createEvent(payload, idempotencyKey));
+  async createEvent(@Body() payload: CreateAttendanceEventDto, @Headers('idempotency-key') idempotencyKey?: string) {
+    return ok(await this.attendanceService.createEvent(payload, idempotencyKey));
   }
 
   @Get('homework-time/daily-stats')
   @RequirePermission('attendance:homework-time:view')
-  getHomeworkTimeDailyStats(@Query() query: HomeworkTimeDailyStatsQueryDto) {
-    return ok(this.attendanceService.getHomeworkTimeDailyStats(query));
+  async getHomeworkTimeDailyStats(@Query() query: HomeworkTimeDailyStatsQueryDto) {
+    return ok(await this.attendanceService.getHomeworkTimeDailyStats(query));
   }
 }

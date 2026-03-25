@@ -9,24 +9,24 @@ function createFixture() {
   return { repository, service };
 }
 
-test('attendance device/binding/event/homework-time skeleton flows work', () => {
+test('attendance device/binding/event/homework-time skeleton flows work', async () => {
   const { service } = createFixture();
 
-  const createdDevice = service.createDevice({
+  const createdDevice = await service.createDevice({
     campusId: 'campus-001',
     serialNo: 'BEACON-002',
     deviceType: 'beacon',
   });
   assert.equal(createdDevice.status, 'idle');
 
-  const createdBinding = service.createBinding({
+  const createdBinding = await service.createBinding({
     studentId: 'student-002',
     deviceId: createdDevice.id,
     createdBy: 'user-admin-001',
   });
   assert.equal(createdBinding.status, 'active');
 
-  const event = service.createEvent({
+  const event = await service.createEvent({
     studentId: 'student-002',
     campusId: 'campus-001',
     deviceId: createdDevice.id,
@@ -35,7 +35,7 @@ test('attendance device/binding/event/homework-time skeleton flows work', () => 
   });
   assert.match(event.id, /^attendance-event-/);
 
-  const replay = service.createEvent({
+  const replay = await service.createEvent({
     studentId: 'student-002',
     campusId: 'campus-001',
     deviceId: createdDevice.id,
@@ -45,7 +45,7 @@ test('attendance device/binding/event/homework-time skeleton flows work', () => 
   assert.equal(replay.id, event.id);
   assert.equal((replay as { replayed?: boolean }).replayed, true);
 
-  const session = service.createHomeworkTimeSession({
+  const session = await service.createHomeworkTimeSession({
     studentId: 'student-002',
     campusId: 'campus-001',
     termId: 'term-2026-spring',
@@ -58,7 +58,7 @@ test('attendance device/binding/event/homework-time skeleton flows work', () => 
   });
   assert.equal(session.durationMinutes, 30);
 
-  const stats = service.getHomeworkTimeDailyStats({
+  const stats = await service.getHomeworkTimeDailyStats({
     studentId: 'student-002',
     dateFrom: '2026-03-25',
     dateTo: '2026-03-25',
@@ -68,29 +68,29 @@ test('attendance device/binding/event/homework-time skeleton flows work', () => 
   assert.equal(stats.list[0]?.sessionCount, 1);
 });
 
-test('attendance binding uniqueness and explicit unbind flow are enforced', () => {
+test('attendance binding uniqueness and explicit unbind flow are enforced', async () => {
   const { service } = createFixture();
 
-  const secondDevice = service.createDevice({
+  const secondDevice = await service.createDevice({
     serialNo: 'BEACON-003',
     campusId: 'campus-001',
   });
 
-  assert.throws(() => {
-    service.createBinding({
+  await assert.rejects(async () => {
+    await service.createBinding({
       studentId: 'student-001',
       deviceId: secondDevice.id,
     });
   });
 
-  const updated = service.updateBinding('binding-001', {
+  const updated = await service.updateBinding('binding-001', {
     status: 'inactive',
     unboundAt: '2026-03-25T08:00:00+08:00',
   });
   assert.equal(updated.status, 'inactive');
   assert.ok(updated.unboundAt);
 
-  const rebound = service.createBinding({
+  const rebound = await service.createBinding({
     studentId: 'student-001',
     deviceId: secondDevice.id,
   });
@@ -98,10 +98,10 @@ test('attendance binding uniqueness and explicit unbind flow are enforced', () =
 });
 
 
-test('attendance session overlap/device-campus constraints are enforced', () => {
+test('attendance session overlap/device-campus constraints are enforced', async () => {
   const service = new AttendanceService(new AttendanceRepository());
 
-  assert.throws(() =>
+  await assert.rejects(() =>
     service.createEvent({
       studentId: 'student-001',
       campusId: 'campus-002',
@@ -111,7 +111,7 @@ test('attendance session overlap/device-campus constraints are enforced', () => 
     }),
   );
 
-  const session = service.createHomeworkTimeSession({
+  const session = await service.createHomeworkTimeSession({
     studentId: 'student-001',
     campusId: 'campus-001',
     termId: 'term-2026-spring',
@@ -123,7 +123,7 @@ test('attendance session overlap/device-campus constraints are enforced', () => 
   });
   assert.match(session.id, /^hw-session-/);
 
-  assert.throws(() =>
+  await assert.rejects(() =>
     service.createHomeworkTimeSession({
       studentId: 'student-001',
       campusId: 'campus-001',
@@ -136,7 +136,7 @@ test('attendance session overlap/device-campus constraints are enforced', () => 
     }),
   );
 
-  assert.throws(() =>
+  await assert.rejects(() =>
     service.createHomeworkTimeSession({
       studentId: 'student-002',
       campusId: 'campus-001',

@@ -16,9 +16,9 @@ import { CommunicationRepository } from '../repository/communication.repository'
 export class CommunicationService {
   constructor(private readonly communicationRepository: CommunicationRepository) {}
 
-  listRecords(query: CommunicationQueryDto): PageResult<CommunicationRecord> {
+  async listRecords(query: CommunicationQueryDto): Promise<PageResult<CommunicationRecord>> {
     const { pageNo, pageSize } = normalizePage(query);
-    const filtered = this.communicationRepository.listRecords().filter((item) => {
+    const filtered = (await this.communicationRepository.listRecords()).filter((item) => {
       if (query.familyId && item.familyId !== query.familyId) return false;
       if (query.studentId && item.studentId !== query.studentId) return false;
       if (query.channel && item.channel !== query.channel) return false;
@@ -32,14 +32,14 @@ export class CommunicationService {
     return this.paginate(filtered, pageNo, pageSize);
   }
 
-  getRecord(recordId: string) {
-    const record = this.communicationRepository.findRecordById(recordId);
+  async getRecord(recordId: string) {
+    const record = await this.communicationRepository.findRecordById(recordId);
     if (!record) throw new NotFoundException(`communication record ${recordId} not found`);
     return record;
   }
 
-  createRecord(payload: CreateCommunicationRecordDto) {
-    return this.communicationRepository.createRecord({
+  async createRecord(payload: CreateCommunicationRecordDto) {
+    return await this.communicationRepository.createRecord({
       familyId: payload.familyId,
       studentId: payload.studentId,
       channel: payload.channel,
@@ -50,9 +50,9 @@ export class CommunicationService {
     });
   }
 
-  listTemplates(query: MessageTemplateQueryDto): PageResult<MessageTemplate> {
+  async listTemplates(query: MessageTemplateQueryDto): Promise<PageResult<MessageTemplate>> {
     const { pageNo, pageSize } = normalizePage(query);
-    const filtered = this.communicationRepository.listTemplates().filter((item) => {
+    const filtered = (await this.communicationRepository.listTemplates()).filter((item) => {
       if (query.status && item.status !== query.status) return false;
       if (query.channel && item.channel !== query.channel) return false;
       if (query.keyword) {
@@ -65,8 +65,8 @@ export class CommunicationService {
     return this.paginate(filtered, pageNo, pageSize);
   }
 
-  createTemplate(payload: CreateMessageTemplateDto) {
-    return this.communicationRepository.createTemplate({
+  async createTemplate(payload: CreateMessageTemplateDto) {
+    return await this.communicationRepository.createTemplate({
       code: payload.code,
       name: payload.name,
       channel: payload.channel,
@@ -77,13 +77,13 @@ export class CommunicationService {
     });
   }
 
-  updateTemplate(templateId: string, payload: UpdateMessageTemplateDto) {
-    return this.communicationRepository.updateTemplate(templateId, payload);
+  async updateTemplate(templateId: string, payload: UpdateMessageTemplateDto) {
+    return await this.communicationRepository.updateTemplate(templateId, payload);
   }
 
-  listMessageTasks(query: MessageTaskQueryDto): PageResult<MessageTask> {
+  async listMessageTasks(query: MessageTaskQueryDto): Promise<PageResult<MessageTask>> {
     const { pageNo, pageSize } = normalizePage(query);
-    const filtered = this.communicationRepository.listMessageTasks().filter((item) => {
+    const filtered = (await this.communicationRepository.listMessageTasks()).filter((item) => {
       if (query.familyId && item.familyId !== query.familyId) return false;
       if (query.studentId && item.studentId !== query.studentId) return false;
       if (query.status && item.status !== query.status) return false;
@@ -98,9 +98,9 @@ export class CommunicationService {
     return this.paginate(filtered, pageNo, pageSize);
   }
 
-  createMessageTask(payload: CreateMessageTaskDto) {
+  async createMessageTask(payload: CreateMessageTaskDto) {
     const status = this.resolveInitialStatus(payload.status, payload.scheduledAt);
-    return this.communicationRepository.createMessageTask({
+    return await this.communicationRepository.createMessageTask({
       templateId: payload.templateId,
       familyId: payload.familyId,
       studentId: payload.studentId,
@@ -115,7 +115,7 @@ export class CommunicationService {
     });
   }
 
-  updateMessageTaskStatus(taskId: string, payload: UpdateMessageTaskStatusDto) {
+  async updateMessageTaskStatus(taskId: string, payload: UpdateMessageTaskStatusDto) {
     const patch: Partial<MessageTask> = {
       status: payload.status,
       failureReason: payload.failureReason,
@@ -136,7 +136,7 @@ export class CommunicationService {
       patch.failureReason = undefined;
     }
 
-    return this.communicationRepository.updateMessageTask(taskId, patch);
+    return await this.communicationRepository.updateMessageTask(taskId, patch);
   }
 
   private resolveInitialStatus(status: MessageTaskStatus | undefined, scheduledAt?: string): MessageTaskStatus {

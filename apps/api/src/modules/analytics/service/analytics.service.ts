@@ -10,14 +10,14 @@ export class AnalyticsService {
   constructor(private readonly analyticsRepository: AnalyticsRepository) {}
 
   async getOverview(query: AnalyticsQueryDto) {
-    const contracts = this.filterContractsByScope(query);
-    const invoices = this.filterInvoicesByScope(query);
-    const payments = this.filterPaymentsByScope(query);
+    const contracts = await this.filterContractsByScope(query);
+    const invoices = await this.filterInvoicesByScope(query);
+    const payments = await this.filterPaymentsByScope(query);
     const homework = await this.filterHomeworkSubmissionsByScope(query);
-    const attendanceEvents = this.filterAttendanceEventsByScope(query);
-    const communicationRecords = this.filterCommunicationRecordsByScope(query);
-    const messageTasks = this.filterMessageTasksByScope(query);
-    const renewals = this.filterRenewalsByScope(query);
+    const attendanceEvents = await this.filterAttendanceEventsByScope(query);
+    const communicationRecords = await this.filterCommunicationRecordsByScope(query);
+    const messageTasks = await this.filterMessageTasksByScope(query);
+    const renewals = await this.filterRenewalsByScope(query);
 
     const receivableCents = invoices.reduce((sum, item) => sum + item.amountCents, 0);
     const receivedCents = payments.filter((item) => item.status === 'success').reduce((sum, item) => sum + item.paidAmountCents, 0);
@@ -42,8 +42,8 @@ export class AnalyticsService {
 
   async getTeaching(query: AnalyticsQueryDto) {
     const homework = await this.filterHomeworkSubmissionsByScope(query);
-    const homeworkDailyStats = this.filterHomeworkDailyStatsByScope(query);
-    const communicationRecords = this.filterCommunicationRecordsByScope(query);
+    const homeworkDailyStats = await this.filterHomeworkDailyStatsByScope(query);
+    const communicationRecords = await this.filterCommunicationRecordsByScope(query);
 
     const teacherIds = new Set(homework.map((item) => item.teacherId).filter(Boolean) as string[]);
     if (query.teacherId) teacherIds.add(query.teacherId);
@@ -99,13 +99,13 @@ export class AnalyticsService {
   }
 
   async getBilling(query: AnalyticsQueryDto) {
-    const contracts = this.filterContractsByScope(query);
-    const invoices = this.filterInvoicesByScope(query);
-    const payments = this.filterPaymentsByScope(query);
-    const refunds = this.filterRefundsByScope(query);
-    const renewals = this.filterRenewalsByScope(query);
-    const records = this.filterCommunicationRecordsByScope(query);
-    const tasks = this.filterMessageTasksByScope(query);
+    const contracts = await this.filterContractsByScope(query);
+    const invoices = await this.filterInvoicesByScope(query);
+    const payments = await this.filterPaymentsByScope(query);
+    const refunds = await this.filterRefundsByScope(query);
+    const renewals = await this.filterRenewalsByScope(query);
+    const records = await this.filterCommunicationRecordsByScope(query);
+    const tasks = await this.filterMessageTasksByScope(query);
 
     const paymentById = new Map(payments.map((item) => [item.id, item]));
     const receivedByInvoiceId = new Map<string, number>();
@@ -132,20 +132,20 @@ export class AnalyticsService {
     };
   }
 
-  private filterPaymentsByScope(query: AnalyticsQueryDto) {
-    const invoices = this.filterInvoicesByScope(query);
+  private async filterPaymentsByScope(query: AnalyticsQueryDto) {
+    const invoices = await this.filterInvoicesByScope(query);
     const invoiceIds = new Set(invoices.map((item) => item.id));
-    return this.analyticsRepository.listPayments().filter((item) => invoiceIds.has(item.invoiceId) && this.matchDate(item.paymentTime.slice(0, 10), query.dateFrom, query.dateTo));
+    return (await this.analyticsRepository.listPayments()).filter((item) => invoiceIds.has(item.invoiceId) && this.matchDate(item.paymentTime.slice(0, 10), query.dateFrom, query.dateTo));
   }
 
-  private filterRefundsByScope(query: AnalyticsQueryDto) {
-    const payments = this.filterPaymentsByScope(query);
+  private async filterRefundsByScope(query: AnalyticsQueryDto) {
+    const payments = await this.filterPaymentsByScope(query);
     const paymentIds = new Set(payments.map((item) => item.id));
-    return this.analyticsRepository.listRefunds().filter((item) => paymentIds.has(item.paymentId) && this.matchDate(item.refundTime.slice(0, 10), query.dateFrom, query.dateTo));
+    return (await this.analyticsRepository.listRefunds()).filter((item) => paymentIds.has(item.paymentId) && this.matchDate(item.refundTime.slice(0, 10), query.dateFrom, query.dateTo));
   }
 
-  private filterRenewalsByScope(query: AnalyticsQueryDto): RenewalRecord[] {
-    return this.analyticsRepository.listRenewals().filter((item) => {
+  private async filterRenewalsByScope(query: AnalyticsQueryDto): Promise<RenewalRecord[]> {
+    return (await this.analyticsRepository.listRenewals()).filter((item) => {
       if (query.campusId && item.campusId !== query.campusId) return false;
       if (query.termId && item.termId !== query.termId) return false;
       const date = item.expectedEndDate ?? item.nextFollowUpAt?.slice(0, 10) ?? null;
@@ -153,17 +153,17 @@ export class AnalyticsService {
     });
   }
 
-  private filterContractsByScope(query: AnalyticsQueryDto) {
-    return this.analyticsRepository.listContracts().filter((item) => {
+  private async filterContractsByScope(query: AnalyticsQueryDto) {
+    return (await this.analyticsRepository.listContracts()).filter((item) => {
       if (query.campusId && item.campusId !== query.campusId) return false;
       if (query.termId && item.termId !== query.termId) return false;
       return this.matchDate(item.startDate, query.dateFrom, query.dateTo);
     });
   }
 
-  private filterInvoicesByScope(query: AnalyticsQueryDto) {
-    const contractById = new Map(this.analyticsRepository.listContracts().map((item) => [item.id, item]));
-    return this.analyticsRepository.listInvoices().filter((item) => {
+  private async filterInvoicesByScope(query: AnalyticsQueryDto) {
+    const contractById = new Map((await this.analyticsRepository.listContracts()).map((item) => [item.id, item]));
+    return (await this.analyticsRepository.listInvoices()).filter((item) => {
       const contract = item.contractId ? contractById.get(item.contractId) : undefined;
       if (query.campusId && contract?.campusId !== query.campusId) return false;
       if (query.termId && contract?.termId !== query.termId) return false;
@@ -172,38 +172,38 @@ export class AnalyticsService {
   }
 
   private async filterHomeworkSubmissionsByScope(query: AnalyticsQueryDto) {
-    const contractStudents = new Set(this.filterContractsByScope(query).map((item) => item.studentId));
+    const contractStudents = new Set((await this.filterContractsByScope(query)).map((item) => item.studentId));
     return (await this.analyticsRepository.listHomeworkSubmissions()).filter((item) => {
       if (contractStudents.size && !contractStudents.has(item.studentId)) return false;
       return this.matchDate(item.homeworkDate, query.dateFrom, query.dateTo) && (!query.teacherId || item.teacherId === query.teacherId);
     });
   }
 
-  private filterAttendanceEventsByScope(query: AnalyticsQueryDto) {
-    const contractStudents = new Set(this.filterContractsByScope(query).map((item) => item.studentId));
-    return this.analyticsRepository.listAttendanceEvents().filter((item) => {
+  private async filterAttendanceEventsByScope(query: AnalyticsQueryDto) {
+    const contractStudents = new Set((await this.filterContractsByScope(query)).map((item) => item.studentId));
+    return (await this.analyticsRepository.listAttendanceEvents()).filter((item) => {
       if (query.campusId && item.campusId !== query.campusId) return false;
       if (contractStudents.size && !contractStudents.has(item.studentId)) return false;
       return this.matchDate(item.eventTime.slice(0, 10), query.dateFrom, query.dateTo);
     });
   }
 
-  private filterHomeworkDailyStatsByScope(query: AnalyticsQueryDto) {
-    const contractStudents = new Set(this.filterContractsByScope(query).map((item) => item.studentId));
-    return this.analyticsRepository.listHomeworkDailyStats().filter((item) => (!contractStudents.size || contractStudents.has(item.studentId)) && this.matchDate(item.statDate, query.dateFrom, query.dateTo));
+  private async filterHomeworkDailyStatsByScope(query: AnalyticsQueryDto) {
+    const contractStudents = new Set((await this.filterContractsByScope(query)).map((item) => item.studentId));
+    return (await this.analyticsRepository.listHomeworkDailyStats()).filter((item) => (!contractStudents.size || contractStudents.has(item.studentId)) && this.matchDate(item.statDate, query.dateFrom, query.dateTo));
   }
 
-  private filterCommunicationRecordsByScope(query: AnalyticsQueryDto) {
-    const contractStudents = new Set(this.filterContractsByScope(query).map((item) => item.studentId));
-    return this.analyticsRepository.listCommunicationRecords().filter((item) => (!item.studentId || !contractStudents.size || contractStudents.has(item.studentId)) && this.matchDate(item.createdAt.slice(0, 10), query.dateFrom, query.dateTo));
+  private async filterCommunicationRecordsByScope(query: AnalyticsQueryDto) {
+    const contractStudents = new Set((await this.filterContractsByScope(query)).map((item) => item.studentId));
+    return (await this.analyticsRepository.listCommunicationRecords()).filter((item) => (!item.studentId || !contractStudents.size || contractStudents.has(item.studentId)) && this.matchDate(item.createdAt.slice(0, 10), query.dateFrom, query.dateTo));
   }
 
-  private filterMessageTasksByScope(query: AnalyticsQueryDto) {
-    const contractStudents = new Set(this.filterContractsByScope(query).map((item) => item.studentId));
-    return this.analyticsRepository.listMessageTasks().filter((item) => (!item.studentId || !contractStudents.size || contractStudents.has(item.studentId)) && this.matchDate((item.sentAt ?? item.scheduledAt ?? item.createdAt).slice(0, 10), query.dateFrom, query.dateTo));
+  private async filterMessageTasksByScope(query: AnalyticsQueryDto) {
+    const contractStudents = new Set((await this.filterContractsByScope(query)).map((item) => item.studentId));
+    return (await this.analyticsRepository.listMessageTasks()).filter((item) => (!item.studentId || !contractStudents.size || contractStudents.has(item.studentId)) && this.matchDate((item.sentAt ?? item.scheduledAt ?? item.createdAt).slice(0, 10), query.dateFrom, query.dateTo));
   }
 
-  private countAttendanceAnomalies(events: ReturnType<AnalyticsRepository['listAttendanceEvents']>) {
+  private countAttendanceAnomalies(events: Awaited<ReturnType<AnalyticsRepository['listAttendanceEvents']>>) {
     const grouped = new Map<string, Set<string>>();
     for (const event of events) {
       const key = `${event.studentId}|${event.eventTime.slice(0, 10)}`;

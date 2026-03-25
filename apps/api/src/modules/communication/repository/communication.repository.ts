@@ -1,141 +1,57 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { asc, eq } from 'drizzle-orm';
 import type { CommunicationRecord, MessageTask, MessageTemplate } from '@growthpilot/schema/index';
 import { PersistentJsonStore } from '../../../common/persistent-json.store';
+import { createDb, dbSchema } from '../../../db';
+import { isDbPersistenceEnabled } from '../../../shared/persistence/adapter';
 
-interface CommunicationState {
-  records: CommunicationRecord[];
-  templates: MessageTemplate[];
-  messageTasks: MessageTask[];
+interface CommunicationState { records: CommunicationRecord[]; templates: MessageTemplate[]; messageTasks: MessageTask[]; }
+interface CommunicationRepositoryPort {
+  listRecords(): Promise<CommunicationRecord[]>; findRecordById(recordId: string): Promise<CommunicationRecord | undefined>; createRecord(input: Omit<CommunicationRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<CommunicationRecord>;
+  listTemplates(): Promise<MessageTemplate[]>; findTemplateByCode(code: string): Promise<MessageTemplate | undefined>; createTemplate(input: Omit<MessageTemplate, 'id' | 'createdAt' | 'updatedAt'>): Promise<MessageTemplate>; updateTemplate(templateId: string, patch: Partial<MessageTemplate>): Promise<MessageTemplate>;
+  listMessageTasks(): Promise<MessageTask[]>; createMessageTask(input: Omit<MessageTask, 'id' | 'createdAt' | 'updatedAt'>): Promise<MessageTask>; updateMessageTask(taskId: string, patch: Partial<MessageTask>): Promise<MessageTask>;
 }
-
+const createInitialState = (): CommunicationState => ({ records: [{ id: 'comm-record-001', familyId: 'family-001', studentId: 'student-001', channel: 'wechat', direction: 'outbound', topic: '周报沟通', summary: '已与家长同步本周专注度提升情况。', nextAction: '周五继续跟进家庭任务反馈。', createdAt: '2026-03-24T19:30:00+08:00', updatedAt: '2026-03-24T19:30:00+08:00' }], templates: [{ id: 'msg-template-001', code: 'weekly-report', name: '周报发送模板', channel: 'wechat', subject: '本周成长简报', bodyTemplate: '您好，{{studentName}} 本周表现：{{summary}}', variables: ['studentName', 'summary'], status: 'active', createdAt: '2026-03-24T19:00:00+08:00', updatedAt: '2026-03-24T19:00:00+08:00' }], messageTasks: [{ id: 'msg-task-001', templateId: 'msg-template-001', familyId: 'family-001', studentId: 'student-001', channel: 'wechat', subject: '本周成长简报', body: '您好，小明本周表现稳定，专注度明显提升。', status: 'draft', createdAt: '2026-03-24T19:10:00+08:00', updatedAt: '2026-03-24T19:10:00+08:00' }, { id: 'msg-task-002', templateId: 'msg-template-001', familyId: 'family-002', studentId: 'student-002', channel: 'wechat', subject: '账单提醒', body: '请查收本期账单。', status: 'failed', scheduledAt: '2026-03-24T20:00:00+08:00', failureReason: 'wechat api timeout', createdAt: '2026-03-24T19:20:00+08:00', updatedAt: '2026-03-24T20:01:00+08:00' }] });
+class FileCommunicationRepository implements CommunicationRepositoryPort {
+  private readonly store: PersistentJsonStore<CommunicationState>;
+  constructor(filePath = '.data/communication.json') { this.store = new PersistentJsonStore(filePath, createInitialState); }
+  private get state() { return this.store.get(); }
+  async listRecords() { return [...this.state.records]; }
+  async findRecordById(recordId: string) { return this.state.records.find((item) => item.id === recordId); }
+  async createRecord(input: Omit<CommunicationRecord, 'id' | 'createdAt' | 'updatedAt'>) { let created!: CommunicationRecord; this.store.update((state) => { const now = new Date().toISOString(); created = { ...input, id: `comm-record-${String(state.records.length + 1).padStart(3, '0')}`, createdAt: now, updatedAt: now }; state.records.unshift(created); }); return created; }
+  async listTemplates() { return [...this.state.templates]; }
+  async findTemplateByCode(code: string) { return this.state.templates.find((item) => item.code === code); }
+  async createTemplate(input: Omit<MessageTemplate, 'id' | 'createdAt' | 'updatedAt'>) { let created!: MessageTemplate; this.store.update((state) => { if (state.templates.some((item) => item.code === input.code)) throw new ConflictException({ code: 'DATA_409', message: 'template code already exists' }); const now = new Date().toISOString(); created = { ...input, id: `msg-template-${String(state.templates.length + 1).padStart(3, '0')}`, createdAt: now, updatedAt: now }; state.templates.unshift(created); }); return created; }
+  async updateTemplate(templateId: string, patch: Partial<MessageTemplate>) { let updated!: MessageTemplate; this.store.update((state) => { const template = state.templates.find((item) => item.id === templateId); if (!template) throw new NotFoundException(`message template ${templateId} not found`); if (patch.code && patch.code !== template.code && state.templates.some((item) => item.code === patch.code)) throw new ConflictException({ code: 'DATA_409', message: 'template code already exists' }); Object.assign(template, patch, { updatedAt: new Date().toISOString() }); updated = template; }); return updated; }
+  async listMessageTasks() { return [...this.state.messageTasks]; }
+  async createMessageTask(input: Omit<MessageTask, 'id' | 'createdAt' | 'updatedAt'>) { let created!: MessageTask; this.store.update((state) => { const now = new Date().toISOString(); created = { ...input, id: `msg-task-${String(state.messageTasks.length + 1).padStart(3, '0')}`, createdAt: now, updatedAt: now }; state.messageTasks.unshift(created); }); return created; }
+  async updateMessageTask(taskId: string, patch: Partial<MessageTask>) { let updated!: MessageTask; this.store.update((state) => { const task = state.messageTasks.find((item) => item.id === taskId); if (!task) throw new NotFoundException(`message task ${taskId} not found`); Object.assign(task, patch, { updatedAt: new Date().toISOString() }); updated = task; }); return updated; }
+}
+class DbCommunicationRepository implements CommunicationRepositoryPort {
+  private readonly db = createDb();
+  async listRecords() { const rows = await this.db.select().from(dbSchema.communicationRecords).orderBy(asc(dbSchema.communicationRecords.createdAt)); return rows.map((row) => ({ id: row.id, familyId: row.familyId, studentId: row.studentId ?? null, channel: row.channel, direction: row.direction, topic: row.topic ?? undefined, summary: row.summary, nextAction: row.nextAction ?? undefined, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() })); }
+  async findRecordById(recordId: string) { return (await this.listRecords()).find((item) => item.id === recordId); }
+  async createRecord(input: Omit<CommunicationRecord, 'id' | 'createdAt' | 'updatedAt'>) { const [row] = await this.db.insert(dbSchema.communicationRecords).values({ familyId: input.familyId, studentId: input.studentId ?? null, channel: input.channel, direction: input.direction, topic: input.topic ?? null, summary: input.summary, nextAction: input.nextAction ?? null, createdAt: new Date(), updatedAt: new Date() }).returning(); return (await this.findRecordById(row.id))!; }
+  async listTemplates() { const rows = await this.db.select().from(dbSchema.messageTemplates).orderBy(asc(dbSchema.messageTemplates.createdAt)); return rows.map((row) => ({ id: row.id, code: row.code, name: row.name, channel: row.channel, subject: row.subjectTemplate ?? undefined, bodyTemplate: row.bodyTemplate, variables: [], status: row.active === 'true' ? 'active' : 'inactive', createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() })); }
+  async findTemplateByCode(code: string) { return (await this.listTemplates()).find((item) => item.code === code); }
+  async createTemplate(input: Omit<MessageTemplate, 'id' | 'createdAt' | 'updatedAt'>) { const [row] = await this.db.insert(dbSchema.messageTemplates).values({ code: input.code, name: input.name, channel: input.channel, subjectTemplate: input.subject ?? null, bodyTemplate: input.bodyTemplate, active: input.status === 'active' ? 'true' : 'false', createdAt: new Date(), updatedAt: new Date() }).returning(); return (await this.listTemplates()).find((item) => item.id === row.id)!; }
+  async updateTemplate(templateId: string, patch: Partial<MessageTemplate>) { await this.db.update(dbSchema.messageTemplates).set({ code: patch.code, name: patch.name, channel: patch.channel, subjectTemplate: patch.subject, bodyTemplate: patch.bodyTemplate, active: patch.status ? (patch.status === 'active' ? 'true' : 'false') : undefined, updatedAt: new Date() }).where(eq(dbSchema.messageTemplates.id, templateId)); const template = (await this.listTemplates()).find((item) => item.id === templateId); if (!template) throw new NotFoundException(`message template ${templateId} not found`); return template; }
+  async listMessageTasks() { const rows = await this.db.select().from(dbSchema.messageTasks).orderBy(asc(dbSchema.messageTasks.createdAt)); return rows.map((row) => ({ id: row.id, templateId: row.templateId ?? null, familyId: row.familyId, studentId: row.studentId ?? null, channel: row.channel, subject: row.subject ?? undefined, body: row.body, status: row.status as MessageTask['status'], scheduledAt: row.scheduledAt?.toISOString(), sentAt: row.sentAt?.toISOString(), failureReason: row.errorMessage ?? undefined, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() })); }
+  async createMessageTask(input: Omit<MessageTask, 'id' | 'createdAt' | 'updatedAt'>) { const [row] = await this.db.insert(dbSchema.messageTasks).values({ templateId: input.templateId ?? null, familyId: input.familyId, studentId: input.studentId ?? null, channel: input.channel, subject: input.subject ?? null, body: input.body, status: input.status, scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null, sentAt: input.sentAt ? new Date(input.sentAt) : null, errorMessage: input.failureReason ?? null, createdAt: new Date(), updatedAt: new Date() }).returning(); return (await this.listMessageTasks()).find((item) => item.id === row.id)!; }
+  async updateMessageTask(taskId: string, patch: Partial<MessageTask>) { await this.db.update(dbSchema.messageTasks).set({ status: patch.status, subject: patch.subject, body: patch.body, scheduledAt: patch.scheduledAt === undefined ? undefined : (patch.scheduledAt ? new Date(patch.scheduledAt) : null), sentAt: patch.sentAt === undefined ? undefined : (patch.sentAt ? new Date(patch.sentAt) : null), errorMessage: patch.failureReason === undefined ? undefined : patch.failureReason, updatedAt: new Date() }).where(eq(dbSchema.messageTasks.id, taskId)); const task = (await this.listMessageTasks()).find((item) => item.id === taskId); if (!task) throw new NotFoundException(`message task ${taskId} not found`); return task; }
+}
 @Injectable()
 export class CommunicationRepository {
-  private readonly store: PersistentJsonStore<CommunicationState>;
-
-  constructor() {
-    this.store = new PersistentJsonStore('.data/communication.json', () => ({
-      records: [
-        {
-          id: 'comm-record-001',
-          familyId: 'family-001',
-          studentId: 'student-001',
-          channel: 'wechat',
-          direction: 'outbound',
-          topic: '周报沟通',
-          summary: '已与家长同步本周专注度提升情况。',
-          nextAction: '周五继续跟进家庭任务反馈。',
-          createdAt: '2026-03-24T19:30:00+08:00',
-          updatedAt: '2026-03-24T19:30:00+08:00',
-        },
-      ],
-      templates: [
-        {
-          id: 'msg-template-001',
-          code: 'weekly-report',
-          name: '周报发送模板',
-          channel: 'wechat',
-          subject: '本周成长简报',
-          bodyTemplate: '您好，{{studentName}} 本周表现：{{summary}}',
-          variables: ['studentName', 'summary'],
-          status: 'active',
-          createdAt: '2026-03-24T19:00:00+08:00',
-          updatedAt: '2026-03-24T19:00:00+08:00',
-        },
-      ],
-      messageTasks: [
-        {
-          id: 'msg-task-001',
-          templateId: 'msg-template-001',
-          familyId: 'family-001',
-          studentId: 'student-001',
-          channel: 'wechat',
-          subject: '本周成长简报',
-          body: '您好，小明本周表现稳定，专注度明显提升。',
-          status: 'draft',
-          createdAt: '2026-03-24T19:10:00+08:00',
-          updatedAt: '2026-03-24T19:10:00+08:00',
-        },
-        {
-          id: 'msg-task-002',
-          templateId: 'msg-template-001',
-          familyId: 'family-002',
-          studentId: 'student-002',
-          channel: 'wechat',
-          subject: '账单提醒',
-          body: '请查收本期账单。',
-          status: 'failed',
-          scheduledAt: '2026-03-24T20:00:00+08:00',
-          failureReason: 'wechat api timeout',
-          createdAt: '2026-03-24T19:20:00+08:00',
-          updatedAt: '2026-03-24T20:01:00+08:00',
-        },
-      ],
-    }));
-  }
-
-  private get state() { return this.store.get(); }
-
-  listRecords() { return [...this.state.records]; }
-  findRecordById(recordId: string) { return this.state.records.find((item) => item.id === recordId); }
-
-  createRecord(input: Omit<CommunicationRecord, 'id' | 'createdAt' | 'updatedAt'>) {
-    let created!: CommunicationRecord;
-    this.store.update((state) => {
-      const now = new Date().toISOString();
-      created = { ...input, id: `comm-record-${String(state.records.length + 1).padStart(3, '0')}`, createdAt: now, updatedAt: now };
-      state.records.unshift(created);
-    });
-    return created;
-  }
-
-  listTemplates() { return [...this.state.templates]; }
-  findTemplateByCode(code: string) { return this.state.templates.find((item) => item.code === code); }
-
-  createTemplate(input: Omit<MessageTemplate, 'id' | 'createdAt' | 'updatedAt'>) {
-    let created!: MessageTemplate;
-    this.store.update((state) => {
-      if (state.templates.some((item) => item.code === input.code)) throw new ConflictException({ code: 'DATA_409', message: 'template code already exists' });
-      const now = new Date().toISOString();
-      created = { ...input, id: `msg-template-${String(state.templates.length + 1).padStart(3, '0')}`, createdAt: now, updatedAt: now };
-      state.templates.unshift(created);
-    });
-    return created;
-  }
-
-  updateTemplate(templateId: string, patch: Partial<MessageTemplate>) {
-    let updated!: MessageTemplate;
-    this.store.update((state) => {
-      const template = state.templates.find((item) => item.id === templateId);
-      if (!template) throw new NotFoundException(`message template ${templateId} not found`);
-      if (patch.code && patch.code !== template.code && state.templates.some((item) => item.code === patch.code)) {
-        throw new ConflictException({ code: 'DATA_409', message: 'template code already exists' });
-      }
-      Object.assign(template, patch, { updatedAt: new Date().toISOString() });
-      updated = template;
-    });
-    return updated;
-  }
-
-  listMessageTasks() { return [...this.state.messageTasks]; }
-
-  createMessageTask(input: Omit<MessageTask, 'id' | 'createdAt' | 'updatedAt'>) {
-    let created!: MessageTask;
-    this.store.update((state) => {
-      const now = new Date().toISOString();
-      created = { ...input, id: `msg-task-${String(state.messageTasks.length + 1).padStart(3, '0')}`, createdAt: now, updatedAt: now };
-      state.messageTasks.unshift(created);
-    });
-    return created;
-  }
-
-  updateMessageTask(taskId: string, patch: Partial<MessageTask>) {
-    let updated!: MessageTask;
-    this.store.update((state) => {
-      const task = state.messageTasks.find((item) => item.id === taskId);
-      if (!task) throw new NotFoundException(`message task ${taskId} not found`);
-      Object.assign(task, patch, { updatedAt: new Date().toISOString() });
-      updated = task;
-    });
-    return updated;
-  }
+  private readonly adapter: CommunicationRepositoryPort;
+  constructor(filePath?: string) { this.adapter = isDbPersistenceEnabled() ? new DbCommunicationRepository() : new FileCommunicationRepository(filePath); }
+  listRecords() { return this.adapter.listRecords(); }
+  findRecordById(recordId: string) { return this.adapter.findRecordById(recordId); }
+  createRecord(input: Omit<CommunicationRecord, 'id' | 'createdAt' | 'updatedAt'>) { return this.adapter.createRecord(input); }
+  listTemplates() { return this.adapter.listTemplates(); }
+  findTemplateByCode(code: string) { return this.adapter.findTemplateByCode(code); }
+  createTemplate(input: Omit<MessageTemplate, 'id' | 'createdAt' | 'updatedAt'>) { return this.adapter.createTemplate(input); }
+  updateTemplate(templateId: string, patch: Partial<MessageTemplate>) { return this.adapter.updateTemplate(templateId, patch); }
+  listMessageTasks() { return this.adapter.listMessageTasks(); }
+  createMessageTask(input: Omit<MessageTask, 'id' | 'createdAt' | 'updatedAt'>) { return this.adapter.createMessageTask(input); }
+  updateMessageTask(taskId: string, patch: Partial<MessageTask>) { return this.adapter.updateMessageTask(taskId, patch); }
 }

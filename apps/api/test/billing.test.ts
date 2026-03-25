@@ -13,13 +13,13 @@ function createFixture() {
   return { repository, service };
 }
 
-test('billing product / contract / invoice / payment / refund skeleton flows work', () => {
+test('billing product / contract / invoice / payment / refund skeleton flows work', async () => {
   const { service } = createFixture();
 
-  const products = service.listProducts({ pageNo: 1, pageSize: 20, status: 'active' });
+  const products = await service.listProducts({ pageNo: 1, pageSize: 20, status: 'active' });
   assert.equal(products.page.total, 1);
 
-  const product = service.createProduct({
+  const product = await service.createProduct({
     code: 'HW-MONTH-001',
     name: '晚托月包',
     category: 'homework',
@@ -29,7 +29,7 @@ test('billing product / contract / invoice / payment / refund skeleton flows wor
   });
   assert.equal(product.code, 'HW-MONTH-001');
 
-  const contract = service.createContract({
+  const contract = await service.createContract({
     contractNo: 'CT2026030002',
     campusId: 'campus-001',
     familyId: 'family-001',
@@ -49,11 +49,11 @@ test('billing product / contract / invoice / payment / refund skeleton flows wor
   });
   assert.equal(contract.contractNo, 'CT2026030002');
 
-  const contractDetail = service.getContract(contract.id);
+  const contractDetail = await service.getContract(contract.id);
   assert.equal(contractDetail.items.length, 1);
   assert.equal(contractDetail.contract.payableAmountCents, 230000);
 
-  const invoice = service.createInvoice({
+  const invoice = await service.createInvoice({
     invoiceNo: 'IV202603240001',
     contractId: contract.id,
     familyId: 'family-001',
@@ -75,7 +75,7 @@ test('billing product / contract / invoice / payment / refund skeleton flows wor
   });
   assert.equal(invoice.invoiceNo, 'IV202603240001');
 
-  const payment = service.createPayment(
+  const payment = await service.createPayment(
     invoice.id,
     {
       paymentNo: 'PM202603240001',
@@ -88,7 +88,7 @@ test('billing product / contract / invoice / payment / refund skeleton flows wor
   );
   assert.equal(payment.status, 'success');
 
-  const paymentReplay = service.createPayment(
+  const paymentReplay = await service.createPayment(
     invoice.id,
     {
       paymentNo: 'PM202603240099',
@@ -101,10 +101,10 @@ test('billing product / contract / invoice / payment / refund skeleton flows wor
   assert.equal(paymentReplay.paymentId, payment.paymentId);
   assert.equal(paymentReplay.replayed, true);
 
-  const paymentDetail = service.getPayment(payment.paymentId);
+  const paymentDetail = await service.getPayment(payment.paymentId);
   assert.equal(paymentDetail.invoice.status, 'partial');
 
-  const refund = service.createRefund(payment.paymentId, {
+  const refund = await service.createRefund(payment.paymentId, {
     refundNo: 'RF202603240001',
     refundAmountCents: 50000,
     refundTime: '2026-03-24T12:00:00+08:00',
@@ -112,15 +112,15 @@ test('billing product / contract / invoice / payment / refund skeleton flows wor
   });
   assert.equal(refund.status, 'success');
 
-  const refundDetail = service.getRefund(refund.refundId);
+  const refundDetail = await service.getRefund(refund.refundId);
   assert.equal(refundDetail.payment?.id, payment.paymentId);
   assert.equal(refundDetail.invoice?.status, 'partial');
 });
 
-test('billing payment/refund constraints are enforced in memory', () => {
+test('billing payment/refund constraints are enforced in memory', async () => {
   const { service } = createFixture();
 
-  const invoice = service.createInvoice({
+  const invoice = await service.createInvoice({
     invoiceNo: 'IV202603240002',
     familyId: 'family-002',
     studentId: 'student-002',
@@ -129,7 +129,7 @@ test('billing payment/refund constraints are enforced in memory', () => {
     status: 'issued',
   });
 
-  const payment = service.createPayment(invoice.id, {
+  const payment = await service.createPayment(invoice.id, {
     paymentNo: 'PM202603240002',
     paidAmountCents: 100000,
     paymentTime: '2026-03-24T10:00:00+08:00',
@@ -159,7 +159,7 @@ test('billing payment/refund constraints are enforced in memory', () => {
     channel: 'cash',
   }, 'idem-pay-dup');
 
-  const replayed = service.createPayment(invoice.id, {
+  const replayed = await service.createPayment(invoice.id, {
     paymentNo: 'PM202603240004',
     paidAmountCents: 1,
     paymentTime: '2026-03-24T10:03:00+08:00',

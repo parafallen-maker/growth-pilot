@@ -199,10 +199,10 @@
 - [x] `BE-11` 替换 `files` module — file_assets → DB, adapter 保留
 - [/] `BE-12` 替换 `homework` module — submissions/analyses/reviews → DB
 - [/] `BE-13` 替换 `growth` module — rubrics/observations/goals/reports → DB
-- [ ] `BE-14` 替换 `billing` module — products/contracts/invoices/payments/refunds → DB
-- [ ] `BE-15` 替换 `attendance` module → DB
-- [ ] `BE-16` 替换 `communication` module → DB
-- [ ] `BE-17` 替换 `analytics` module — 改为真实 SQL 聚合查询
+- [x] `BE-14` 替换 `billing` module — products/contracts/invoices/payments/refunds → DB
+- [x] `BE-15` 替换 `attendance` module → DB
+- [x] `BE-16` 替换 `communication` module → DB
+- [/] `BE-17` 替换 `analytics` module — 改为真实 SQL 聚合查询
 
 #### Phase 3：补缺失接口
 

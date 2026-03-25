@@ -20,67 +20,67 @@ export class CommunicationController {
 
   @Get('records')
   @RequirePermission('communication:records:view')
-  listRecords(@Query() query: CommunicationQueryDto) {
-    return ok(this.communicationService.listRecords(query));
+  async listRecords(@Query() query: CommunicationQueryDto) {
+    return ok(await this.communicationService.listRecords(query));
   }
 
   @Get('records/:recordId')
   @RequirePermission('communication:records:view')
-  getRecord(@Param('recordId') recordId: string) {
-    return ok(this.communicationService.getRecord(recordId));
+  async getRecord(@Param('recordId') recordId: string) {
+    return ok(await this.communicationService.getRecord(recordId));
   }
 
   @Post('records')
   @RequirePermission('communication:records:manage')
-  createRecord(@Body() payload: CreateCommunicationRecordDto) {
-    return ok(this.communicationService.createRecord(payload));
+  async createRecord(@Body() payload: CreateCommunicationRecordDto) {
+    return ok(await this.communicationService.createRecord(payload));
   }
 
   @Get('templates')
   @RequirePermission('communication:templates:view')
-  listTemplates(@Query() query: MessageTemplateQueryDto) {
-    return ok(this.communicationService.listTemplates(query));
+  async listTemplates(@Query() query: MessageTemplateQueryDto) {
+    return ok(await this.communicationService.listTemplates(query));
   }
 
   @Post('templates')
   @RequirePermission('communication:templates:manage')
-  createTemplate(@Body() payload: CreateMessageTemplateDto) {
-    return ok(this.communicationService.createTemplate(payload));
+  async createTemplate(@Body() payload: CreateMessageTemplateDto) {
+    return ok(await this.communicationService.createTemplate(payload));
   }
 
   @Patch('templates/:templateId')
   @RequirePermission('communication:templates:manage')
-  updateTemplate(@Param('templateId') templateId: string, @Body() payload: UpdateMessageTemplateDto) {
-    return ok(this.communicationService.updateTemplate(templateId, payload));
+  async updateTemplate(@Param('templateId') templateId: string, @Body() payload: UpdateMessageTemplateDto) {
+    return ok(await this.communicationService.updateTemplate(templateId, payload));
   }
 
   @Get('message-tasks')
   @RequirePermission('communication:messages:view')
-  listMessageTasks(@Query() query: MessageTaskQueryDto) {
-    return ok(this.communicationService.listMessageTasks(query));
+  async listMessageTasks(@Query() query: MessageTaskQueryDto) {
+    return ok(await this.communicationService.listMessageTasks(query));
   }
 
   @Post('message-tasks')
   @RequirePermission('communication:messages:manage')
-  createMessageTask(@Body() payload: CreateMessageTaskDto) {
-    return ok(this.communicationService.createMessageTask(payload));
+  async createMessageTask(@Body() payload: CreateMessageTaskDto) {
+    return ok(await this.communicationService.createMessageTask(payload));
   }
 
   @Patch('message-tasks/:taskId/status')
   @RequirePermission('communication:messages:manage')
-  updateMessageTaskStatus(@Param('taskId') taskId: string, @Body() payload: UpdateMessageTaskStatusDto) {
-    return ok(this.communicationService.updateMessageTaskStatus(taskId, payload));
+  async updateMessageTaskStatus(@Param('taskId') taskId: string, @Body() payload: UpdateMessageTaskStatusDto) {
+    return ok(await this.communicationService.updateMessageTaskStatus(taskId, payload));
   }
 
   @Get('messages')
   @RequirePermission('communication:messages:view')
-  listMessages(@Query() query: MessageTaskQueryDto) {
-    return ok(this.communicationService.listMessageTasks(query));
+  async listMessages(@Query() query: MessageTaskQueryDto) {
+    return ok(await this.communicationService.listMessageTasks(query));
   }
 
   @Post('messages')
   @RequirePermission('communication:messages:manage')
-  createMessage(@Body() payload: CreateMessageTaskDto) {
-    return ok(this.communicationService.createMessageTask(payload));
+  async createMessage(@Body() payload: CreateMessageTaskDto) {
+    return ok(await this.communicationService.createMessageTask(payload));
   }
 }

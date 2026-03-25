@@ -24,95 +24,95 @@ export class BillingController {
 
   @Get('products')
   @RequirePermission('billing:products:view')
-  listProducts(@Query() query: BillingProductQueryDto) {
-    return ok(this.billingService.listProducts(query));
+  async listProducts(@Query() query: BillingProductQueryDto) {
+    return ok(await this.billingService.listProducts(query));
   }
 
   @Post('products')
   @RequirePermission('billing:products:manage')
-  createProduct(@Body() payload: CreateBillingProductDto) {
-    return ok(this.billingService.createProduct(payload));
+  async createProduct(@Body() payload: CreateBillingProductDto) {
+    return ok(await this.billingService.createProduct(payload));
   }
 
   @Get('contracts')
   @RequirePermission('billing:contracts:view')
-  listContracts(@Query() query: ContractQueryDto) {
-    return ok(this.billingService.listContracts(query));
+  async listContracts(@Query() query: ContractQueryDto) {
+    return ok(await this.billingService.listContracts(query));
   }
 
   @Get('contracts/:contractId')
   @RequirePermission('billing:contracts:view')
-  getContract(@Param('contractId') contractId: string) {
-    return ok(this.billingService.getContract(contractId));
+  async getContract(@Param('contractId') contractId: string) {
+    return ok(await this.billingService.getContract(contractId));
   }
 
   @Post('contracts')
   @RequirePermission('billing:contracts:manage')
-  createContract(@Body() payload: CreateContractDto) {
-    return ok(this.billingService.createContract(payload));
+  async createContract(@Body() payload: CreateContractDto) {
+    return ok(await this.billingService.createContract(payload));
   }
 
   @Get('invoices')
   @RequirePermission('billing:invoices:view')
-  listInvoices(@Query() query: InvoiceQueryDto) {
-    return ok(this.billingService.listInvoices(query));
+  async listInvoices(@Query() query: InvoiceQueryDto) {
+    return ok(await this.billingService.listInvoices(query));
   }
 
   @Post('invoices')
   @RequirePermission('billing:contracts:manage')
-  createInvoice(@Body() payload: CreateInvoiceDto) {
-    return ok(this.billingService.createInvoice(payload));
+  async createInvoice(@Body() payload: CreateInvoiceDto) {
+    return ok(await this.billingService.createInvoice(payload));
   }
 
   @Post('invoices/:invoiceId/payments')
   @RequirePermission('billing:payments:manage')
-  createPayment(
+  async createPayment(
     @Param('invoiceId') invoiceId: string,
     @Body() payload: CreatePaymentDto,
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
-    return ok(this.billingService.createPayment(invoiceId, payload, idempotencyKey));
+    return ok(await this.billingService.createPayment(invoiceId, payload, idempotencyKey));
   }
 
   @Get('payments/:paymentId')
   @RequirePermission('billing:invoices:view')
-  getPayment(@Param('paymentId') paymentId: string) {
-    return ok(this.billingService.getPayment(paymentId));
+  async getPayment(@Param('paymentId') paymentId: string) {
+    return ok(await this.billingService.getPayment(paymentId));
   }
 
   @Post('payments/:paymentId/refunds')
   @RequirePermission('billing:refunds:manage')
-  createRefund(@Param('paymentId') paymentId: string, @Body() payload: CreateRefundDto) {
-    return ok(this.billingService.createRefund(paymentId, payload));
+  async createRefund(@Param('paymentId') paymentId: string, @Body() payload: CreateRefundDto) {
+    return ok(await this.billingService.createRefund(paymentId, payload));
   }
 
   @Get('refunds/:refundId')
   @RequirePermission('billing:invoices:view')
-  getRefund(@Param('refundId') refundId: string) {
-    return ok(this.billingService.getRefund(refundId));
+  async getRefund(@Param('refundId') refundId: string) {
+    return ok(await this.billingService.getRefund(refundId));
   }
 
   @Get('renewals')
   @RequirePermission('billing:renewals:view')
-  listRenewals(@Query() query: RenewalQueryDto) {
-    return ok(this.billingService.listRenewals(query));
+  async listRenewals(@Query() query: RenewalQueryDto) {
+    return ok(await this.billingService.listRenewals(query));
   }
 
   @Post('renewals')
   @RequirePermission('billing:renewals:manage')
-  createRenewal(@Body() payload: CreateRenewalDto) {
-    return ok(this.billingService.createRenewal(payload));
+  async createRenewal(@Body() payload: CreateRenewalDto) {
+    return ok(await this.billingService.createRenewal(payload));
   }
 
   @Patch('renewals/:renewalId/status')
   @RequirePermission('billing:renewals:manage')
-  updateRenewalStatus(@Param('renewalId') renewalId: string, @Body() payload: UpdateRenewalStatusDto) {
-    return ok(this.billingService.updateRenewalStatus(renewalId, payload));
+  async updateRenewalStatus(@Param('renewalId') renewalId: string, @Body() payload: UpdateRenewalStatusDto) {
+    return ok(await this.billingService.updateRenewalStatus(renewalId, payload));
   }
 
   @Patch('renewals/:renewalId/follow-up')
   @RequirePermission('billing:renewals:manage')
-  updateRenewalFollowUp(@Param('renewalId') renewalId: string, @Body() payload: UpdateRenewalFollowUpDto) {
-    return ok(this.billingService.updateRenewalFollowUp(renewalId, payload));
+  async updateRenewalFollowUp(@Param('renewalId') renewalId: string, @Body() payload: UpdateRenewalFollowUpDto) {
+    return ok(await this.billingService.updateRenewalFollowUp(renewalId, payload));
   }
 }

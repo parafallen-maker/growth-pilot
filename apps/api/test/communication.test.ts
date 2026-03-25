@@ -13,14 +13,14 @@ function createFixture() {
   return { repository, service };
 }
 
-test('communication records / templates / message tasks skeleton flows work', () => {
+test('communication records / templates / message tasks skeleton flows work', async () => {
   const { service } = createFixture();
 
-  const records = service.listRecords({ pageNo: 1, pageSize: 20, familyId: 'family-001' });
+  const records = await service.listRecords({ pageNo: 1, pageSize: 20, familyId: 'family-001' });
   assert.equal(records.page.total, 1);
   assert.equal(records.list[0]?.channel, 'wechat');
 
-  const record = service.createRecord({
+  const record = await service.createRecord({
     familyId: 'family-001',
     studentId: 'student-001',
     channel: 'phone',
@@ -29,9 +29,9 @@ test('communication records / templates / message tasks skeleton flows work', ()
     summary: '家长反馈孩子回家后先完成数学。',
     nextAction: '下次提醒先自查错题。',
   });
-  assert.equal(service.getRecord(record.id).summary, '家长反馈孩子回家后先完成数学。');
+  assert.equal((await service.getRecord(record.id)).summary, '家长反馈孩子回家后先完成数学。');
 
-  const template = service.createTemplate({
+  const template = await service.createTemplate({
     code: 'invoice-reminder',
     name: '账单提醒模板',
     channel: 'wechat',
@@ -41,13 +41,13 @@ test('communication records / templates / message tasks skeleton flows work', ()
   });
   assert.equal(template.code, 'invoice-reminder');
 
-  const updatedTemplate = service.updateTemplate(template.id, {
+  const updatedTemplate = await service.updateTemplate(template.id, {
     status: 'inactive',
     bodyTemplate: '您好，{{studentName}} 请查收本期账单 {{amount}} 元。',
   });
   assert.equal(updatedTemplate.status, 'inactive');
 
-  const pendingTask = service.createMessageTask({
+  const pendingTask = await service.createMessageTask({
     templateId: template.id,
     familyId: 'family-001',
     studentId: 'student-001',
@@ -58,14 +58,14 @@ test('communication records / templates / message tasks skeleton flows work', ()
   });
   assert.equal(pendingTask.status, 'pending');
 
-  const sentTask = service.updateMessageTaskStatus(pendingTask.id, {
+  const sentTask = await service.updateMessageTaskStatus(pendingTask.id, {
     status: 'sent',
     sentAt: '2026-03-25T09:01:00+08:00',
   });
   assert.equal(sentTask.status, 'sent');
   assert.equal(sentTask.sentAt, '2026-03-25T09:01:00+08:00');
 
-  const failedTask = service.createMessageTask({
+  const failedTask = await service.createMessageTask({
     familyId: 'family-002',
     studentId: 'student-002',
     channel: 'wechat',
@@ -76,7 +76,7 @@ test('communication records / templates / message tasks skeleton flows work', ()
   });
   assert.equal(failedTask.status, 'failed');
 
-  const tasks = service.listMessageTasks({ pageNo: 1, pageSize: 20, status: 'failed' });
+  const tasks = await service.listMessageTasks({ pageNo: 1, pageSize: 20, status: 'failed' });
   assert.equal(tasks.page.total >= 1, true);
   assert.equal(tasks.list[0]?.status, 'failed');
 });
