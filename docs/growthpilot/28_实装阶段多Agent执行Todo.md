@@ -71,22 +71,22 @@
 
 ### A4-1 真实鉴权
 - [x] JWT access token / refresh token 持久化
-- [ ] refresh rotation
-- [ ] logout token 失效链路
+- [x] refresh rotation
+- [x] logout token 失效链路
 - [x] 权限 guard / permission policy 真化
 - [x] 401 / 403 / 409 / 422 标准错误体收口
 
 ### A4-2 真实文件上传
 - [x] multipart 上传入口
 - [x] 对象存储 adapter 接真实 S3 兼容存储
-- [ ] file asset 元数据落库
+- [x] file asset 元数据落库（当前为 file-backed 持久化，正式 DB 仍待替换）
 - [ ] upload -> fileId -> submission 真链路打通
 
 ### A4-3 真实 jobs 基础设施
 - [x] jobs 表持久化 repository
 - [x] jobs 列表接口
-- [ ] job 状态推进与 retry 基础能力
-- [ ] AI / report draft / 聚合任务统一接入 jobs
+- [x] job 状态推进与 retry 基础能力（当前为文件持久化 + 进程内 runner，真实队列仍待补）
+- [~] AI / report draft / 聚合任务统一接入 jobs（homework analyze / growth report draft 已接，聚合类任务仍待统一）
 
 **DoD**
 - 不再依赖 mock session
@@ -139,17 +139,18 @@
 
 ### A6-3 review 真事务
 - [x] review / review_error_items 真事务
-- [ ] draft 保存接口（若保留）
-- [ ] HomeworkReviewed 事件总线 / outbox 方案
+- [x] draft 保存接口（若保留）
+- [x] HomeworkReviewed 事件总线 / outbox 方案（当前为 homework.json 内 outbox 基础队列，正式消息基础设施仍待替换）
 
-> 2026-03-25 A6 第一波：已把 homework submissions / submission_files / analyses / reviews / review_error_items 从运行时数组替换为 `apps/api/.data/homework.json` 持久化；analyze 任务接入 `apps/api/.data/jobs.json`，job 的 queued/running/success/failed、attempts、startedAt/finishedAt 可重启后追踪。仍未接真实 PG/队列与 review draft/outbox。
+> 2026-03-25 A6 第一波：已把 homework submissions / submission_files / analyses / reviews / review_error_items 从运行时数组替换为 `apps/api/.data/homework.json` 持久化；analyze 任务接入 `apps/api/.data/jobs.json`，job 的 queued/running/success/failed、attempts、startedAt/finishedAt 可重启后追踪。
+> 2026-03-25 A6 第二波：已补 `GET/PUT /homework/submissions/:submissionId/review-draft`、`GET /homework/outbox-events` 与 `GET/POST/PATCH/DELETE /homework/error-taxonomies`，review draft 与 HomeworkSubmitted/HomeworkReviewed outbox 事件均可重启保留。仍未接真实 PG/Redis 队列。
 
 
 ### A9-1 homework 页面联调真接口
-- [ ] submissions 列表接真数据
-- [ ] review workbench 接真 detail
-- [ ] error-taxonomies 接真维护接口
-- [ ] draft / analyze / review 动作闭环
+- [x] submissions 列表接真数据
+- [x] review workbench 接真 detail
+- [x] error-taxonomies 接真维护接口
+- [x] draft / analyze / review 动作闭环
 
 **DoD**
 - submission -> analyze -> review 走真实数据链
@@ -166,16 +167,17 @@
 - [x] report drafts 真 repository
 - [x] ReportDraftJob 真 jobs 接入
 
-> 2026-03-25 A6 第一波：已把 rubrics / observations / goals / check-ins / reports 从运行时数组替换为 `apps/api/.data/growth.json` 持久化；report draft job 接入统一 jobs repository，不再单独挂 growth 内存 jobs。当前仍是同步执行的轻量 job runner，尚未接真实队列、report review/publish/outbox。
+> 2026-03-25 A6 第一波：已把 rubrics / observations / goals / check-ins / reports 从运行时数组替换为 `apps/api/.data/growth.json` 持久化；report draft job 接入统一 jobs repository，不再单独挂 growth 内存 jobs。
+> 2026-03-25 A6 第二波：已补 `GET /growth/reports/:reportId`、`POST /growth/reports/:reportId/review`、`POST /growth/reports/:reportId/publish`，report workflow 固定为 `draft -> reviewed -> published`，`reportPublished` 口径统一为“是否已被 published report 的 materialRefs/growthObservations 引用”。当前仍是同步执行的轻量 job runner，尚未接真实队列。
 
 ### A3-1 growth report 契约补齐
-- [ ] report review / publish 动作
-- [ ] reportPublished 口径
+- [x] report review / publish 动作
+- [x] reportPublished 口径
 - [ ] praise_records 是否纳入首发的最终裁决
 
 ### A9-2 growth 页面联调真接口
-- [ ] rubrics 真接口接入
-- [ ] observations / goals / reports 接真数据
+- [x] rubrics 真接口接入
+- [x] observations / goals / reports 接真数据
 - [ ] report draft job 异步态联通
 
 **DoD**
@@ -201,10 +203,10 @@
 > 2026-03-25 A7 第一波：communication repository 已切到 JSON 文件持久层（`apps/api/.data/communication.json`），records/templates/message_tasks 状态流转改为落盘，可追踪 sent/failed/read 时间戳链路。
 
 ### A6-5 attendance 真化
-- [ ] devices / bindings / events 持久化
-- [ ] binding active 唯一性落库
-- [ ] event 去重 / Idempotency-Key 落库
-- [ ] homework_time_daily_stats 真聚合
+- [x] devices / bindings / events 持久化
+- [x] binding active 唯一性落库（当前为 repository 规则约束，正式 DB 唯一索引仍待补）
+- [x] event 去重 / Idempotency-Key 落库（当前为 repository 规则约束，正式 DB 幂等约束仍待补）
+- [x] homework_time_daily_stats 真聚合
 
 ### A7-3 analytics 真化
 - [x] overview / teaching / billing 真实聚合查询
@@ -214,10 +216,10 @@
 > 2026-03-25 A7 第一波：analytics 已改为 repository 聚合，不再直接返回纯手写 mock 常量；当前真实读取 billing + communication + attendance + homework 仓储数据，overview/billing/teaching 均可返回非静态聚合结果。指标口径文档细化仍待补齐。
 
 ### A9-3 页面联调
-- [ ] billing 页面接真接口
+- [~] billing 页面接真接口（products/contracts/invoices/renewals 已接；payments/refunds/adjustments 列表聚合仍待后端）
 - [ ] communication 页面接真接口
 - [ ] attendance 页面接真接口
-- [ ] analytics 页面接真接口与真图表数据
+- [x] analytics 页面接真接口与真图表数据
 
 **DoD**
 - 合同 -> 账单 -> 支付 -> 退款 真闭环
@@ -228,15 +230,15 @@
 ## IMPL-006 migration / QA / release 真系统化（P0）
 
 ### A10-1 migration 真导入
-- [ ] 接真实 Excel/CSV parser
+- [x] 接真实 Excel/CSV parser（当前已支持 CSV/JSON 文件输入，`.xlsx` 原生解析仍待补）
 - [ ] 接 PostgreSQL staging schema
 - [ ] 接 final load upsert
-- [ ] 第一批真实样本导入
+- [x] 第一批真实样本导入（当前为 sample CSV dry-run）
 - [ ] 正式 validation report
 
 ### A10-2 QA 真联调
-- [ ] skeleton tests 扩成真实 E2E
-- [ ] 主流程 smoke 变成真实回归
+- [x] skeleton tests 扩成真实 E2E（auth/enrollment/homework/growth/billing 已有 executable assertions）
+- [x] 主流程 smoke 变成真实回归
 - [ ] 缺陷单 + triage + 回归报告
 
 ### A10-3 release 真验收
@@ -292,18 +294,18 @@
 - [x] Student 360 真聚合
 
 ### NOW-3 A6 homework / growth 真化
-- [ ] homework submission / review 真入库
-- [ ] growth rubrics / observations / goals 真入库
-- [ ] report draft job 真接 jobs
+- [x] homework submission / review 真入库
+- [x] growth rubrics / observations / goals 真入库
+- [x] report draft job 真接 jobs
 
 ### NOW-4 A7 经营模块真化
-- [ ] billing 真持久化
-- [ ] communication 真持久化
-- [ ] analytics 真聚合
+- [x] billing 真持久化
+- [x] communication 真持久化
+- [x] analytics 真聚合
 
 ### NOW-5 A10 真样本与真联调准备
-- [ ] migration dry-run -> 真实输入
-- [ ] skeleton QA -> 真接口 smoke
+- [~] migration dry-run -> 真实输入（CSV/JSON 已支持，staging/upsert 与 `.xlsx` 仍待补）
+- [x] skeleton QA -> 真接口 smoke
 
 ---
 

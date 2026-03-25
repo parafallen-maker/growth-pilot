@@ -19,26 +19,19 @@ export default async function AttendanceHomeworkTimePage() {
     sortBy: 'date',
     sortOrder: 'desc' as const,
   };
-  const result = attendanceService.queryHomeworkTime(filters);
-  const detail = attendanceService.detailHomeworkTime();
+  const result = await attendanceService.queryHomeworkTime(filters);
+  const detail = attendanceService.detailHomeworkTime(result);
 
   return (
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="作业时长" permissionCode={attendancePermissions.homeworkTimeView} />}>
       <div className="stack">
         <PageHeader
-          title="作业时长骨架"
-          description={`P19 已铺筛选栏、日统计、趋势图占位、学科分布与学生排行块。query key: ${JSON.stringify(queryKeys.attendanceHomeworkTime(filters))}`}
+          title="作业时长"
+          description={`P19 已从本地占位切到 attendance homework-time daily stats 真接口。query key: ${JSON.stringify(queryKeys.attendanceHomeworkTime(filters))}`}
           actions={<><button className="btn primary">导出统计</button><button className="btn">查看异常会话</button></>}
         />
 
-        <MetricGrid
-          items={[
-            { label: '今日总分钟', value: '708', hint: '按校区 / 日期汇总' },
-            { label: '人均投入', value: '71min', hint: '和近 7 日均值对比' },
-            { label: '异常学生', value: '4', hint: '偏低 / 断点 / 异常长时段' },
-            { label: '有效会话', value: '32', hint: '后续接日聚合任务' },
-          ]}
-        />
+        <MetricGrid items={detail.metrics} />
 
         <FilterBar fields={[
           { label: '校区', value: '贵阳主校区', kind: 'select' },

@@ -66,8 +66,8 @@
 - [x] logout revoke 基础链路
 - [x] 全局 HTTP 标准错误体（401/403/409/422）
 - [x] auth guard / permission guard 基础实现
-- [ ] 守卫真正挂到主要控制器
-- [ ] current user / permission code 真正接入 Web
+- [~] 守卫已挂到 jobs/files/students/homework/growth；billing/attendance/communication/analytics/users/settings 仍待补齐
+- [x] current user / permission code 真正接入 Web（已统一走 `/auth/me`，无 token 时仅保留 dev fallback）
 - [ ] refresh 黑名单 / 多端策略
 
 #### IMPL-001-2 文件真化
@@ -81,9 +81,9 @@
 - [x] jobs repository 持久化
 - [x] jobs 列表 / 详情接口
 - [x] retry 字段与基础动作
-- [ ] worker 驱动 queued -> running -> success/failed
-- [ ] retry/backoff 策略
-- [ ] homework/growth/聚合任务统一 jobs 执行框架
+- [x] 轻量 worker lifecycle（repo-internal：`JobsService.processJob/enqueueAndProcess`）
+- [~] retry/backoff 策略（已具备 retry 字段与重入入口，定时/backoff 仍待 Redis/BullMQ）
+- [x] homework/growth repo-internal 统一 jobs 执行框架
 
 ### 当前判断
 - 后端基础设施已有 60~70% 雏形
@@ -149,8 +149,8 @@
 - [ ] 真实 provider 配置边界
 - [x] error taxonomy CRUD 后端能力
 
-> 2026-03-25 A6 第二波：已在 `apps/api` 落 review draft 读写接口（`GET/PUT /homework/submissions/:submissionId/review-draft`），草稿持久化到 `apps/api/.data/homework.json`；`HomeworkSubmitted/HomeworkReviewed` 改为写入同文件 outbox 基础队列，支持重启后追踪；并补 `GET/POST/PATCH/DELETE /homework/error-taxonomies` 词典 CRUD 与“被 review 引用不可删”保护。顺手修复了现存 typecheck/test 红灯：`GrowthRepository.updateReport` 返回值、`teacher-002` 默认样本、growth reports 页面类型错误。- [ ] homework 页面接真接口
-- [ ] review workbench 真 detail + 动作闭环
+> 2026-03-25 A6 第二波：已在 `apps/api` 落 review draft 读写接口（`GET/PUT /homework/submissions/:submissionId/review-draft`），草稿持久化到 `apps/api/.data/homework.json`；`HomeworkSubmitted/HomeworkReviewed` 改为写入同文件 outbox 基础队列，支持重启后追踪；并补 `GET/POST/PATCH/DELETE /homework/error-taxonomies` 词典 CRUD 与“被 review 引用不可删”保护。顺手修复了现存 typecheck/test 红灯：`GrowthRepository.updateReport` 返回值、`teacher-002` 默认样本、growth reports 页面类型错误。- [x] homework 页面接真接口（submissions / review / error taxonomies 已接真）
+- [x] review workbench 真 detail + 动作闭环（review draft、提交复核、词典维护已可走真链路）
 
 #### IMPL-004 Growth
 - [x] rubrics / observations / goals / check-ins / reports 持久化
@@ -158,7 +158,7 @@
 - [x] report review / publish API
 - [x] reportPublished 口径定版（以“是否已被 published report 的 materialRefs/growthObservations 引用”作为派生口径）
 - [ ] materials assembler 去 placeholder
-- [ ] growth 页面接真接口
+- [x] growth 页面接真接口（rubrics / observations / goals / reports 列表与详情已接真）
 - [ ] report draft job 异步态前后端联通
 - 2026-03-25：已补 `GET /growth/reports/:reportId`、`POST /growth/reports/:reportId/review`、`POST /growth/reports/:reportId/publish`，后端状态流转固定为 `draft -> reviewed -> published`；review/publish workflow 先写入 `summaryJson.workflow`，保持当前 schema 与 JSON 持久化架构不破。
 
@@ -186,7 +186,7 @@
 - [x] products/contracts/invoices/payments/refunds/renewals 持久化
 - [x] payment/refund 事务与 invoice 状态回写
 - [ ] billing_adjustments 决策与实现
-- [ ] billing 页面接真接口
+- [~] billing 页面主体已接真接口（products/contracts/invoices/renewals 已接；payments/refunds/adjustments 列表聚合仍待后端补齐）
 
 #### IMPL-005 Communication
 - [x] records/templates/message_tasks 持久化
@@ -197,18 +197,19 @@
 #### IMPL-005 Attendance
 - [x] devices/bindings/events/sessions/dailyStats 持久化
 - [x] active binding / dedupe / daily stats 再生
-- [ ] 数据库级唯一性 / 幂等约束
+- [~] 仓库内唯一性 / 幂等约束硬化（已补 binding 时间重叠、device-campus 校验、session overlap/device-active-binding 保护；DB 级约束仍待正式库）
 - [ ] 真设备 ingestion / 接入链路
 - [ ] attendance 页面接真接口
 
 #### IMPL-005 Analytics
 - [x] overview/teaching/billing 仓储聚合
-- [ ] 指标口径文档与实现完全对齐
+- [~] repo-internal 指标口径文档与实现对齐（见 `30_analytics指标口径与实现对齐.md`；正式 BI/快照/异步刷新仍待外部底座）
 - [ ] analytics 页面接真接口
 
 ### 当前判断
 - 后端经营模块比文档写得更靠前
-- 但 Web 仍大面积 mock，口径文档治理也没收口
+- Web 已不再是“大面积全 mock”，但 attendance / communication 仍主要是前端骨架，billing 也还缺 payments/refunds/adjustments 列表接口支撑
+- 指标口径文档治理也没收口
 
 ---
 
@@ -314,7 +315,7 @@
 ## 5. 当前立刻执行（Now）
 
 ### NOW-A｜A4 基础设施接线
-- [ ] 把 `ApiAuthGuard` / `PermissionGuard` 真挂到主要控制器
+- [~] 把 `ApiAuthGuard` / `PermissionGuard` 真挂到主要控制器（jobs/files/students/homework/growth 已接；billing/attendance/communication/analytics/users/settings 未全量收口）
 - [x] Web 去掉 `mockCurrentUser` 入口，改接共享 current-user source（优先 `/auth/me`，无 token 时 dev bootstrap login fallback）
 
 ### NOW-B｜A8/A9 Web 去 mock
@@ -322,11 +323,11 @@
 - [x] 再打通 growth reports/observations/goals 真接口
 - [x] 再接 billing/contracts/invoices 与 analytics overview
 - [~] billing products/renewals、analytics billing/teaching 也已顺手接真接口；payments/refunds/adjustments 详情聚合因后端未给列表接口，暂保留占位块
-- [~] growth rubrics 详情与列表已接真接口；report publish / report review 因后端 API 未落地，编辑/发布动作仍为前端骨架
+- [~] growth rubrics 详情与列表已接真接口；report review/publish API 已落，但前端异步生成态、编辑动作与发布后回跳细节仍待收口
 
 ### NOW-C｜A3/A6 教学闭环收口
 - [x] growth report review/publish 契约与实现
-- [ ] homework review draft / outbox 决策与实现
+- [x] homework review draft / outbox 决策与实现
 
 ### NOW-D｜A10 真导入与真联调
 - [~] migration 脚本去掉 mock source rows（已支持外部 CSV/JSON 输入；默认 mock fallback 暂保留给 dry-run 样本）
@@ -335,7 +336,42 @@
 
 ---
 
-## 6. 本文件与其他文档的关系
+## 6. 外部依赖剩余清单（Repo 内已留边界，未在仓内闭环）
+
+### EXT-DB｜正式数据库 / migration / upsert
+- [ ] 把 JSON/file-backed repository 切到正式 PostgreSQL / SQLite repository
+- [ ] 落正式 migration、唯一约束、外键、索引，而不是只停留在 `05_数据库DDL.sql`
+- [ ] 接通 migration staging schema、final load / upsert、真实样本回灌
+- 现状判断：仓内接口、状态机、样本 dry-run 已够用；真正卡点是库实例、连接配置、迁移执行窗口与数据所有权确认
+
+### EXT-S3｜对象存储
+- [ ] 接真实 S3 SDK / presign / multipart complete/abort
+- [ ] 校验 bucket / CORS / 生命周期 / 凭据 / 回写 fileId 全链路
+- 现状判断：仓内已具 local-s3-compatible adapter 和 multipart 骨架；差的不是接口名，是外部存储与密钥
+
+### EXT-REDIS｜队列 / worker / retry
+- [ ] 接 Redis / BullMQ（或等价队列）
+- [ ] 把 jobs 从“持久化记录 + 进程内处理”推进到真正的 queued -> running -> success/failed worker
+- [ ] 补 retry/backoff、死信、幂等键、worker 观测
+- 现状判断：仓内 job schema 和基础字段已齐；没外部队列，异步就是纸老虎
+
+### EXT-PREPROD｜预发环境
+- [ ] 准备可访问的 preprod 环境与环境变量
+- [ ] 接 PostgreSQL / Redis / 对象存储 / AI provider 真配置
+- [ ] 跑真实联调、真实 E2E、首批样本导入与缺陷清单
+- 现状判断：`17/26/27` 文档和模板齐，但还没真正上场拉练
+
+### EXT-ROLLBACK｜备份 / 恢复 / 回滚
+- [ ] 明确应用回滚版本、DB 备份快照、对象存储回退边界
+- [ ] 完成备份演练、恢复演练、回滚演练并留下记录
+- 现状判断：有 checklist，没有演练记录；没演练的回滚，关键时刻基本靠祈祷
+
+### EXT-SIGNOFF｜放行签收
+- [ ] PM / QA / Owner 填完整 release gate、缺陷清单、风险说明、观察窗口
+- [ ] 完成 go / no-go signoff
+- 现状判断：模板已在仓内，签字的人和放行时点还在仓外
+
+## 7. 本文件与其他文档的关系
 
 - 本文件：唯一主控盘 / 默认更新点
 - `15`：协作总设计
@@ -348,6 +384,7 @@
 后续原则：
 - **进度先回写本文件**
 - 专题细节再落到对应专题文档
+- analytics 口径专题现挂 `30_analytics指标口径与实现对齐.md`
 
 ---
 

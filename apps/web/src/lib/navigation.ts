@@ -92,10 +92,3 @@ export const rolePermissions: Record<AppRole, string[]> = {
   finance: ['dashboard:view', 'families:view', 'billing:products:view', 'billing:products:manage', 'billing:contracts:view', 'billing:contracts:manage', 'billing:invoices:view', 'billing:payments:manage', 'billing:refunds:manage', 'billing:renewals:view', 'billing:renewals:manage', 'communication:messages:view', 'communication:messages:manage', 'communication:templates:view', 'analytics:billing:view'],
 };
 
-export const mockCurrentUser = {
-  id: 'u-super-admin',
-  name: '运营总控台',
-  role: 'super_admin' as AppRole,
-  campusName: '贵阳主校区',
-  permissions: rolePermissions.super_admin,
-};

@@ -18,17 +18,17 @@ export default async function AttendanceDevicesPage() {
     sortBy: 'deviceSn',
     sortOrder: 'asc' as const,
   };
-  const devices = attendanceService.queryDevices(deviceFilters);
-  const currentBindings = attendanceService.queryCurrentBindings({ pageNo: 1, pageSize: 20, tab: 'current-bindings' });
-  const bindingHistory = attendanceService.queryBindingHistory({ pageNo: 1, pageSize: 20, tab: 'binding-history' });
+  const devices = await attendanceService.queryDevices(deviceFilters);
+  const currentBindings = await attendanceService.queryCurrentBindings({ pageNo: 1, pageSize: 20, tab: 'current-bindings' });
+  const bindingHistory = await attendanceService.queryBindingHistory({ pageNo: 1, pageSize: 20, tab: 'binding-history' });
   const action = attendanceService.actionBinding();
 
   return (
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="设备与绑定" permissionCode={attendancePermissions.devicesView} />}>
       <div className="stack">
         <PageHeader
-          title="设备与绑定骨架"
-          description={`P18 已铺设备列表 / 当前绑定 / 历史绑定三段结构。query key: ${JSON.stringify(queryKeys.attendanceDevices(deviceFilters))}`}
+          title="设备与绑定"
+          description={`P18 已从本地假数据切到 attendance devices / bindings 真接口。query key: ${JSON.stringify(queryKeys.attendanceDevices(deviceFilters))}`}
           actions={<><button className="btn primary">新增设备</button><button className="btn">绑定学生</button><button className="btn">解绑设备</button></>}
         />
 
