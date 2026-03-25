@@ -170,11 +170,13 @@
   - `schema/communication.ts` — communication_records, message_templates, message_tasks
   - `schema/jobs.ts` — jobs, file_assets
 
-- [!] `BE-03` 创建 `apps/api/drizzle.config.ts` + 第一批 migration
+- [x] `BE-03` 创建 `apps/api/drizzle.config.ts` + 第一批 migration
   ```bash
-  cd apps/api && npx drizzle-kit generate
+  cd apps/api && npx drizzle-kit generate --config drizzle.config.ts
   ```
-  - 已创建 `apps/api/drizzle.config.ts` 与手工基线迁移占位；当前本地执行 `drizzle-kit generate` 被 drizzle CLI/runtime 版本检查阻塞，需后续解锁后重新生成正式 migration。
+  - 已补齐 workspace 根级 `drizzle-kit` / `drizzle-orm` 依赖，修复 CLI 从仓库根解析不到 `drizzle-orm` 的问题。
+  - 已删除手工占位迁移，生成正式基线迁移：`apps/api/drizzle/0000_stormy_the_twelve.sql`。
+  - `drizzle.config.ts` 改为显式引用 Phase 1 schema 文件，避免把当前工作树里未提交的后续 auth 草稿误卷入基线 migration。
 
 - [x] `BE-04` 创建 `apps/api/src/db/seed.ts`：
   - 插入默认角色（super_admin, principal, teacher, finance）

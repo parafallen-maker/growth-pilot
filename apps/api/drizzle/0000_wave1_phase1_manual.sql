@@ -1,3 +1,0 @@
--- Manual baseline migration for Wave 1 Phase 1.
--- Drizzle config is in place, but `drizzle-kit generate` is currently blocked by the local drizzle CLI/runtime compatibility check.
--- Use the schema under apps/api/src/db/schema/ as the source of truth until CLI generation is unblocked.
