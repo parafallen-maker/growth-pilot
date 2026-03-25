@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Headers, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiAuthGuard } from '../../../common/auth.guard';
 import { ok } from '../../../common/api-response';
 import { CreateHomeworkSubmissionDto } from '../dto/create-homework-submission.dto';
 import { HomeworkReviewDto } from '../dto/homework-review.dto';
@@ -7,6 +8,7 @@ import { TriggerHomeworkAnalysisDto } from '../dto/trigger-analysis.dto';
 import { HomeworkService } from '../service/homework.service';
 
 @Controller('homework')
+@UseGuards(ApiAuthGuard)
 export class HomeworkController {
   constructor(private readonly homeworkService: HomeworkService) {}
 

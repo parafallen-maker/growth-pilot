@@ -1,11 +1,13 @@
-import { Body, Controller, Get, Headers, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { IncomingMessage } from 'node:http';
+import { ApiAuthGuard } from '../../../common/auth.guard';
 import { ok } from '../../../common/api-response';
 import { UploadFileDto } from '../dto/upload-file.dto';
 import { UploadFilesDto } from '../dto/upload-files.dto';
 import { FilesService } from '../service/files.service';
 
 @Controller('files')
+@UseGuards(ApiAuthGuard)
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 

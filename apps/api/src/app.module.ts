@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ApiAuthGuard } from './common/auth.guard';
+import { PermissionGuard } from './common/permission.guard';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -31,5 +33,6 @@ import { UsersModule } from './modules/users/users.module';
     CommunicationModule,
     GrowthModule,
   ],
+  providers: [ApiAuthGuard, PermissionGuard],
 })
 export class AppModule {}

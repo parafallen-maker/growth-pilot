@@ -84,14 +84,15 @@ export class StudentsService {
     const attendanceStats = this.attendanceRepository.listDailyStats().filter((item) => item.studentId === studentId);
     const studentContracts = this.billingRepository.listContracts().filter((item) => item.studentId === studentId);
     const studentInvoices = this.billingRepository.listInvoices().filter((item) => item.studentId === studentId);
-    const studentPayments = this.billingRepository.listPayments().filter((item) => item.studentId === studentId);
+    const invoiceIds = new Set(studentInvoices.map((item) => item.id));
+    const studentPayments = this.billingRepository.listPayments().filter((item) => invoiceIds.has(item.invoiceId));
 
     const reviewedHomework = studentHomework.filter((item) => item.finalAccuracyPct != null);
     const averageAccuracyPct = reviewedHomework.length
       ? Math.round(reviewedHomework.reduce((sum, item) => sum + (item.finalAccuracyPct ?? 0), 0) / reviewedHomework.length)
       : null;
     const presentAttendance = attendanceEvents.filter((item) => item.eventType === 'checkin');
-    const absentAttendance = attendanceEvents.filter((item) => item.eventType === 'absence');
+    const absentAttendance = [] as typeof attendanceEvents;
     const averageStudyMinutes = attendanceStats.length
       ? Math.round(attendanceStats.reduce((sum, item) => sum + item.totalMinutes, 0) / attendanceStats.length)
       : 0;
@@ -102,7 +103,7 @@ export class StudentsService {
       family,
       guardians,
       homeworkSummary: {
-        latestSubmissionId: studentHomework[0]?.submissionId ?? null,
+        latestSubmissionId: studentHomework[0]?.id ?? null,
         latestHomeworkDate: studentHomework[0]?.homeworkDate ?? null,
         reviewedCount: studentHomework.filter((item) => item.reviewStatus === 'published').length,
         pendingReviewCount: studentHomework.filter((item) => item.reviewStatus !== 'published').length,
@@ -129,11 +130,11 @@ export class StudentsService {
         activeContractCount: studentContracts.filter((item) => item.status === 'active').length,
         unpaidInvoiceCount: studentInvoices.filter((item) => item.status !== 'paid').length,
         outstandingAmount: studentInvoices.reduce((sum, item) => {
-          const paid = studentPayments.filter((payment) => payment.invoiceId === item.id && payment.status === 'success').reduce((acc, payment) => acc + payment.amountCents, 0);
+          const paid = studentPayments.filter((payment) => payment.invoiceId === item.id && payment.status === 'success').reduce((acc, payment) => acc + payment.paidAmountCents, 0);
           return sum + Math.max(item.amountCents - paid, 0);
         }, 0),
         balanceAmount: 0,
-        latestPaymentDate: [...studentPayments].sort((a, b) => b.paidAt.localeCompare(a.paidAt))[0]?.paidAt?.slice(0, 10) ?? null,
+        latestPaymentDate: [...studentPayments].sort((a, b) => b.paymentTime.localeCompare(a.paymentTime))[0]?.paymentTime?.slice(0, 10) ?? null,
       },
       recentTimeline: this.buildRecentTimeline(studentId),
     };
@@ -219,7 +220,7 @@ export class StudentsService {
     const homeworkItems: Student360TimelineItem[] = this.homeworkRepository
       .listSubmissions()
       .filter((item) => item.studentId === studentId)
-      .map((item) => ({ id: `timeline-homework-${item.id}`, type: 'homework', title: '作业复核更新', occurredAt: item.updatedAt, status: item.reviewStatus, summary: item.finalErrorSummary }));
+      .map((item) => ({ id: `timeline-homework-${item.id}`, type: 'homework', title: '作业复核更新', occurredAt: item.updatedAt, status: item.reviewStatus, summary: item.finalErrorSummary ?? undefined }));
     const growthItems: Student360TimelineItem[] = this.growthRepository
       .listObservations()
       .filter((item) => item.studentId === studentId)

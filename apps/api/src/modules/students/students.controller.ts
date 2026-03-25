@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiAuthGuard } from '../../common/auth.guard';
 import { ok } from '../../common/api-response';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { CreateStudentDto } from './dto/create-student.dto';
@@ -6,6 +7,7 @@ import { StudentQueryDto } from './dto/student-query.dto';
 import { StudentsService } from './students.service';
 
 @Controller('students')
+@UseGuards(ApiAuthGuard)
 export class StudentsController {
   constructor(private readonly studentsService: StudentsService) {}
 

@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiAuthGuard } from '../../../common/auth.guard';
 import { ok } from '../../../common/api-response';
 import { CreateGoalCheckinDto } from '../dto/create-goal-checkin.dto';
 import { CreateGrowthGoalDto } from '../dto/create-growth-goal.dto';
@@ -12,6 +13,7 @@ import { RubricQueryDto } from '../dto/rubric-query.dto';
 import { GrowthService } from '../service/growth.service';
 
 @Controller('growth')
+@UseGuards(ApiAuthGuard)
 export class GrowthController {
   constructor(private readonly growthService: GrowthService) {}
 
