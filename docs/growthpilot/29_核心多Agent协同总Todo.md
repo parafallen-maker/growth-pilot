@@ -144,11 +144,12 @@
 - [x] fileIds 校验接真实 file assets
 - [x] analyze 接 jobs
 - [x] review / review_error_items 持久化事务
-- [ ] review draft 保存接口（若保留）
-- [ ] HomeworkReviewed outbox / event bus
+- [x] review draft 保存接口（若保留）
+- [x] HomeworkReviewed outbox / event bus
 - [ ] 真实 provider 配置边界
-- [ ] error taxonomy CRUD 后端能力
-- [ ] homework 页面接真接口
+- [x] error taxonomy CRUD 后端能力
+
+> 2026-03-25 A6 第二波：已在 `apps/api` 落 review draft 读写接口（`GET/PUT /homework/submissions/:submissionId/review-draft`），草稿持久化到 `apps/api/.data/homework.json`；`HomeworkSubmitted/HomeworkReviewed` 改为写入同文件 outbox 基础队列，支持重启后追踪；并补 `GET/POST/PATCH/DELETE /homework/error-taxonomies` 词典 CRUD 与“被 review 引用不可删”保护。顺手修复了现存 typecheck/test 红灯：`GrowthRepository.updateReport` 返回值、`teacher-002` 默认样本、growth reports 页面类型错误。- [ ] homework 页面接真接口
 - [ ] review workbench 真 detail + 动作闭环
 
 #### IMPL-004 Growth

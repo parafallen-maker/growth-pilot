@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type {
   HomeworkAiAnalysis,
   HomeworkReview,
@@ -7,6 +7,47 @@ import type {
   HomeworkSubmissionFile,
 } from '@growthpilot/schema/index';
 import { PersistentJsonStore } from '../../../common/persistent-json.store';
+
+export interface HomeworkReviewDraft {
+  id: string;
+  submissionId: string;
+  reviewerTeacherId?: string | null;
+  reviewResult?: 'approved' | 'adjusted' | 'rejected';
+  finalAccuracyPct?: number | null;
+  finalErrorSummary?: string | null;
+  finalSuggestion?: string | null;
+  publishToFamily: boolean;
+  finalErrorItems: Array<{
+    errorTaxonomyId: string;
+    weight: number;
+    note?: string;
+  }>;
+  savedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HomeworkErrorTaxonomy {
+  id: string;
+  code: string;
+  name: string;
+  subject?: string;
+  stageScope?: string;
+  description?: string;
+  status: 'draft' | 'active' | 'inactive';
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HomeworkOutboxEvent {
+  id: string;
+  eventName: 'HomeworkSubmitted' | 'HomeworkReviewed';
+  bizId: string;
+  payload: Record<string, unknown>;
+  status: 'pending';
+  createdAt: string;
+}
 
 export interface CreateHomeworkSubmissionRecord {
   studentId: string;
@@ -38,6 +79,9 @@ interface HomeworkState {
   analyses: HomeworkAiAnalysis[];
   reviews: HomeworkReview[];
   reviewErrorItems: HomeworkReviewErrorItem[];
+  reviewDrafts: HomeworkReviewDraft[];
+  errorTaxonomies: HomeworkErrorTaxonomy[];
+  outboxEvents: HomeworkOutboxEvent[];
 }
 
 @Injectable()
@@ -80,6 +124,22 @@ export class HomeworkRepository {
     analyses: [],
     reviews: [],
     reviewErrorItems: [],
+    reviewDrafts: [],
+    errorTaxonomies: [
+      {
+        id: 'taxonomy-001',
+        code: 'MATH_CALC',
+        name: '计算错误',
+        subject: 'math',
+        stageScope: 'grade-1',
+        description: '口算、竖式、抄写导致的计算失误',
+        status: 'active',
+        sortOrder: 100,
+        createdAt: '2026-03-23T18:00:00+08:00',
+        updatedAt: '2026-03-23T18:00:00+08:00',
+      },
+    ],
+    outboxEvents: [],
   }));
 
   listSubmissions() {
@@ -250,6 +310,152 @@ export class HomeworkRepository {
 
   listReviewErrorItems(reviewId: string) {
     return this.store.get().reviewErrorItems.filter((item) => item.reviewId === reviewId);
+  }
+
+  getReviewDraft(submissionId: string) {
+    return this.store.get().reviewDrafts.find((item) => item.submissionId === submissionId) ?? null;
+  }
+
+  saveReviewDraft(
+    submissionId: string,
+    payload: {
+      reviewerTeacherId?: string | null;
+      reviewResult?: 'approved' | 'adjusted' | 'rejected';
+      finalAccuracyPct?: number | null;
+      finalErrorSummary?: string | null;
+      finalSuggestion?: string | null;
+      publishToFamily?: boolean;
+      finalErrorItems?: Array<{ errorTaxonomyId: string; weight?: number; note?: string }>;
+    },
+  ) {
+    this.getSubmissionOrThrow(submissionId);
+    const now = new Date().toISOString();
+    const existing = this.getReviewDraft(submissionId);
+    if (existing) {
+      this.store.update((state) => {
+        const target = state.reviewDrafts.find((item) => item.id === existing.id)!;
+        Object.assign(target, {
+          reviewerTeacherId: payload.reviewerTeacherId ?? null,
+          reviewResult: payload.reviewResult,
+          finalAccuracyPct: payload.finalAccuracyPct ?? null,
+          finalErrorSummary: payload.finalErrorSummary ?? null,
+          finalSuggestion: payload.finalSuggestion ?? null,
+          publishToFamily: payload.publishToFamily ?? false,
+          finalErrorItems: (payload.finalErrorItems ?? []).map((item) => ({
+            errorTaxonomyId: item.errorTaxonomyId,
+            weight: item.weight ?? 1,
+            note: item.note,
+          })),
+          savedAt: now,
+          updatedAt: now,
+        });
+      });
+      return this.getReviewDraft(submissionId)!;
+    }
+
+    const draft: HomeworkReviewDraft = {
+      id: `review-draft-${String(this.store.get().reviewDrafts.length + 1).padStart(3, '0')}`,
+      submissionId,
+      reviewerTeacherId: payload.reviewerTeacherId ?? null,
+      reviewResult: payload.reviewResult,
+      finalAccuracyPct: payload.finalAccuracyPct ?? null,
+      finalErrorSummary: payload.finalErrorSummary ?? null,
+      finalSuggestion: payload.finalSuggestion ?? null,
+      publishToFamily: payload.publishToFamily ?? false,
+      finalErrorItems: (payload.finalErrorItems ?? []).map((item) => ({
+        errorTaxonomyId: item.errorTaxonomyId,
+        weight: item.weight ?? 1,
+        note: item.note,
+      })),
+      savedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.store.update((state) => {
+      state.reviewDrafts.unshift(draft);
+    });
+    return draft;
+  }
+
+  deleteReviewDraft(submissionId: string) {
+    this.store.update((state) => {
+      state.reviewDrafts = state.reviewDrafts.filter((item) => item.submissionId !== submissionId);
+    });
+  }
+
+  listErrorTaxonomies() {
+    return [...this.store.get().errorTaxonomies].sort((a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code));
+  }
+
+  createErrorTaxonomy(input: Omit<HomeworkErrorTaxonomy, 'id' | 'createdAt' | 'updatedAt'>) {
+    const exists = this.store.get().errorTaxonomies.some((item) => item.code === input.code);
+    if (exists) {
+      throw new ConflictException(`error taxonomy code ${input.code} already exists`);
+    }
+    const now = new Date().toISOString();
+    const taxonomy: HomeworkErrorTaxonomy = {
+      id: `taxonomy-${String(this.store.get().errorTaxonomies.length + 1).padStart(3, '0')}`,
+      ...input,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.store.update((state) => {
+      state.errorTaxonomies.unshift(taxonomy);
+    });
+    return taxonomy;
+  }
+
+  updateErrorTaxonomy(taxonomyId: string, patch: Partial<Omit<HomeworkErrorTaxonomy, 'id' | 'createdAt' | 'updatedAt'>>) {
+    let updated: HomeworkErrorTaxonomy | undefined;
+    this.store.update((state) => {
+      const target = state.errorTaxonomies.find((item) => item.id === taxonomyId);
+      if (!target) {
+        throw new NotFoundException(`error taxonomy ${taxonomyId} not found`);
+      }
+      if (patch.code && patch.code !== target.code) {
+        const duplicated = state.errorTaxonomies.some((item) => item.id !== taxonomyId && item.code === patch.code);
+        if (duplicated) {
+          throw new ConflictException(`error taxonomy code ${patch.code} already exists`);
+        }
+      }
+      Object.assign(target, patch, { updatedAt: new Date().toISOString() });
+      updated = target;
+    });
+    return updated!;
+  }
+
+  deleteErrorTaxonomy(taxonomyId: string) {
+    const taxonomy = this.store.get().errorTaxonomies.find((item) => item.id === taxonomyId);
+    if (!taxonomy) {
+      throw new NotFoundException(`error taxonomy ${taxonomyId} not found`);
+    }
+    const referenced = this.store.get().reviewErrorItems.some((item) => item.errorTaxonomyId === taxonomyId);
+    if (referenced) {
+      throw new ConflictException(`error taxonomy ${taxonomyId} is referenced by review items`);
+    }
+    this.store.update((state) => {
+      state.errorTaxonomies = state.errorTaxonomies.filter((item) => item.id !== taxonomyId);
+    });
+  }
+
+  enqueueOutboxEvent(eventName: HomeworkOutboxEvent['eventName'], bizId: string, payload: Record<string, unknown>) {
+    const event: HomeworkOutboxEvent = {
+      id: `homework-outbox-${String(this.store.get().outboxEvents.length + 1).padStart(3, '0')}`,
+      eventName,
+      bizId,
+      payload,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    this.store.update((state) => {
+      state.outboxEvents.unshift(event);
+    });
+    return event;
+  }
+
+  listOutboxEvents() {
+    return [...this.store.get().outboxEvents];
   }
 
   runInTransaction<T>(runner: () => T): T {

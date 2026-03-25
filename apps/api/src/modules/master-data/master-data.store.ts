@@ -64,6 +64,19 @@ const DEFAULT_STATE: MasterDataState = {
       createdAt: '2026-03-24T09:00:00+08:00',
       updatedAt: '2026-03-24T09:00:00+08:00',
     },
+    {
+      id: 'teacher-002',
+      campusId: 'campus-002',
+      employeeNo: 'T002',
+      name: '李老师',
+      mobile: '13800000002',
+      email: 'teacher002@example.com',
+      hireDate: '2025-09-01',
+      leadSubject: 'chinese',
+      status: 'active',
+      createdAt: '2026-03-24T09:05:00+08:00',
+      updatedAt: '2026-03-24T09:05:00+08:00',
+    },
   ],
   families: [
     {

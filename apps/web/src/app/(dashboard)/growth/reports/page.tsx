@@ -3,9 +3,11 @@ import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/compone
 import { queryKeys } from '@/features/shared/query-keys';
 import { growthPermissions } from '@/features/growth/constants';
 import { growthService } from '@/services/growth-service';
-import { mockCurrentUser } from '@/lib/navigation';
+import { getCurrentUser } from '@/lib/current-user';
 
-function ReportListSection({ title, items }: { title: string; items: ReturnType<typeof growthService.queryReports>['queued'] }) {
+type GrowthReportsResult = Awaited<ReturnType<typeof growthService.queryReports>>;
+
+function ReportListSection({ title, items }: { title: string; items: GrowthReportsResult['queued'] }) {
   return (
     <section className="panel stack">
       <div className="page-header">
@@ -29,9 +31,10 @@ function ReportListSection({ title, items }: { title: string; items: ReturnType<
   );
 }
 
-export default function GrowthReportsPage() {
-  const allowed = hasPermission(mockCurrentUser.permissions, growthPermissions.reportsView);
-  const result = growthService.queryReports({ pageNo: 1, pageSize: 20, reportType: 'weekly', publishStatus: 'all' });
+export default async function GrowthReportsPage() {
+  const currentUser = await getCurrentUser();
+  const allowed = hasPermission(currentUser.permissions, growthPermissions.reportsView);
+  const result = await growthService.queryReports({ pageNo: 1, pageSize: 20, reportType: 'weekly', publishStatus: 'all' });
   const action = growthService.actionReport();
 
   return (

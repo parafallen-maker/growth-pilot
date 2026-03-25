@@ -3,13 +3,15 @@ import type { HomeworkSubmission } from '@growthpilot/schema/index';
 import { normalizePage } from '../../../common/base-list-query.dto';
 import type { PageResult } from '../../../common/api-response';
 import { FilesService } from '../../files/service/files.service';
+import { HomeworkErrorTaxonomyQueryDto, CreateHomeworkErrorTaxonomyDto, UpdateHomeworkErrorTaxonomyDto } from '../dto/homework-error-taxonomy.dto';
 import { HomeworkEventPublisher } from '../event/homework-event.publisher';
 import { HomeworkAnalysisQueue } from '../job/homework-analysis.queue';
 import { CreateHomeworkSubmissionDto } from '../dto/create-homework-submission.dto';
+import { HomeworkReviewDraftDto } from '../dto/homework-review-draft.dto';
 import { HomeworkReviewDto } from '../dto/homework-review.dto';
 import { HomeworkSubmissionQueryDto } from '../dto/homework-submission-query.dto';
 import { TriggerHomeworkAnalysisDto } from '../dto/trigger-analysis.dto';
-import { HomeworkRepository } from '../repository/homework.repository';
+import { HomeworkErrorTaxonomy, HomeworkRepository } from '../repository/homework.repository';
 
 @Injectable()
 export class HomeworkService {
@@ -54,6 +56,7 @@ export class HomeworkService {
       files: this.homeworkRepository.listSubmissionFiles(submissionId),
       latestAiAnalysis: this.homeworkRepository.getLatestAnalysis(submissionId) ?? null,
       review: this.homeworkRepository.getReviewBySubmissionId(submissionId) ?? null,
+      reviewDraft: this.homeworkRepository.getReviewDraft(submissionId),
     };
   }
 
@@ -103,6 +106,21 @@ export class HomeworkService {
     };
   }
 
+  getReviewDraft(submissionId: string) {
+    this.homeworkRepository.getSubmissionOrThrow(submissionId);
+    return this.homeworkRepository.getReviewDraft(submissionId);
+  }
+
+  saveReviewDraft(submissionId: string, payload: HomeworkReviewDraftDto) {
+    return this.homeworkRepository.runInTransaction(() => {
+      const draft = this.homeworkRepository.saveReviewDraft(submissionId, payload);
+      this.homeworkRepository.updateSubmission(submissionId, {
+        reviewStatus: 'reviewing',
+      });
+      return draft;
+    });
+  }
+
   submitReview(submissionId: string, payload: HomeworkReviewDto) {
     return this.homeworkRepository.runInTransaction(() => {
       const submission = this.homeworkRepository.getSubmissionOrThrow(submissionId);
@@ -137,6 +155,7 @@ export class HomeworkService {
         finalErrorSummary: payload.finalErrorSummary ?? null,
         publishedAt: payload.publishToFamily ? new Date().toISOString() : null,
       });
+      this.homeworkRepository.deleteReviewDraft(submissionId);
 
       this.homeworkEventPublisher.publish('HomeworkReviewed', submissionId, {
         reviewId: review.id,
@@ -149,5 +168,42 @@ export class HomeworkService {
         reviewStatus: this.homeworkRepository.getSubmissionOrThrow(submissionId).reviewStatus,
       };
     });
+  }
+
+  listErrorTaxonomies(query: HomeworkErrorTaxonomyQueryDto): HomeworkErrorTaxonomy[] {
+    return this.homeworkRepository.listErrorTaxonomies().filter((item) => {
+      if (query.status && item.status !== query.status) return false;
+      if (query.subject && item.subject !== query.subject) return false;
+      if (query.keyword) {
+        const haystack = [item.code, item.name, item.description, item.subject, item.stageScope].filter(Boolean).join(' ').toLowerCase();
+        if (!haystack.includes(query.keyword.toLowerCase())) return false;
+      }
+      return true;
+    });
+  }
+
+  createErrorTaxonomy(payload: CreateHomeworkErrorTaxonomyDto) {
+    return this.homeworkRepository.createErrorTaxonomy({
+      code: payload.code,
+      name: payload.name,
+      subject: payload.subject,
+      stageScope: payload.stageScope,
+      description: payload.description,
+      status: payload.status ?? 'active',
+      sortOrder: payload.sortOrder ?? 100,
+    });
+  }
+
+  updateErrorTaxonomy(taxonomyId: string, payload: UpdateHomeworkErrorTaxonomyDto) {
+    return this.homeworkRepository.updateErrorTaxonomy(taxonomyId, payload);
+  }
+
+  deleteErrorTaxonomy(taxonomyId: string) {
+    this.homeworkRepository.deleteErrorTaxonomy(taxonomyId);
+    return { deleted: true, taxonomyId };
+  }
+
+  listOutboxEvents() {
+    return this.homeworkRepository.listOutboxEvents();
   }
 }

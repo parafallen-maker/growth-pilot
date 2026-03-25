@@ -24,7 +24,7 @@ function createHomeworkFixture() {
   const jobsService = new JobsService(new JobsRepository());
   const filesService = new FilesService(new FileAssetRepository(), new MockObjectStorageAdapter());
   const homeworkRepository = new HomeworkRepository();
-  const eventPublisher = new HomeworkEventPublisher();
+  const eventPublisher = new HomeworkEventPublisher(homeworkRepository);
   const queue = new HomeworkAnalysisQueue(jobsService, homeworkRepository, filesService, new MockHomeworkAnalysisAdapter());
   const service = new HomeworkService(homeworkRepository, queue, eventPublisher, filesService);
 
@@ -37,7 +37,7 @@ function createHomeworkFixture() {
   };
 }
 
-test('homework submission -> analyze -> review persists across repository restarts', async () => {
+test('homework submission -> draft -> analyze -> review persists across repository restarts', async () => {
   resetDataDir();
   const { service, homeworkRepository, jobsService, eventPublisher } = createHomeworkFixture();
 
@@ -56,11 +56,33 @@ test('homework submission -> analyze -> review persists across repository restar
   assert.equal(submission.aiStatus, 'pending');
   assert.equal(homeworkRepository.listSubmissionFiles(submission.id).length, 2);
 
-  const job = await service.triggerAnalysis(submission.id, {
-    provider: 'doubao',
-    modelName: 'vision-v1',
-    promptVersion: 'homework-review-v3',
-  }, 'idem-homework-001');
+  const draft = service.saveReviewDraft(submission.id, {
+    reviewResult: 'adjusted',
+    finalAccuracyPct: 82,
+    finalErrorSummary: '草稿：先看审题',
+    finalSuggestion: '先圈关键词',
+    publishToFamily: false,
+    finalErrorItems: [
+      {
+        errorTaxonomyId: 'taxonomy-001',
+        weight: 1,
+        note: '先存草稿',
+      },
+    ],
+  });
+
+  assert.equal(draft.submissionId, submission.id);
+  assert.equal(homeworkRepository.getSubmissionOrThrow(submission.id).reviewStatus, 'reviewing');
+
+  const job = await service.triggerAnalysis(
+    submission.id,
+    {
+      provider: 'doubao',
+      modelName: 'vision-v1',
+      promptVersion: 'homework-review-v3',
+    },
+    'idem-homework-001',
+  );
 
   assert.match(job.jobId, /^job-homework_analysis-/);
   assert.equal(jobsService.getJob(job.jobId).status, 'success');
@@ -89,11 +111,48 @@ test('homework submission -> analyze -> review persists across repository restar
   assert.equal(detail.finalAccuracyPct, 85);
   assert.equal(restartedRepository.getReviewBySubmissionId(submission.id)?.publishToFamily, true);
   assert.equal(restartedRepository.listReviewErrorItems(review.reviewId).length, 1);
+  assert.equal(restartedRepository.getReviewDraft(submission.id), null);
+  assert.equal(restartedRepository.listOutboxEvents().length, 2);
+  assert.equal(restartedRepository.listOutboxEvents()[0]?.eventName, 'HomeworkReviewed');
   assert.equal(restartedJobsService.getJob(job.jobId).status, 'success');
   assert.deepEqual(
     eventPublisher.list().map((item) => item.eventName),
     ['HomeworkReviewed', 'HomeworkSubmitted'],
   );
+});
+
+test('homework error taxonomy CRUD enforces uniqueness and reference guard', async () => {
+  resetDataDir();
+  const { service } = createHomeworkFixture();
+
+  const taxonomy = service.createErrorTaxonomy({
+    code: 'MATH_READ',
+    name: '审题偏差',
+    subject: 'math',
+    status: 'active',
+    sortOrder: 120,
+  });
+
+  assert.equal(service.listErrorTaxonomies({ subject: 'math' }).some((item) => item.id === taxonomy.id), true);
+
+  const updated = service.updateErrorTaxonomy(taxonomy.id, {
+    name: '审题偏差（更新）',
+    status: 'inactive',
+  });
+  assert.equal(updated.name, '审题偏差（更新）');
+  assert.equal(updated.status, 'inactive');
+
+  assert.throws(() =>
+    service.createErrorTaxonomy({
+      code: 'MATH_READ',
+      name: '重复 code',
+    }),
+  );
+
+  service.deleteErrorTaxonomy(taxonomy.id);
+  assert.equal(service.listErrorTaxonomies({ keyword: '审题偏差' }).length, 0);
+
+  assert.throws(() => service.deleteErrorTaxonomy('taxonomy-001'));
 });
 
 test('homework analysis dedupe blocks duplicate active job', async () => {

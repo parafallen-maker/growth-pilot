@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { HomeworkRepository } from '../repository/homework.repository';
 
 export interface HomeworkDomainEvent {
   eventName: 'HomeworkSubmitted' | 'HomeworkReviewed';
@@ -9,20 +10,13 @@ export interface HomeworkDomainEvent {
 
 @Injectable()
 export class HomeworkEventPublisher {
-  private readonly events: HomeworkDomainEvent[] = [];
+  constructor(private readonly homeworkRepository: HomeworkRepository) {}
 
   publish(eventName: HomeworkDomainEvent['eventName'], bizId: string, payload: Record<string, unknown>) {
-    const event: HomeworkDomainEvent = {
-      eventName,
-      bizId,
-      payload,
-      createdAt: new Date().toISOString(),
-    };
-    this.events.unshift(event);
-    return event;
+    return this.homeworkRepository.enqueueOutboxEvent(eventName, bizId, payload);
   }
 
   list() {
-    return [...this.events];
+    return this.homeworkRepository.listOutboxEvents();
   }
 }
