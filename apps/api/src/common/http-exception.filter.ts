@@ -63,6 +63,9 @@ export class ApiHttpExceptionFilter implements ExceptionFilter {
     if (status === HttpStatus.CONFLICT || exception instanceof ConflictException) {
       return { code: 'FLOW_409', message: fallbackMessage || 'conflict', details };
     }
+    if (status === HttpStatus.TOO_MANY_REQUESTS) {
+      return { code: 'FLOW_429', message: fallbackMessage || 'rate limit exceeded', details };
+    }
     if (status === HttpStatus.UNPROCESSABLE_ENTITY || exception instanceof UnprocessableEntityException) {
       return { code: 'DATA_422', message: fallbackMessage || 'unprocessable entity', details };
     }

@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { createHmac, randomUUID } from 'node:crypto';
+import { getAuthCookieOptions, hashToken, requireJwtSecret, secureCompare } from '../../../common/security';
 import { DefaultAuthSessionRepository } from '../repository/auth-session.repository';
 import { SessionRecord } from '../auth.types';
 import { UsersService } from '../../users/service/users.service';
@@ -7,9 +8,15 @@ import { CurrentUserProfile } from '../../users/users.types';
 import { AuthRateLimitService } from './auth-rate-limit.service';
 import { AuthSessionCacheService } from './auth-session-cache.service';
 
+interface IssuedSession {
+  accessToken: string;
+  refreshToken: string;
+  session: SessionRecord;
+}
+
 @Injectable()
 export class AuthService {
-  private readonly jwtSecret = process.env.JWT_SECRET ?? 'growthpilot-dev-secret';
+  private readonly jwtSecret = requireJwtSecret();
   private readonly issuer = 'growthpilot-api';
   private readonly audience = 'growthpilot-web';
   private readonly accessTtlSeconds = Number(process.env.JWT_ACCESS_TTL_SECONDS ?? 15 * 60);
@@ -25,6 +32,10 @@ export class AuthService {
     private readonly authSessionCacheService: AuthSessionCacheService = new AuthSessionCacheService(),
     private readonly authRateLimitService: AuthRateLimitService = new AuthRateLimitService(),
   ) {}
+
+  getCookieOptions() {
+    return getAuthCookieOptions();
+  }
 
   async login(username: string, password: string, actorKey?: string) {
     const loginActorKey = this.buildLoginActorKey(username, actorKey);
@@ -109,7 +120,7 @@ export class AuthService {
     return {};
   }
 
-  private async issueSession(userId: string): Promise<SessionRecord> {
+  private async issueSession(userId: string): Promise<IssuedSession> {
     const now = new Date();
     const sessionId = randomUUID();
     const accessTokenId = randomUUID();
@@ -124,8 +135,8 @@ export class AuthService {
       userId,
       accessTokenId,
       refreshTokenId,
-      accessToken,
-      refreshToken,
+      accessToken: hashToken(accessToken),
+      refreshToken: hashToken(refreshToken),
       accessExpiresAt,
       refreshExpiresAt,
       createdAt: now.toISOString(),
@@ -136,7 +147,7 @@ export class AuthService {
     await this.authSessionRepository.save(session);
     await this.authSessionCacheService.cache(session);
 
-    return session;
+    return { session, accessToken, refreshToken };
   }
 
   private revokeSession(sessionId: string, reason: 'logout' | 'rotated') {
@@ -169,7 +180,7 @@ export class AuthService {
   private tryVerifyToken(token: string, expectedType: 'access' | 'refresh') {
     const [header, payload, signature] = token.split('.');
     if (!header || !payload || !signature) return null;
-    if (this.sign(`${header}.${payload}`) !== signature) return null;
+    if (!secureCompare(this.sign(`${header}.${payload}`), signature)) return null;
 
     const claims = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as {
       sub: string; sid: string; jti: string; type: 'access' | 'refresh'; exp: number; iss: string; aud: string;

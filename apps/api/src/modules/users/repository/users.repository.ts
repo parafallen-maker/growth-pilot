@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InferSelectModel, desc, eq, ilike, inArray, or } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
+import { PasswordService } from '../../../common/security';
 import { createDb, dbSchema } from '../../../db';
 import { FileJsonStore } from '../../../shared/persistence/file-json-store';
 import { isDbPersistenceEnabled } from '../../../shared/persistence/adapter';
@@ -11,6 +12,8 @@ interface UsersStoreShape {
   roles: Role[];
   users: UserRecord[];
 }
+
+const passwordService = new PasswordService();
 
 const defaultPermissions: Permission[] = [
   { id: 'perm-auth-session-read', code: 'auth.session.read', name: '读取会话信息', module: 'auth', action: 'read' },
@@ -78,7 +81,7 @@ const defaultUsers: UserRecord[] = [
   {
     id: 'user-admin-001',
     username: 'admin',
-    password: 'admin123',
+    passwordHash: passwordService.hash('admin123'),
     displayName: '系统管理员',
     mobile: '13800000000',
     email: 'admin@growthpilot.local',
@@ -89,7 +92,7 @@ const defaultUsers: UserRecord[] = [
   {
     id: 'user-teacher-001',
     username: 'teacher.zhang',
-    password: 'teacher123',
+    passwordHash: passwordService.hash('teacher123'),
     displayName: '张老师',
     mobile: '13800000001',
     email: 'teacher.zhang@growthpilot.local',
@@ -249,7 +252,7 @@ class DbUsersRepository implements UsersRepositoryPort {
         .insert(dbSchema.users)
         .values({
           username: input.username,
-          passwordHash: input.password,
+          passwordHash: input.passwordHash,
           displayName: input.displayName,
           mobile: input.mobile ?? null,
           email: input.email ?? null,
@@ -282,7 +285,7 @@ class DbUsersRepository implements UsersRepositoryPort {
     return {
       id: row.id,
       username: row.username,
-      password: row.passwordHash,
+      passwordHash: row.passwordHash,
       displayName: row.displayName,
       mobile: row.mobile ?? undefined,
       email: row.email ?? undefined,

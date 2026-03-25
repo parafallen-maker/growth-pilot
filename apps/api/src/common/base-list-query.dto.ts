@@ -1,4 +1,8 @@
+import { baseListQuerySchema } from './validation';
+
 export class BaseListQueryDto {
+  static schema = baseListQuerySchema;
+
   pageNo?: number;
   pageSize?: number;
   keyword?: string;

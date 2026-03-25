@@ -18,7 +18,7 @@ export interface Role {
 export interface UserRecord {
   id: string;
   username: string;
-  password: string;
+  passwordHash: string;
   displayName: string;
   mobile?: string;
   email?: string;

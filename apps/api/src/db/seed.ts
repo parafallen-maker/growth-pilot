@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
+import { redactSensitiveForLogs } from '../common/security';
 import { settingsRepositorySeed } from '../modules/settings/repository/settings.repository';
 import { usersRepositorySeed } from '../modules/users/repository/users.repository';
 import { authSessions, campuses, permissions, roles, schoolTerms, systemDictionaries, userRoles, users } from './schema';
@@ -73,7 +74,7 @@ export function buildSeedPlan() {
     users: usersRepositorySeed.users.map((user) => ({
       id: user.id,
       username: user.username,
-      passwordHash: user.password,
+      passwordHash: user.passwordHash,
       displayName: user.displayName,
       mobile: user.mobile ?? null,
       email: user.email ?? null,
@@ -164,7 +165,7 @@ if (require.main === module) {
       console.log('Seed completed', result);
     })
     .catch((error) => {
-      console.error(error);
+      console.error(redactSensitiveForLogs(error));
       process.exitCode = 1;
     });
 }

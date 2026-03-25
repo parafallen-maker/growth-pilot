@@ -426,37 +426,44 @@
 
 #### 安全加固
 
-- [ ] `BE-30` **CORS 配置**：
+- [x] `BE-30` **CORS 配置**：
   - 在 `main.ts` 配置 `app.enableCors()` 
   - 只允许生产域名 + localhost（dev）
   - 配置 `credentials: true`
+  - 2026-03-25：已在 `main.ts` 启用 CORS，支持 `CORS_ORIGINS` 显式白名单；非生产环境额外放行 localhost/127.0.0.1 常见端口，并开启 `credentials: true`。
 
-- [ ] `BE-31` **Helmet 安全头**：
+- [x] `BE-31` **Helmet 安全头**：
   - 安装 `@nestjs/common` 内置 `helmet` 或 `helmet` 包
   - 配置 CSP、X-Frame-Options、X-Content-Type-Options 等
+  - 2026-03-25：已通过自定义安全头中间件落地等效能力，统一下发 CSP / `X-Frame-Options` / `X-Content-Type-Options` / `Referrer-Policy` / `HSTS(https+prod)` 等头。
 
-- [ ] `BE-32` **Rate Limiting**：
+- [x] `BE-32` **Rate Limiting**：
   - 安装 `@nestjs/throttler`
   - 全局限流：60 req/min
   - 登录接口特殊限流：5 req/min（防暴力破解）
+  - 2026-03-25：已接入全局 in-memory rate limit guard，默认 `60 req/min`；`POST /auth/login` 单独收紧到 `5 req/min`，`/auth/refresh` 为 `10 req/min`。
 
-- [ ] `BE-33` **输入校验强化**：
+- [x] `BE-33` **输入校验强化**：
   - 确保所有 DTO 使用 `class-validator` 装饰器
   - 全局启用 `ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })`
   - SQL 注入防护确认（Drizzle 参数化查询）
+  - 2026-03-25：已为 API DTO 补齐 strict schema，并在 `main.ts` 全局启用严格校验 pipe，等效实现 `whitelist + forbidNonWhitelisted`；Drizzle DB 路径继续使用参数化查询。
 
-- [ ] `BE-34` **JWT Secret 生产化**：
+- [x] `BE-34` **JWT Secret 生产化**：
   - 不允许使用默认 `growthpilot-dev-secret`
   - 启动时检查 `JWT_SECRET` 环境变量长度 ≥ 32 字符
   - 生产环境强制 HTTPS-only cookie
+  - 2026-03-25：启动前强制校验 `JWT_SECRET` 非默认值且长度 ≥ 32；auth 控制器新增 `HttpOnly` cookie 下发与清理，生产环境自动强制 `secure`。
 
-- [ ] `BE-35` **密码安全**：
+- [/] `BE-35` **密码安全**：
   - 用户密码使用 `bcrypt`（cost factor ≥ 12）存储
   - 禁止明文密码存储和传输
+  - 2026-03-25：已彻底去掉明文密码存储与比对，改为 Node.js `scrypt` 哈希（seed/file/db default users 与 create user 全部改为 hash）；由于本工作树无法引入新依赖，尚未切成 checklist 指定的 `bcrypt`，因此保持 `[/]`。
 
-- [ ] `BE-36` **敏感数据脱敏**：
+- [x] `BE-36` **敏感数据脱敏**：
   - API 响应中隐藏密码、token 等敏感字段
   - 日志中不输出密码和完整 token
+  - 2026-03-25：新增全局响应脱敏 interceptor，默认隐藏 `password/passwordHash/accessToken/refreshToken/secret` 等字段；仅 auth login/refresh 显式放行 token 响应。会话持久化改存 token 指纹而非原文，日志输出也统一做敏感字段遮罩。
 
 #### 性能优化
 
