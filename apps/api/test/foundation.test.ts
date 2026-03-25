@@ -10,7 +10,7 @@ import { BullmqJobBroker } from '../src/modules/jobs/queue/bullmq-job-broker';
 import { JobsRepository } from '../src/modules/jobs/repository/jobs.repository';
 import { JobsService } from '../src/modules/jobs/service/jobs.service';
 import { SettingsRepository } from '../src/modules/settings/repository/settings.repository';
-import { SettingsService } from '../src/modules/settings/service/settings.service';
+import { ACCESS_PERMISSION_DICT_TYPE, ACCESS_ROLE_DICT_TYPE, SettingsService } from '../src/modules/settings/service/settings.service';
 import { UsersRepository } from '../src/modules/users/repository/users.repository';
 import { UsersService } from '../src/modules/users/service/users.service';
 
@@ -34,7 +34,7 @@ function createFixture() {
     new AuthSessionCacheService(redisKvService),
     new AuthRateLimitService(redisKvService),
   );
-  const settingsService = new SettingsService(new SettingsRepository());
+  const settingsService = new SettingsService(new SettingsRepository(), usersRepository);
   const jobsService = new JobsService(new JobsRepository());
 
   return {
@@ -84,6 +84,19 @@ test('settings queries return filtered mock data aligned with list shape', async
   const dictionaries = await settingsService.listDictionaries('job_status');
   assert.equal(dictionaries.list.length, 2);
   assert.equal(dictionaries.list[0]?.dictType, 'job_status');
+
+  const roleCatalog = await settingsService.listDictionaries(ACCESS_ROLE_DICT_TYPE);
+  assert.equal(roleCatalog.list.length, 2);
+  assert.equal(roleCatalog.list[0]?.dictType, ACCESS_ROLE_DICT_TYPE);
+  assert.equal(roleCatalog.list[0]?.code, 'admin');
+  assert.equal(roleCatalog.list[0]?.status, 'active');
+  assert.ok((roleCatalog.list[0]?.permissionCount ?? 0) > 0);
+
+  const permissionCatalog = await settingsService.listDictionaries(ACCESS_PERMISSION_DICT_TYPE);
+  assert.ok(permissionCatalog.list.length > 10);
+  assert.equal(permissionCatalog.list[0]?.dictType, ACCESS_PERMISSION_DICT_TYPE);
+  assert.equal(permissionCatalog.list[0]?.module, 'analytics');
+  assert.equal(permissionCatalog.list[0]?.action, 'view');
 });
 
 test('jobs and user role assignment skeleton are available', async () => {

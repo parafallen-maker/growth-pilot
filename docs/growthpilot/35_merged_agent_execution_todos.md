@@ -298,10 +298,11 @@
   - [x] 列表调用 `GET /families`
   - [x] 详情调用 `GET /families/{id}`
 
-- [/] `FE-09` **Settings 页面接真**：
+- [x] `FE-09` **Settings 页面接真**：
   - [x] users 调用 `GET /users`
   - [x] system 调用 `GET /settings/campuses`、`GET /settings/terms`、`GET /settings/dictionaries`
-  - [/] AI 任务中心已接 `GET /jobs`；本轮补齐 users 真状态字段与校区名展示，角色列表改为基于真实 `/users` 分配聚合，权限点改展示当前登录态真实权限集；独立 roles / permissions catalog 接口仍缺后端支持。
+  - [x] AI 任务中心已接 `GET /jobs`；本轮补齐 users 真状态字段与校区名展示，并将角色/权限目录切到真实 `GET /settings/dictionaries?dictType=access_role|access_permission`，前端不再从 `/users` 或当前登录态推断 catalog。
+  - 2026-03-26：已完成收口验证，`npm run test --workspace @growthpilot/api` 31/31 PASS，`npm run build --workspace @growthpilot/web` PASS。
 
 - [x] `FE-10` **统一四态组件**：
   - `LoadingState` — 骨架屏/spinner
