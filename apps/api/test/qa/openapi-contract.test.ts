@@ -222,8 +222,8 @@ test('QA-06 contract smoke exercises representative happy paths across auth, cor
   assert.equal(assertEnvelope(await familiesController.detail(familyId!)).family.id, familyId);
 
   const uploaded = assertEnvelope(await filesController.uploadOne({
-    fileName: 'qa-contract-smoke.txt',
-    mimeType: 'text/plain',
+    fileName: 'qa-contract-smoke.pdf',
+    mimeType: 'application/pdf',
     sizeBytes: 5,
     checksum: 'sha256:qa-smoke',
     contentBase64: Buffer.from('hello').toString('base64'),
@@ -234,8 +234,8 @@ test('QA-06 contract smoke exercises representative happy paths across auth, cor
   assert.equal(fileDetail.fileId, uploaded.fileId);
   const batchUpload = assertEnvelope(await filesController.uploadMany({
     files: [{
-      fileName: 'qa-batch.txt',
-      mimeType: 'text/plain',
+      fileName: 'qa-batch.pdf',
+      mimeType: 'application/pdf',
       sizeBytes: 4,
       checksum: 'sha256:batch',
       contentBase64: Buffer.from('data').toString('base64'),

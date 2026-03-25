@@ -5,7 +5,7 @@ import { LocalObjectStorageAdapter } from '../src/modules/files/adapter/local-ob
 import { MockObjectStorageAdapter } from '../src/modules/files/adapter/mock-object-storage.adapter';
 import { S3ObjectStorageAdapter } from '../src/modules/files/adapter/s3-object-storage.adapter';
 import { FileAssetRepository } from '../src/modules/files/repository/file-asset.repository';
-import { FilesService } from '../src/modules/files/service/files.service';
+import { FilesService, MAX_FILE_UPLOAD_BYTES, MAX_UPLOAD_REQUEST_BYTES } from '../src/modules/files/service/files.service';
 
 function createFilesService(useMock = false) {
   rmSync('.data/file-assets.json', { force: true });
@@ -54,8 +54,8 @@ test('files service returns fileId for single and batch uploads', async () => {
 test('files service keeps mock provider replaceable', async () => {
   const service = createFilesService(true);
   const uploaded = await service.uploadMultipartFile({
-    fileName: 'demo.txt',
-    mimeType: 'text/plain',
+    fileName: 'demo.pdf',
+    mimeType: 'application/pdf',
     content: Buffer.from('hello'),
   });
 
@@ -80,4 +80,44 @@ test('s3 adapter can resolve MinIO-compatible public URLs without loading the SD
       process.env.S3_PUBLIC_BASE_URL = originalBaseUrl;
     }
   }
+});
+
+test('files service rejects oversized and disallowed uploads', async () => {
+  const service = createFilesService();
+
+  await assert.rejects(
+    () => service.uploadOne({
+      fileName: 'large.pdf',
+      mimeType: 'application/pdf',
+      sizeBytes: MAX_FILE_UPLOAD_BYTES + 1,
+    }),
+    /single file size exceeds/i,
+  );
+
+  await assert.rejects(
+    () => service.uploadOne({
+      fileName: 'script.sh',
+      mimeType: 'text/x-shellscript',
+      sizeBytes: 12,
+      contentBase64: Buffer.from('echo demo').toString('base64'),
+    }),
+    /mimeType .* is not allowed/i,
+  );
+
+  await assert.rejects(
+    () =>
+      service.uploadMany([
+        {
+          fileName: 'a.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: MAX_UPLOAD_REQUEST_BYTES,
+        },
+        {
+          fileName: 'b.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 1,
+        },
+      ]),
+    /batch upload size exceeds/i,
+  );
 });

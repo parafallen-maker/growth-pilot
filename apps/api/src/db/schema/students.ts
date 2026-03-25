@@ -1,4 +1,4 @@
-import { createId, date, pgTable, primaryKey, text, timestamp, uniqueIndex, varchar, activeStatus } from './base';
+import { activeStatus, createId, date, index, pgTable, text, timestamp, uniqueIndex, varchar } from './base';
 import { campuses, schoolTerms } from './settings';
 import { teachers } from './teachers';
 import { families } from './families';
@@ -19,7 +19,11 @@ export const students = pgTable('students', {
   profileNotes: text('profile_notes'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-}, (table) => [uniqueIndex('students_student_no_uq').on(table.studentNo)]);
+}, (table) => [
+  uniqueIndex('students_student_no_uq').on(table.studentNo),
+  index('students_home_campus_status_idx').on(table.homeCampusId, table.status),
+  index('students_created_at_idx').on(table.createdAt),
+]);
 
 export const studentEnrollments = pgTable('student_enrollments', {
   id: createId(),
@@ -35,7 +39,11 @@ export const studentEnrollments = pgTable('student_enrollments', {
   remark: text('remark'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-}, (table) => [uniqueIndex('student_enrollments_student_campus_term_uq').on(table.studentId, table.campusId, table.termId)]);
+}, (table) => [
+  uniqueIndex('student_enrollments_student_campus_term_uq').on(table.studentId, table.campusId, table.termId),
+  index('student_enrollments_campus_term_status_idx').on(table.campusId, table.termId, table.status),
+  index('student_enrollments_teacher_idx').on(table.primaryTeacherId),
+]);
 
 export const studentLabels = pgTable('student_tags', {
   id: createId(),

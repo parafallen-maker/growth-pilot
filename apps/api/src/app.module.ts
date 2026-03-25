@@ -11,6 +11,7 @@ import { CommunicationModule } from './modules/communication/communication.modul
 import { FamiliesModule } from './modules/families/families.module';
 import { FilesModule } from './modules/files/files.module';
 import { GrowthModule } from './modules/growth/growth.module';
+import { HealthModule } from './modules/health/health.module';
 import { HomeworkModule } from './modules/homework/homework.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { SettingsModule } from './modules/settings/settings.module';
@@ -29,6 +30,7 @@ import { UsersModule } from './modules/users/users.module';
     StudentsModule,
     FamiliesModule,
     FilesModule,
+    HealthModule,
     HomeworkModule,
     AttendanceModule,
     BillingModule,

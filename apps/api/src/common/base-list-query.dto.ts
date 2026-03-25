@@ -1,5 +1,8 @@
 import { baseListQuerySchema } from './validation';
 
+export const DEFAULT_PAGE_SIZE = 20;
+export const MAX_PAGE_SIZE = 100;
+
 export class BaseListQueryDto {
   static schema = baseListQuerySchema;
 
@@ -16,6 +19,6 @@ export class BaseListQueryDto {
 export function normalizePage(query: BaseListQueryDto) {
   return {
     pageNo: Math.max(Number(query.pageNo) || 1, 1),
-    pageSize: Math.max(Number(query.pageSize) || 20, 1),
+    pageSize: Math.min(Math.max(Number(query.pageSize) || DEFAULT_PAGE_SIZE, 1), MAX_PAGE_SIZE),
   };
 }

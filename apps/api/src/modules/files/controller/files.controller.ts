@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { IncomingMessage } from 'node:http';
 import { ApiAuthGuard } from '../../../common/auth.guard';
 import { ok } from '../../../common/api-response';
 import { UploadFileDto } from '../dto/upload-file.dto';
 import { UploadFilesDto } from '../dto/upload-files.dto';
+import { MAX_FILE_UPLOAD_BYTES, MAX_UPLOAD_REQUEST_BYTES } from '../service/files.service';
 import { FilesService } from '../service/files.service';
 
 @Controller('files')
@@ -48,12 +49,24 @@ export class FilesController {
   private async parseMultipartRequest(request: IncomingMessage, contentType?: string) {
     const boundary = contentType?.match(/boundary=([^;]+)/i)?.[1];
     if (!boundary) {
-      throw new Error('multipart boundary is required');
+      throw new BadRequestException('multipart boundary is required');
+    }
+
+    const contentLengthHeader = request.headers['content-length'];
+    const contentLength = typeof contentLengthHeader === 'string' ? Number(contentLengthHeader) : NaN;
+    if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_REQUEST_BYTES) {
+      throw new BadRequestException(`request body exceeds ${MAX_UPLOAD_REQUEST_BYTES} bytes`);
     }
 
     const chunks: Buffer[] = [];
+    let totalBytes = 0;
     for await (const chunk of request) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      totalBytes += buffer.byteLength;
+      if (totalBytes > MAX_UPLOAD_REQUEST_BYTES) {
+        throw new BadRequestException(`request body exceeds ${MAX_UPLOAD_REQUEST_BYTES} bytes`);
+      }
+      chunks.push(buffer);
     }
     const raw = Buffer.concat(chunks);
     const marker = Buffer.from(`--${boundary}`);
@@ -69,9 +82,12 @@ export class FilesController {
       const fileName = rawHeaders.match(/filename="([^"]+)"/i)?.[1] ?? 'upload.bin';
       const mimeType = rawHeaders.match(/Content-Type:\s*([^\r\n]+)/i)?.[1]?.trim() ?? 'application/octet-stream';
       const content = Buffer.from(rawBody.replace(/\r\n--?$/, '').replace(/\r\n$/, ''), 'binary');
+      if (content.byteLength > MAX_FILE_UPLOAD_BYTES) {
+        throw new BadRequestException(`single file size exceeds ${MAX_FILE_UPLOAD_BYTES} bytes`);
+      }
       return { fileName, mimeType, content };
     }
 
-    throw new Error('multipart file field `file` is required');
+    throw new BadRequestException('multipart file field `file` is required');
   }
 }

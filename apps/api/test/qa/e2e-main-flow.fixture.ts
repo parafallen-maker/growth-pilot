@@ -34,6 +34,7 @@ import { UsersRepository } from '../../src/modules/users/repository/users.reposi
 import { UsersService } from '../../src/modules/users/service/users.service';
 
 const dataDir = resolve(process.cwd(), '.data');
+process.env.JWT_SECRET ??= 'growthpilot-test-secret-with-32-chars!';
 
 function resetDataDir() {
   rmSync(dataDir, { recursive: true, force: true });

@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { normalizePage } from '../../../common/base-list-query.dto';
 import { PasswordService } from '../../../common/security';
-import { buildPagedResult } from '../../../shared/api-response';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UsersRepository } from '../repository/users.repository';
 import { CurrentUserProfile, Permission, Role, UserRecord } from '../users.types';
@@ -13,11 +13,12 @@ export class UsersService {
   ) {}
 
   async listUsers(keyword?: string, pageNo = 1, pageSize = 20) {
+    const normalized = normalizePage({ pageNo, pageSize });
     const users = (await this.usersRepository.list(keyword)).map((user) => this.toContractUser(user));
-    const start = Math.max(pageNo - 1, 0) * pageSize;
+    const start = Math.max(normalized.pageNo - 1, 0) * normalized.pageSize;
     return {
-      list: users.slice(start, start + pageSize),
-      page: { pageNo, pageSize, total: users.length },
+      list: users.slice(start, start + normalized.pageSize),
+      page: { pageNo: normalized.pageNo, pageSize: normalized.pageSize, total: users.length },
     };
   }
 

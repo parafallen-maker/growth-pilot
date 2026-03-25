@@ -9,31 +9,50 @@ import {
   ConflictException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { captureExceptionForTracking } from '../observability/error-tracker';
+import { getRequestId } from '../observability/request-context';
+import { structuredLogger } from '../observability/structured-logger';
 
 @Catch()
 export class ApiHttpExceptionFilter implements ExceptionFilter {
-  catch(exception: unknown, host: ArgumentsHost) {
+  async catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<{ status: (code: number) => { json: (body: unknown) => void } }>();
-    const request = ctx.getRequest<{ url: string; method: string }>();
+    const request = ctx.getRequest<{ url: string; method: string; requestId?: string; authUser?: { id?: string } }>();
 
     const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     const raw = exception instanceof HttpException ? exception.getResponse() : null;
     const normalized = this.normalize(status, raw, exception);
+    const requestId = request.requestId ?? getRequestId();
+    const timestamp = new Date().toISOString();
 
-    response.status(status).json({
-      success: false,
-      error: {
+    structuredLogger.logException({
+      code: normalized.code,
+      message: normalized.message,
+      requestId,
+      userId: request.authUser?.id ?? null,
+      method: request.method,
+      path: request.url,
+      status,
+      details: normalized.details ?? null,
+      error: exception instanceof Error
+        ? { name: exception.name, message: exception.message, stack: exception.stack }
+        : exception,
+    });
+
+    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      await captureExceptionForTracking(exception, {
         code: normalized.code,
         message: normalized.message,
-        details: normalized.details,
-      },
-      meta: {
+        requestId,
         path: request.url,
         method: request.method,
-        timestamp: new Date().toISOString(),
-      },
-    });
+        status,
+        userId: request.authUser?.id,
+      });
+    }
+
+    response.status(status).json(this.buildResponseBody(normalized, requestId, timestamp));
   }
 
   private normalize(status: number, raw: string | object | null, exception: unknown) {
@@ -73,5 +92,26 @@ export class ApiHttpExceptionFilter implements ExceptionFilter {
       return { code: 'DATA_404', message: fallbackMessage || 'not found', details };
     }
     return { code: 'SYS_500', message: fallbackMessage || 'internal server error', details };
+  }
+
+  private buildResponseBody(
+    normalized: { code: string; message: string; details: unknown },
+    requestId: string,
+    timestamp: string,
+  ) {
+    return normalized.details == null
+      ? {
+          code: normalized.code,
+          message: normalized.message,
+          requestId,
+          timestamp,
+        }
+      : {
+          code: normalized.code,
+          message: normalized.message,
+          requestId,
+          timestamp,
+          details: normalized.details,
+        };
   }
 }

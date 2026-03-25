@@ -467,36 +467,39 @@
 
 #### 性能优化
 
-- [ ] `BE-37` **数据库连接池**：
-  - 配置 connection pool（min: 5, max: 20）
-  - 配置连接超时和空闲回收
+- [x] `BE-37` **数据库连接池**：
+  - 已在 `src/db/client.ts` 统一收口 `pg.Pool`，避免 repository 各自创建连接池
+  - 已配置 connection pool（min: 5, max: 20）
+  - 已配置连接超时和空闲回收（`connectionTimeoutMillis` / `idleTimeoutMillis`）
 
-- [ ] `BE-38` **分页查询优化**：
-  - 大表查询添加适当索引
-  - 列表接口默认 pageSize 上限为 100
+- [/] `BE-38` **分页查询优化**：
+  - 已将通用分页 `pageSize` 上限统一收紧为 100，`users` 链路也已接入同一归一化逻辑
+  - 已在 Drizzle schema 源码补充 students/homework/growth 高频列表索引声明
+  - 本轮按允许编辑范围未生成新的 drizzle migration，索引落库仍需后续 migration 执行
 
-- [ ] `BE-39` **文件上传限制**：
-  - 单文件上限 20MB
-  - 请求 body 上限 50MB
-  - 支持文件类型白名单（image/pdf/doc/xls）
+- [x] `BE-39` **文件上传限制**：
+  - 已限制单文件上限 20MB
+  - 已限制 JSON/urlencoded/multipart 请求 body 上限 50MB
+  - 已增加文件类型白名单（image/pdf/doc/docx/xls/xlsx）
 
-- [ ] `BE-40` **响应压缩**：
-  - 启用 `compression` 中间件（gzip）
+- [x] `BE-40` **响应压缩**：
+  - 已启用 gzip 响应压缩中间件
+  - 当前为内置 middleware 实现，未额外引入 `compression` 包
 
 #### 日志与监控
 
-- [ ] `BE-41` **结构化日志**：
-  - 接入 `pino` 或 `winston`
-  - JSON 格式输出
-  - 包含 requestId、userId、method、path、status、duration
+- [x] `BE-41` **结构化日志**：
+  - 已接入全局 JSON 结构化日志输出
+  - 已覆盖 request log / exception log，包含 requestId、userId、method、path、status、duration
+  - 当前采用自定义结构化 logger，未额外引入 `pino` / `winston`
 
-- [ ] `BE-42` **健康检查端点**：
-  - `GET /health` — 返回 `{ status: "ok", version, uptime }`
-  - `GET /health/ready` — 检查 DB + Redis + S3 连接
+- [x] `BE-42` **健康检查端点**：
+  - 已新增 `GET /health` — 返回 `{ status: "ok", version, uptime }`
+  - 已新增 `GET /health/ready` — 检查 DB / Redis / storage readiness（未配置依赖时返回 skipped）
 
-- [ ] `BE-43` **错误追踪预留**：
-  - 全局异常过滤器统一格式：`{ code, message, requestId, timestamp }`
-  - 预留 Sentry/Bugsnag 接入点（通过环境变量开关）
+- [x] `BE-43` **错误追踪预留**：
+  - 全局异常过滤器已统一为 `{ code, message, requestId, timestamp }`（有 details 时附带 details）
+  - 已预留错误追踪 hook，可通过环境变量开关启用后接入 Sentry/Bugsnag 类 sink
 
 **验收**：
 - 安全扫描无 critical/high 漏洞
