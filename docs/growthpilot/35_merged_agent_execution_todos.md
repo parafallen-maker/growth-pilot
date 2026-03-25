@@ -206,11 +206,16 @@
 
 #### Phase 3：补缺失接口
 
-- [ ] `BE-18` 实现 `POST /students/import`（CSV/JSON 解析 + job 返回）
-- [ ] `BE-19` 实现 `POST /families/{familyId}/tasks`
-- [ ] `BE-20` 实现 `POST /teachers/{teacherId}/development-records`
-- [ ] `BE-21` 实现 `POST /users`（admin 创建用户）
-- [ ] `BE-22` 统一 rubric 参数命名为 `templateId`
+- [x] `BE-18` 实现 `POST /students/import`（CSV/JSON 解析 + job 返回）
+  - 已支持 inline CSV/JSON 解析并复用 `JobsService` 返回 enqueue-compatible job payload；仅传 `fileId`/无内容时会返回 queued job，便于后续接 file asset 拉取。
+- [x] `BE-19` 实现 `POST /families/{familyId}/tasks`
+  - 已补齐 file/db repository 写路径，家庭详情返回真实 `tasks`。
+- [x] `BE-20` 实现 `POST /teachers/{teacherId}/development-records`
+  - 已补齐 file/db repository 写路径，教师详情返回真实 `developmentRecords`。
+- [x] `BE-21` 实现 `POST /users`（admin 创建用户）
+  - 已支持 admin 创建用户并可一次性绑定 `roleIds` / `campusIds`。
+- [x] `BE-22` 统一 rubric 参数命名为 `templateId`
+  - 已在 backend controller/service/repository、OpenAPI 与 API QA contract 中统一为 `templateId`。
 
 #### Phase 4：基础设施升级
 

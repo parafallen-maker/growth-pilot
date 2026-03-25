@@ -7,13 +7,14 @@ import { BillingRepository } from '../billing/repository/billing.repository';
 import { FamiliesModule } from '../families/families.module';
 import { GrowthRepository } from '../growth/repository/growth.repository';
 import { HomeworkRepository } from '../homework/repository/homework.repository';
+import { JobsModule } from '../jobs/jobs.module';
 import { MasterDataModule } from '../master-data/master-data.module';
 import { StudentsController } from './students.controller';
 import { StudentsRepository } from './repository/students.repository';
 import { StudentsService } from './students.service';
 
 @Module({
-  imports: [AuthModule, MasterDataModule, FamiliesModule],
+  imports: [AuthModule, MasterDataModule, FamiliesModule, JobsModule],
   controllers: [StudentsController],
   providers: [ApiAuthGuard, PermissionGuard, 
     StudentsRepository,

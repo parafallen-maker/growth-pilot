@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import type { Family, Guardian } from '@growthpilot/schema/index';
+import type { Family, FamilyTask, Guardian } from '@growthpilot/schema/index';
 import { normalizePage } from '../../common/base-list-query.dto';
 import type { PageResult } from '../../common/api-response';
 import { CreateFamilyDto } from './dto/create-family.dto';
 import { CreateGuardianDto } from './dto/create-guardian.dto';
+import { CreateFamilyTaskDto } from './dto/create-family-task.dto';
 import { FamilyQueryDto } from './dto/family-query.dto';
 import { FamiliesRepository } from './repository/families.repository';
 
@@ -40,7 +41,7 @@ export class FamiliesService {
       guardians: await this.familiesRepository.listGuardiansByFamily(familyId),
       students: await this.familiesRepository.listStudentsByFamily(familyId),
       billingSummary: {},
-      tasks: [],
+      tasks: await this.familiesRepository.listTasksByFamily(familyId),
       communications: [],
     };
   }
@@ -72,6 +73,22 @@ export class FamiliesService {
       isPrimary: payload.isPrimary ?? false,
       isEmergency: payload.isEmergency ?? false,
       notes: payload.notes,
+    });
+  }
+
+  createTask(familyId: string, payload: CreateFamilyTaskDto, createdBy?: string | null): Promise<FamilyTask> {
+    return this.familiesRepository.createTask(familyId, {
+      studentId: payload.studentId ?? null,
+      sourceType: payload.sourceType,
+      sourceId: payload.sourceId ?? null,
+      title: payload.title,
+      description: payload.description,
+      frequency: payload.frequency ?? 'once',
+      assigneeGuardianId: payload.assigneeGuardianId ?? null,
+      startDate: payload.startDate ?? null,
+      dueDate: payload.dueDate ?? null,
+      status: payload.status ?? 'todo',
+      createdBy: createdBy ?? null,
     });
   }
 }

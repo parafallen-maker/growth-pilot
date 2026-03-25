@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import type {
   Enrollment,
   Student,
   Student360Aggregate,
   Student360TimelineItem,
 } from '@growthpilot/schema/index';
+import { randomUUID } from 'node:crypto';
 import { normalizePage } from '../../common/base-list-query.dto';
 import type { PageResult } from '../../common/api-response';
 import { AttendanceRepository } from '../attendance/repository/attendance.repository';
@@ -12,10 +13,36 @@ import { BillingRepository } from '../billing/repository/billing.repository';
 import { FamiliesRepository } from '../families/repository/families.repository';
 import { GrowthRepository } from '../growth/repository/growth.repository';
 import { HomeworkRepository } from '../homework/repository/homework.repository';
+import { JobsRepository } from '../jobs/repository/jobs.repository';
+import { JobsService } from '../jobs/service/jobs.service';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
+import { CreateStudentImportDto } from './dto/create-student-import.dto';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { StudentQueryDto } from './dto/student-query.dto';
 import { StudentsRepository } from './repository/students.repository';
+
+interface ImportedStudentRow {
+  studentNo: string;
+  name: string;
+  gradeLabel: string;
+  gender?: string;
+  birthDate?: string | null;
+  schoolName?: string;
+  className?: string;
+  familyCode?: string;
+  primaryContactName?: string;
+  primaryMobile?: string;
+  campusId?: string;
+  termId?: string;
+  primaryTeacherId?: string;
+  status: string;
+}
+
+interface StudentImportError {
+  rowNumber: number;
+  field?: string;
+  message: string;
+}
 
 @Injectable()
 export class StudentsService {
@@ -26,6 +53,7 @@ export class StudentsService {
     private readonly growthRepository: GrowthRepository = new GrowthRepository(),
     private readonly attendanceRepository: AttendanceRepository = new AttendanceRepository(),
     private readonly billingRepository: BillingRepository = new BillingRepository(),
+    private readonly jobsService: JobsService = new JobsService(new JobsRepository()),
   ) {}
 
   async list(query: StudentQueryDto): Promise<PageResult<Student>> {
@@ -171,8 +199,262 @@ export class StudentsService {
     return this.studentsRepository.listEnrollmentsByStudent(studentId);
   }
 
+  async importStudents(payload: CreateStudentImportDto) {
+    const format = this.resolveImportFormat(payload);
+    const importType = payload.importType ?? 'students';
+    const jobInput = {
+      jobType: 'students_import',
+      bizType: 'student_import',
+      bizId: payload.fileId ?? randomUUID(),
+      payload: {
+        importType,
+        format,
+        dryRun: payload.dryRun ?? true,
+        fileId: payload.fileId ?? null,
+        fileName: payload.fileName ?? null,
+      },
+    } as const;
+
+    if (!payload.content && !payload.records?.length) {
+      return this.toImportJobResponse(this.jobsService.createJob(jobInput));
+    }
+
+    const job = await this.jobsService.enqueueAndProcess(jobInput, async () => {
+      const importedRows = this.parseImportedRows(payload, format);
+      const validation = await this.validateImportedRows(importedRows);
+      return {
+        importType,
+        format,
+        dryRun: payload.dryRun ?? true,
+        totalRows: importedRows.length,
+        validRows: validation.validRows.length,
+        invalidRows: validation.errors.length,
+        duplicateStudentNos: validation.duplicateStudentNos,
+        preview: validation.validRows.slice(0, 20),
+        errors: validation.errors,
+      };
+    });
+
+    return this.toImportJobResponse(job);
+  }
+
   private pickCurrentEnrollment(enrollments: Enrollment[]): Enrollment | null {
     return enrollments.find((item) => item.status === 'active') ?? [...enrollments].sort((a, b) => b.enrollDate.localeCompare(a.enrollDate))[0] ?? null;
+  }
+
+  private toImportJobResponse(job: {
+    jobId: string;
+    jobType: string;
+    bizType: string;
+    bizId: string;
+    status: string;
+    progress: number;
+    queuedAt: string;
+    startedAt?: string | null;
+    finishedAt?: string | null;
+    payload?: Record<string, unknown>;
+    result: Record<string, unknown> | null;
+    errorMessage: string | null;
+    attempts: number;
+  }) {
+    return {
+      jobId: job.jobId,
+      jobType: job.jobType,
+      bizType: job.bizType,
+      bizId: job.bizId,
+      status: job.status,
+      progress: job.progress,
+      attempts: job.attempts,
+      queuedAt: job.queuedAt,
+      startedAt: job.startedAt ?? null,
+      finishedAt: job.finishedAt ?? null,
+      payload: job.payload ?? null,
+      result: job.result,
+      errorMessage: job.errorMessage,
+    };
+  }
+
+  private resolveImportFormat(payload: CreateStudentImportDto): 'csv' | 'json' {
+    if (payload.format) return payload.format;
+    if (payload.fileName?.toLowerCase().endsWith('.csv')) return 'csv';
+    if (payload.fileName?.toLowerCase().endsWith('.json')) return 'json';
+    if (payload.content?.trim().startsWith('[') || payload.content?.trim().startsWith('{') || payload.records?.length) return 'json';
+    return 'csv';
+  }
+
+  private parseImportedRows(payload: CreateStudentImportDto, format: 'csv' | 'json'): Array<{ rowNumber: number; row: ImportedStudentRow }> {
+    if (payload.records?.length) {
+      return payload.records.map((row, index) => ({
+        rowNumber: index + 1,
+        row: this.normalizeImportedRow(row),
+      }));
+    }
+
+    const content = payload.content?.trim();
+    if (!content) {
+      throw new BadRequestException({ code: 'DATA_400', message: 'content or records is required for parsing' });
+    }
+
+    if (format === 'json') {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(content);
+      } catch {
+        throw new BadRequestException({ code: 'DATA_400', message: 'invalid json content' });
+      }
+      const items = Array.isArray(parsed)
+        ? parsed
+        : typeof parsed === 'object' && parsed && Array.isArray((parsed as { records?: unknown[] }).records)
+          ? (parsed as { records: unknown[] }).records
+          : null;
+      if (!items) {
+        throw new BadRequestException({ code: 'DATA_400', message: 'json content must be an array or { records: [] }' });
+      }
+      return items.map((row, index) => ({
+        rowNumber: index + 1,
+        row: this.normalizeImportedRow(row),
+      }));
+    }
+
+    const csvRows = this.parseCsv(content, payload.delimiter ?? ',');
+    if (csvRows.length < 2) {
+      return [];
+    }
+    const [headerRow, ...dataRows] = csvRows;
+    const headers = headerRow.map((value) => value.trim());
+    return dataRows
+      .filter((row) => row.some((cell) => cell.trim().length > 0))
+      .map((row, index) => {
+        const source = Object.fromEntries(headers.map((header, columnIndex) => [header, row[columnIndex] ?? '']));
+        return {
+          rowNumber: index + 2,
+          row: this.normalizeImportedRow(source),
+        };
+      });
+  }
+
+  private normalizeImportedRow(row: unknown): ImportedStudentRow {
+    const source = typeof row === 'object' && row !== null ? row as Record<string, unknown> : {};
+    return {
+      studentNo: this.asString(source.studentNo ?? source.student_no),
+      name: this.asString(source.name),
+      gradeLabel: this.asString(source.gradeLabel ?? source.grade_label),
+      gender: this.asOptionalString(source.gender),
+      birthDate: this.asNullableString(source.birthDate ?? source.birth_date),
+      schoolName: this.asOptionalString(source.schoolName ?? source.school_name),
+      className: this.asOptionalString(source.className ?? source.class_name),
+      familyCode: this.asOptionalString(source.familyCode ?? source.family_code),
+      primaryContactName: this.asOptionalString(source.primaryContactName ?? source.primary_contact_name),
+      primaryMobile: this.asOptionalString(source.primaryMobile ?? source.primary_mobile),
+      campusId: this.asOptionalString(source.campusId ?? source.campus_id),
+      termId: this.asOptionalString(source.termId ?? source.term_id),
+      primaryTeacherId: this.asOptionalString(source.primaryTeacherId ?? source.primary_teacher_id),
+      status: this.asOptionalString(source.status) ?? 'active',
+    };
+  }
+
+  private async validateImportedRows(importedRows: Array<{ rowNumber: number; row: ImportedStudentRow }>) {
+    const existingStudentNos = new Set((await this.studentsRepository.listStudents()).map((student) => student.studentNo));
+    const duplicateStudentNos = new Set<string>();
+    const seenStudentNos = new Set<string>();
+    const validRows: ImportedStudentRow[] = [];
+    const errors: StudentImportError[] = [];
+
+    for (const item of importedRows) {
+      const { rowNumber, row } = item;
+      let hasError = false;
+      if (!row.studentNo) {
+        errors.push({ rowNumber, field: 'studentNo', message: 'studentNo is required' });
+        hasError = true;
+      }
+      if (!row.name) {
+        errors.push({ rowNumber, field: 'name', message: 'name is required' });
+        hasError = true;
+      }
+      if (!row.gradeLabel) {
+        errors.push({ rowNumber, field: 'gradeLabel', message: 'gradeLabel is required' });
+        hasError = true;
+      }
+      if (row.studentNo && existingStudentNos.has(row.studentNo)) {
+        errors.push({ rowNumber, field: 'studentNo', message: 'studentNo already exists' });
+        duplicateStudentNos.add(row.studentNo);
+        hasError = true;
+      }
+      if (row.studentNo && seenStudentNos.has(row.studentNo)) {
+        errors.push({ rowNumber, field: 'studentNo', message: 'studentNo duplicated in import payload' });
+        duplicateStudentNos.add(row.studentNo);
+        hasError = true;
+      }
+      seenStudentNos.add(row.studentNo);
+
+      if (!hasError) {
+        validRows.push(row);
+      }
+    }
+
+    return {
+      validRows,
+      errors,
+      duplicateStudentNos: [...duplicateStudentNos],
+    };
+  }
+
+  private parseCsv(content: string, delimiter: string) {
+    const rows: string[][] = [];
+    let currentRow: string[] = [];
+    let currentCell = '';
+    let inQuotes = false;
+
+    for (let index = 0; index < content.length; index += 1) {
+      const char = content[index];
+      const nextChar = content[index + 1];
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          currentCell += '"';
+          index += 1;
+        } else {
+          inQuotes = !inQuotes;
+        }
+        continue;
+      }
+      if (!inQuotes && char === delimiter) {
+        currentRow.push(currentCell);
+        currentCell = '';
+        continue;
+      }
+      if (!inQuotes && (char === '\n' || char === '\r')) {
+        if (char === '\r' && nextChar === '\n') {
+          index += 1;
+        }
+        currentRow.push(currentCell);
+        rows.push(currentRow);
+        currentRow = [];
+        currentCell = '';
+        continue;
+      }
+      currentCell += char;
+    }
+
+    if (currentCell.length > 0 || currentRow.length > 0) {
+      currentRow.push(currentCell);
+      rows.push(currentRow);
+    }
+
+    return rows;
+  }
+
+  private asString(value: unknown) {
+    return typeof value === 'string' ? value.trim() : value == null ? '' : String(value).trim();
+  }
+
+  private asOptionalString(value: unknown) {
+    const normalized = this.asString(value);
+    return normalized.length ? normalized : undefined;
+  }
+
+  private asNullableString(value: unknown) {
+    const normalized = this.asString(value);
+    return normalized.length ? normalized : null;
   }
 
   private async buildRecentTimeline(studentId: string): Promise<Student360TimelineItem[]> {

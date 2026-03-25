@@ -222,6 +222,34 @@ components:
           items:
             type: string
             format: uuid
+    CreateUserRequest:
+      type: object
+      required:
+      - username
+      - password
+      - displayName
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        displayName:
+          type: string
+        mobile:
+          type: string
+        email:
+          type: string
+        roleIds:
+          type: array
+          items:
+            type: string
+        campusIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        status:
+          type: string
     Campus:
       type: object
       properties:
@@ -274,6 +302,82 @@ components:
           type: string
         status:
           type: string
+    TeacherDevelopmentRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        teacherId:
+          type: string
+          format: uuid
+        recordType:
+          type: string
+        title:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        observerTeacherId:
+          type: string
+          format: uuid
+          nullable: true
+        strengths:
+          type: string
+        improvements:
+          type: string
+        actionItems:
+          type: string
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+        status:
+          type: string
+        attachmentFileId:
+          type: string
+          format: uuid
+          nullable: true
+        createdBy:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateTeacherDevelopmentRecordRequest:
+      type: object
+      required:
+      - recordType
+      - title
+      properties:
+        recordType:
+          type: string
+        title:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        observerTeacherId:
+          type: string
+          format: uuid
+        strengths:
+          type: string
+        improvements:
+          type: string
+        actionItems:
+          type: string
+        dueDate:
+          type: string
+          format: date
+        status:
+          type: string
+        attachmentFileId:
+          type: string
+          format: uuid
     Student:
       type: object
       required:
@@ -344,6 +448,73 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ExternalCourse'
+    CreateStudentImportRequest:
+      type: object
+      properties:
+        importType:
+          type: string
+          default: students
+        fileId:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        format:
+          type: string
+          enum:
+          - csv
+          - json
+        delimiter:
+          type: string
+        dryRun:
+          type: boolean
+          default: true
+        content:
+          type: string
+        records:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    StudentImportJob:
+      type: object
+      properties:
+        jobId:
+          type: string
+        jobType:
+          type: string
+        bizType:
+          type: string
+        bizId:
+          type: string
+        status:
+          type: string
+        progress:
+          type: integer
+        attempts:
+          type: integer
+        queuedAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        payload:
+          type: object
+          additionalProperties: true
+          nullable: true
+        result:
+          type: object
+          additionalProperties: true
+          nullable: true
     ExternalCourse:
       type: object
       properties:
@@ -473,6 +644,61 @@ components:
           type: boolean
         isEmergency:
           type: boolean
+    FamilyTask:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        familyId:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+          nullable: true
+        sourceType:
+          type: string
+        sourceId:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+        description:
+          type: string
+        frequency:
+          type: string
+        assigneeGuardianId:
+          type: string
+          format: uuid
+          nullable: true
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+        status:
+          type: string
+        completionNote:
+          type: string
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdBy:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
     CreateGuardianRequest:
       type: object
       required:
@@ -496,6 +722,36 @@ components:
         isEmergency:
           type: boolean
         notes:
+          type: string
+    CreateFamilyTaskRequest:
+      type: object
+      required:
+      - title
+      properties:
+        studentId:
+          type: string
+          format: uuid
+        sourceType:
+          type: string
+        sourceId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        frequency:
+          type: string
+        assigneeGuardianId:
+          type: string
+          format: uuid
+        startDate:
+          type: string
+          format: date
+        dueDate:
+          type: string
+          format: date
+        status:
           type: string
     HomeworkSubmission:
       type: object
@@ -1359,22 +1615,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - username
-              - password
-              - displayName
-              properties:
-                username:
-                  type: string
-                password:
-                  type: string
-                displayName:
-                  type: string
-                mobile:
-                  type: string
-                email:
-                  type: string
+              $ref: '#/components/schemas/CreateUserRequest'
       responses:
         '200':
           description: success
@@ -1543,7 +1784,7 @@ paths:
                         developmentRecords:
                           type: array
                           items:
-                            type: object
+                            $ref: '#/components/schemas/TeacherDevelopmentRecord'
   /teachers/{teacherId}/development-records:
     post:
       tags:
@@ -1556,29 +1797,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - recordType
-              - title
-              properties:
-                recordType:
-                  type: string
-                title:
-                  type: string
-                occurredAt:
-                  type: string
-                  format: date-time
-                strengths:
-                  type: string
-                improvements:
-                  type: string
-                actionItems:
-                  type: string
-                dueDate:
-                  type: string
-                  format: date
-                status:
-                  type: string
+              $ref: '#/components/schemas/CreateTeacherDevelopmentRecordRequest'
       responses:
         '200':
           description: success
@@ -1590,11 +1809,7 @@ paths:
                 - type: object
                   properties:
                     data:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          format: uuid
+                      $ref: '#/components/schemas/TeacherDevelopmentRecord'
   /students:
     get:
       tags:
@@ -1758,16 +1973,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - fileId
-              properties:
-                fileId:
-                  type: string
-                  format: uuid
-                importType:
-                  type: string
-                  default: students
+              $ref: '#/components/schemas/CreateStudentImportRequest'
       responses:
         '200':
           description: success
@@ -1779,13 +1985,7 @@ paths:
                 - type: object
                   properties:
                     data:
-                      type: object
-                      properties:
-                        jobId:
-                          type: string
-                          format: uuid
-                        status:
-                          type: string
+                      $ref: '#/components/schemas/StudentImportJob'
   /families:
     get:
       tags:
@@ -1874,7 +2074,7 @@ paths:
                         tasks:
                           type: array
                           items:
-                            type: object
+                            $ref: '#/components/schemas/FamilyTask'
                         communications:
                           type: array
                           items:
@@ -1916,33 +2116,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - title
-              properties:
-                studentId:
-                  type: string
-                  format: uuid
-                sourceType:
-                  type: string
-                sourceId:
-                  type: string
-                  format: uuid
-                title:
-                  type: string
-                description:
-                  type: string
-                frequency:
-                  type: string
-                assigneeGuardianId:
-                  type: string
-                  format: uuid
-                startDate:
-                  type: string
-                  format: date
-                dueDate:
-                  type: string
-                  format: date
+              $ref: '#/components/schemas/CreateFamilyTaskRequest'
       responses:
         '200':
           description: success
@@ -1954,11 +2128,7 @@ paths:
                 - type: object
                   properties:
                     data:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          format: uuid
+                      $ref: '#/components/schemas/FamilyTask'
   /files/upload:
     post:
       tags:

@@ -1,8 +1,9 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { asc, eq } from 'drizzle-orm';
-import type { Family, Guardian, Student } from '@growthpilot/schema/index';
+import type { Family, FamilyTask, Guardian, Student } from '@growthpilot/schema/index';
 import { createDb, dbSchema } from '../../../db';
 import { isDbPersistenceEnabled } from '../../../shared/persistence/adapter';
+import { FileJsonStore } from '../../../shared/persistence/file-json-store';
 import { MasterDataStore, type PersistedFamily, type PersistedGuardian, type PersistedStudent } from '../../master-data/master-data.store';
 
 interface CreateFamilyInput {
@@ -29,16 +30,38 @@ interface CreateGuardianInput {
   notes?: string;
 }
 
+interface CreateFamilyTaskInput {
+  studentId?: string | null;
+  sourceType?: string;
+  sourceId?: string | null;
+  title: string;
+  description?: string;
+  frequency: string;
+  assigneeGuardianId?: string | null;
+  startDate?: string | null;
+  dueDate?: string | null;
+  status: string;
+  createdBy?: string | null;
+}
+
+interface FamilyTasksStoreShape {
+  tasks: FamilyTask[];
+}
+
 interface FamiliesRepositoryPort {
   listFamilies(): Promise<PersistedFamily[]>;
   listStudentsByFamily(familyId: string): Promise<Student[]>;
   listGuardiansByFamily(familyId: string): Promise<PersistedGuardian[]>;
+  listTasksByFamily(familyId: string): Promise<FamilyTask[]>;
   findFamilyById(familyId: string): Promise<PersistedFamily | undefined>;
   createFamily(input: CreateFamilyInput): Promise<Family>;
   createGuardian(familyId: string, input: CreateGuardianInput): Promise<Guardian>;
+  createTask(familyId: string, input: CreateFamilyTaskInput): Promise<FamilyTask>;
 }
 
 class FileFamiliesRepository implements FamiliesRepositoryPort {
+  private readonly tasksStore = new FileJsonStore<FamilyTasksStoreShape>('.data/family-tasks.json', () => ({ tasks: [] }));
+
   constructor(private readonly store: MasterDataStore = new MasterDataStore()) {}
 
   async listFamilies() {
@@ -51,6 +74,10 @@ class FileFamiliesRepository implements FamiliesRepositoryPort {
 
   async listGuardiansByFamily(familyId: string) {
     return this.store.read().guardians.filter((item) => item.familyId === familyId);
+  }
+
+  async listTasksByFamily(familyId: string) {
+    return this.tasksStore.read().tasks.filter((item) => item.familyId === familyId);
   }
 
   async findFamilyById(familyId: string) {
@@ -111,6 +138,46 @@ class FileFamiliesRepository implements FamiliesRepositoryPort {
       return guardian;
     });
   }
+
+  async createTask(familyId: string, input: CreateFamilyTaskInput) {
+    return this.store.transact((state) => {
+      const family = state.families.find((item) => item.id === familyId);
+      if (!family) throw new NotFoundException(`Family ${familyId} not found`);
+      if (input.studentId && !state.students.some((item) => item.id === input.studentId && item.familyId === familyId)) {
+        throw new NotFoundException(`Student ${input.studentId} not found in family ${familyId}`);
+      }
+      if (input.assigneeGuardianId && !state.guardians.some((item) => item.id === input.assigneeGuardianId && item.familyId === familyId)) {
+        throw new NotFoundException(`Guardian ${input.assigneeGuardianId} not found in family ${familyId}`);
+      }
+
+      const now = new Date().toISOString();
+      const task: FamilyTask = {
+        id: `family-task-${String(this.tasksStore.read().tasks.length + 1).padStart(3, '0')}`,
+        familyId,
+        studentId: input.studentId ?? null,
+        sourceType: input.sourceType,
+        sourceId: input.sourceId ?? null,
+        title: input.title,
+        description: input.description,
+        frequency: input.frequency,
+        assigneeGuardianId: input.assigneeGuardianId ?? null,
+        startDate: input.startDate ?? null,
+        dueDate: input.dueDate ?? null,
+        status: input.status,
+        completionNote: undefined,
+        completedAt: null,
+        createdBy: input.createdBy ?? null,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      this.tasksStore.update((taskState) => {
+        taskState.tasks.unshift(task);
+      });
+      family.updatedAt = now;
+      return task;
+    });
+  }
 }
 
 class DbFamiliesRepository implements FamiliesRepositoryPort {
@@ -129,6 +196,15 @@ class DbFamiliesRepository implements FamiliesRepositoryPort {
   async listGuardiansByFamily(familyId: string) {
     const rows = await this.db.select().from(dbSchema.guardians).where(eq(dbSchema.guardians.familyId, familyId)).orderBy(asc(dbSchema.guardians.createdAt));
     return rows.map((row) => this.mapGuardian(row));
+  }
+
+  async listTasksByFamily(familyId: string) {
+    const rows = await this.db
+      .select()
+      .from(dbSchema.familyTasks)
+      .where(eq(dbSchema.familyTasks.familyId, familyId))
+      .orderBy(asc(dbSchema.familyTasks.createdAt));
+    return rows.map((row) => this.mapTask(row));
   }
 
   async findFamilyById(familyId: string) {
@@ -200,6 +276,50 @@ class DbFamiliesRepository implements FamiliesRepositoryPort {
     return this.mapGuardian(created);
   }
 
+  async createTask(familyId: string, input: CreateFamilyTaskInput) {
+    const family = await this.findFamilyById(familyId);
+    if (!family) throw new NotFoundException(`Family ${familyId} not found`);
+    if (input.studentId) {
+      const studentRows = await this.listStudentsByFamily(familyId);
+      if (!studentRows.some((item) => item.id === input.studentId)) {
+        throw new NotFoundException(`Student ${input.studentId} not found in family ${familyId}`);
+      }
+    }
+    if (input.assigneeGuardianId) {
+      const guardianRows = await this.listGuardiansByFamily(familyId);
+      if (!guardianRows.some((item) => item.id === input.assigneeGuardianId)) {
+        throw new NotFoundException(`Guardian ${input.assigneeGuardianId} not found in family ${familyId}`);
+      }
+    }
+
+    const now = new Date();
+    const [created] = await this.db.transaction(async (tx) => {
+      const inserted = await tx
+        .insert(dbSchema.familyTasks)
+        .values({
+          familyId,
+          studentId: input.studentId ?? null,
+          sourceType: input.sourceType ?? null,
+          sourceId: input.sourceId ?? null,
+          title: input.title,
+          description: input.description ?? null,
+          frequency: input.frequency,
+          assigneeGuardianId: input.assigneeGuardianId ?? null,
+          startDate: input.startDate ?? null,
+          dueDate: input.dueDate ?? null,
+          status: input.status,
+          createdBy: input.createdBy ?? null,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning();
+      await tx.update(dbSchema.families).set({ updatedAt: now }).where(eq(dbSchema.families.id, familyId));
+      return inserted;
+    });
+
+    return this.mapTask(created);
+  }
+
   private mapFamily(row: typeof dbSchema.families.$inferSelect): PersistedFamily {
     return {
       id: row.id,
@@ -254,6 +374,28 @@ class DbFamiliesRepository implements FamiliesRepositoryPort {
       updatedAt: row.updatedAt.toISOString(),
     };
   }
+
+  private mapTask(row: typeof dbSchema.familyTasks.$inferSelect): FamilyTask {
+    return {
+      id: row.id,
+      familyId: row.familyId,
+      studentId: row.studentId ?? null,
+      sourceType: row.sourceType ?? undefined,
+      sourceId: row.sourceId ?? null,
+      title: row.title,
+      description: row.description ?? undefined,
+      frequency: row.frequency,
+      assigneeGuardianId: row.assigneeGuardianId ?? null,
+      startDate: row.startDate ?? null,
+      dueDate: row.dueDate ?? null,
+      status: row.status,
+      completionNote: row.completionNote ?? undefined,
+      completedAt: row.completedAt?.toISOString() ?? null,
+      createdBy: row.createdBy ?? null,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    };
+  }
 }
 
 @Injectable()
@@ -276,6 +418,10 @@ export class FamiliesRepository {
     return this.adapter.listGuardiansByFamily(familyId);
   }
 
+  listTasksByFamily(familyId: string) {
+    return this.adapter.listTasksByFamily(familyId);
+  }
+
   findFamilyById(familyId: string) {
     return this.adapter.findFamilyById(familyId);
   }
@@ -292,5 +438,9 @@ export class FamiliesRepository {
 
   createGuardian(familyId: string, input: CreateGuardianInput) {
     return this.adapter.createGuardian(familyId, input);
+  }
+
+  createTask(familyId: string, input: CreateFamilyTaskInput) {
+    return this.adapter.createTask(familyId, input);
   }
 }

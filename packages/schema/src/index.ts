@@ -13,6 +13,24 @@ export interface Teacher {
   status: string;
 }
 
+export interface TeacherDevelopmentRecord {
+  id: string;
+  teacherId: string;
+  recordType: string;
+  title: string;
+  occurredAt: string;
+  observerTeacherId?: string | null;
+  strengths?: string;
+  improvements?: string;
+  actionItems?: string;
+  dueDate?: string | null;
+  status: string;
+  attachmentFileId?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Student {
   id: string;
   studentNo: string;
@@ -69,6 +87,26 @@ export interface Guardian {
   mobile?: string;
   isPrimary: boolean;
   isEmergency: boolean;
+}
+
+export interface FamilyTask {
+  id: string;
+  familyId: string;
+  studentId?: string | null;
+  sourceType?: string;
+  sourceId?: string | null;
+  title: string;
+  description?: string;
+  frequency: string;
+  assigneeGuardianId?: string | null;
+  startDate?: string | null;
+  dueDate?: string | null;
+  status: string;
+  completionNote?: string;
+  completedAt?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Student360HomeworkSummary {
@@ -619,4 +657,3 @@ export interface JobStatus {
   result: Record<string, unknown> | null;
   errorMessage?: string | null;
 }
-

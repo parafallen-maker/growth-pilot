@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import type { Teacher } from '@growthpilot/schema/index';
+import type { Teacher, TeacherDevelopmentRecord } from '@growthpilot/schema/index';
 import { normalizePage } from '../../common/base-list-query.dto';
 import type { PageResult } from '../../common/api-response';
+import { CreateDevelopmentRecordDto } from './dto/create-development-record.dto';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { TeacherQueryDto } from './dto/teacher-query.dto';
 import { TeachersRepository } from './repository/teachers.repository';
@@ -10,7 +11,7 @@ interface TeacherDetail {
   teacher: Teacher;
   subjects: Array<{ subject: string; gradeRange?: string; level?: string }>;
   shifts: Array<{ id: string; weekday: number; startTime: string; endTime: string; shiftType: string }>;
-  developmentRecords: Array<{ id: string; recordType: string; title: string; status: string; occurredAt: string }>;
+  developmentRecords: TeacherDevelopmentRecord[];
 }
 
 @Injectable()
@@ -52,7 +53,7 @@ export class TeachersService {
         endTime: shift.endTime,
         shiftType: shift.shiftType,
       })),
-      developmentRecords: [],
+      developmentRecords: await this.teachersRepository.listDevelopmentRecordsByTeacher(teacherId),
     };
   }
 
@@ -66,6 +67,26 @@ export class TeachersService {
       hireDate: payload.hireDate,
       leadSubject: payload.leadSubject,
       status: payload.status ?? 'active',
+    });
+  }
+
+  createDevelopmentRecord(
+    teacherId: string,
+    payload: CreateDevelopmentRecordDto,
+    createdBy?: string | null,
+  ): Promise<TeacherDevelopmentRecord> {
+    return this.teachersRepository.createDevelopmentRecord(teacherId, {
+      recordType: payload.recordType,
+      title: payload.title,
+      occurredAt: payload.occurredAt ?? new Date().toISOString(),
+      observerTeacherId: payload.observerTeacherId ?? null,
+      strengths: payload.strengths,
+      improvements: payload.improvements,
+      actionItems: payload.actionItems,
+      dueDate: payload.dueDate ?? null,
+      status: payload.status ?? 'open',
+      attachmentFileId: payload.attachmentFileId ?? null,
+      createdBy: createdBy ?? null,
     });
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { InferSelectModel, asc, eq, inArray, like } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { createDb, dbSchema } from '../../../db';
@@ -106,6 +106,7 @@ interface UsersRepositoryPort {
   listRoles(): Promise<Role[]>;
   listPermissions(): Promise<Permission[]>;
   assignRoles(userId: string, roleCodes: string[]): Promise<UserRecord | undefined>;
+  create(input: Omit<UserRecord, 'id'>): Promise<UserRecord>;
 }
 
 class FileUsersRepository implements UsersRepositoryPort {
@@ -143,6 +144,22 @@ class FileUsersRepository implements UsersRepositoryPort {
       const user = state.users.find((item) => item.id === userId);
       if (!user) return undefined;
       user.roles = [...new Set(roleCodes)];
+      return user;
+    });
+  }
+
+  async create(input: Omit<UserRecord, 'id'>) {
+    return this.store.update((state) => {
+      if (state.users.some((user) => user.username === input.username)) {
+        throw new ConflictException({ code: 'DATA_409', message: 'username already exists' });
+      }
+      const user: UserRecord = {
+        ...input,
+        id: `user-${String(state.users.length + 1).padStart(3, '0')}`,
+        roles: [...new Set(input.roles)],
+        campusIds: [...new Set(input.campusIds)],
+      };
+      state.users.unshift(user);
       return user;
     });
   }
@@ -211,6 +228,45 @@ class DbUsersRepository implements UsersRepositoryPort {
     return this.findById(userId);
   }
 
+  async create(input: Omit<UserRecord, 'id'>) {
+    const duplicate = await this.db.select({ id: dbSchema.users.id }).from(dbSchema.users).where(eq(dbSchema.users.username, input.username)).limit(1);
+    if (duplicate[0]) {
+      throw new ConflictException({ code: 'DATA_409', message: 'username already exists' });
+    }
+
+    const roleRows = input.roles.length
+      ? await this.db.select().from(dbSchema.roles).where(inArray(dbSchema.roles.code, input.roles))
+      : [];
+    const now = new Date();
+    const [created] = await this.db.transaction(async (tx) => {
+      const inserted = await tx
+        .insert(dbSchema.users)
+        .values({
+          username: input.username,
+          passwordHash: input.password,
+          displayName: input.displayName,
+          mobile: input.mobile ?? null,
+          email: input.email ?? null,
+          status: input.status,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning();
+
+      if (roleRows.length) {
+        const campusIds = input.campusIds.length ? input.campusIds : [null];
+        await tx.insert(dbSchema.userRoles).values(
+          roleRows.flatMap((role) =>
+            campusIds.map((campusId) => ({ userId: inserted[0]!.id, roleId: role.id, campusId })),
+          ),
+        );
+      }
+      return inserted;
+    });
+
+    return (await this.findById(created.id))!;
+  }
+
   private async enrichUser(row: InferSelectModel<typeof dbSchema.users> | undefined) {
     if (!row) return undefined;
 
@@ -262,6 +318,10 @@ export class UsersRepository {
 
   assignRoles(userId: string, roleCodes: string[]) {
     return this.adapter.assignRoles(userId, roleCodes);
+  }
+
+  create(input: Omit<UserRecord, 'id'>) {
+    return this.adapter.create(input);
   }
 }
 
