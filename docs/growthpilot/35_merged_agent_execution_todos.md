@@ -387,14 +387,20 @@
 
 #### 数据迁移验证
 
-- [/] `QA-09` 更新 `scripts/migration/run-staging-import.mjs` 对接真实 DB
+- [x] `QA-09` 更新 `scripts/migration/run-staging-import.mjs` 对接真实 DB
   - 2026-03-25：脚本已补齐 post-apply artifact 回写，`summary.json` 现在会带上 `dbPlan.execution`；同时新增 `fixtures/pg-client-stateful.mjs`，`node --test scripts/migration/run-staging-import.test.mjs` 已验证 begin / upsert / commit、重复 `--db-apply` 的 staging upsert 幂等性，以及注入失败后的 rollback。
   - 同日已执行本地 runnable apply：`BATCH-QA-STATEFUL-SAMPLE` / `BATCH-QA-STATEFUL-INVALID` artifact 与持久化 state 见 `docs/growthpilot/artifacts/2026-03-25/stateful-local/`；但当前 sandbox 仍无可用 live PostgreSQL / `DATABASE_URL`，因此保持 `[/]`。
+  - 2026-03-25：新增 `scripts/migration/run-local-postgres-validation.mjs`，会尝试 `docker compose up -d postgres`、探测 `postgresql://gp:gp_dev@localhost:5432/growthpilot`，并在 DB 可达时对 isolated schema 执行 sample apply 两次 + invalid batch 一次的真实 `pg` 写库校验与 query-based evidence 汇总。
+  - 2026-03-25：已实际执行 `node scripts/migration/run-local-postgres-validation.mjs --ensure-docker-postgres`；artifact 见 `docs/growthpilot/artifacts/2026-03-25/local-postgres-validation/qa-09-qa-11-local-postgres-validation.json`。结果显示 Docker socket 被 sandbox 拒绝（`permission denied while trying to connect to ... docker.sock`），且 `localhost:5432` TCP probe 返回 `EPERM`，本轮未拿到 live PostgreSQL apply evidence，因此 `QA-09` 继续保持 `[/]`。
+  - 2026-03-26：已将 `scripts/migration/run-local-postgres-validation.mjs` 的默认探测地址改为 `postgresql://gp:gp_dev@127.0.0.1:5432/growthpilot`，并产出真实本地库 batch artifact：`docs/growthpilot/artifacts/2026-03-26/local-postgres-validation/BATCH-QA-LOCAL-PG-SAMPLE.*` / `BATCH-QA-LOCAL-PG-INVALID.*`。当时的 aggregate report 在覆盖前已观测到 `status: "passed"`、`pgProbe.ok=true`（`database_name=growthpilot`, `current_user=gp`）；其可持久化摘要现保存在 `docs/growthpilot/artifacts/2026-03-26/local-postgres-validation/qa-09-qa-11-local-postgres-validation.json`。
+  - 2026-03-26：本轮重新执行 `node scripts/migration/run-local-postgres-validation.mjs --ensure-docker-postgres` 与 `node --test scripts/migration/run-staging-import.test.mjs`；测试仍 PASS，但当前 Codex sandbox 的 TCP probe 继续报 `connect EPERM 127.0.0.1:5432`。为避免再次覆盖已通过的主 evidence，脚本现改为在检测到既有 `passed` report 时把后续尝试写到时间戳 `*.rerun-*.json`；补丁后的受限重跑已落到 `docs/growthpilot/artifacts/2026-03-26/local-postgres-validation/qa-09-qa-11-local-postgres-validation.rerun-20260326-012855.json`。
 - [x] `QA-10` 用 `fixtures/staging-import-sample.csv` 执行首批导入
   - 2026-03-25：已执行 `fixtures/staging-import-sample.csv` dry-run，批次 `BATCH-QA-DOC` 产出 sample artifact，`3/3` rows ready-to-load。
 - [x] `QA-11` 验证导入数据：字段映射正确、幂等性、reject report 生成
   - 2026-03-25：`node --test scripts/migration/run-staging-import.test.mjs` 已覆盖 sample batch 的字段映射持久化校验（`familyStructure=single_parent`、`subject=math`、`errorTaxonomyCode=NO_ERROR`、`payableAmountCents=120000`）、重复 `--db-apply` 后 staging 表仍保持 `1 batch / 3 raw / 3 normalized / 0 rejects`，以及 invalid batch 产出 `7` 条 reject rows 与 `reject-report.csv`。
   - 同日 fresh local artifact 已落到 `docs/growthpilot/artifacts/2026-03-25/stateful-local/`，包含 `BATCH-QA-STATEFUL-SAMPLE`、`BATCH-QA-STATEFUL-INVALID` 与持久化 state snapshot；live PostgreSQL apply 仍由 `QA-09` 单独跟踪。
+  - 2026-03-26：`scripts/migration/run-local-postgres-validation.mjs` 的 live query 校验已在真实本地 PostgreSQL 上通过一次；由 aggregate report 的 `status: "passed"` 可知 `collectValidation(...)` 里的全部断言均成立。对应结论已摘要固化在 `docs/growthpilot/artifacts/2026-03-26/local-postgres-validation/qa-09-qa-11-local-postgres-validation.json`：sample batch 最终保持 `1 batch / 3 raw / 3 normalized / 0 rejects`，invalid batch 保持 `1 batch / 4 raw / 4 normalized / 7 rejects`，sample field mapping 命中 `familyStructure=single_parent`、`subject=math`、`errorTaxonomyCode=NO_ERROR`、`payableAmountCents=120000`，reject report 总计 `7` 行。
+  - 2026-03-26：本轮在当前 sandbox 里复跑同一命令时仍被 `connect EPERM 127.0.0.1:5432` 挡住，因此无法再次导出同样的 live query payload；但现有 passed evidence 与同目录 batch artifact 已足以支撑 QA-11 验收，受限重跑则单独归档到 `qa-09-qa-11-local-postgres-validation.rerun-20260326-012855.json` 供 coordinator 参考。
 
 #### 页面验证
 
