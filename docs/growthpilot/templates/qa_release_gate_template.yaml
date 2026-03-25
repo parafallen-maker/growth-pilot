@@ -1,16 +1,28 @@
 release_gate:
   release_wave: wave-5
   release_commit: <fill-me>
+  release_id: <fill-me>
   qa_owner: A10
   pm_owner: <fill-me>
   tech_owner: <fill-me>
+  release_commander: <fill-me>
   environment: preprod
+  performance_benchmark:
+    status: pending
+    executed_at: <fill-me>
+    evidence: docs/growthpilot/artifacts/releases/<release-id>/qa-29/benchmark-sheet.md
+    benchmark_owner: <fill-me>
   smoke_checks:
     auth: pending
     enrollment: pending
     homework: pending
     growth: pending
     billing: pending
+  observation_window:
+    t24_owner: <fill-me>
+    t72_owner: <fill-me>
+    observation_log: docs/growthpilot/artifacts/releases/<release-id>/qa-31/go-live-observation.md
+    incident_template: docs/growthpilot/templates/incident_evidence_template.md
   defect_gate:
     p0_open: 0
     p1_open: 0
@@ -33,3 +45,4 @@ release_gate:
     final_decision: pending
   notes:
     - 填表时要求写清 commit、风险、观察窗口与回滚负责人
+    - 若性能基准未执行完成，`final_decision` 默认不得为 go

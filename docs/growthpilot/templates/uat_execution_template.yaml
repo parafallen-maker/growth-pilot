@@ -2,67 +2,500 @@ uat_execution:
   release_id: <release-id>
   environment: <target-env>
   batch_id: <batch-id>
-  qa_owner: <fill-me>
-  business_owner: <fill-me>
-  start_window: <YYYY-MM-DD HH:mm +08:00>
-  end_window: <YYYY-MM-DD HH:mm +08:00>
+  document_status: draft
+  war_room:
+    session_date: <YYYY-MM-DD>
+    room_link: <meeting-link>
+    release_commander: <fill-me>
+    qa_lead: <fill-me>
+    recorder: <fill-me>
+    tech_oncall: <fill-me>
+    business_owner: <fill-me>
+  entry_criteria:
+    uat_url_ready: pending
+    migrated_data_ready: pending
+    accounts_ready: pending
+    monitoring_ready: pending
+    evidence_workspace_ready: pending
   accounts:
-    super_admin: pending
-    principal: pending
-    teacher: pending
-    finance: pending
-  scenarios:
-    - role: super_admin
-      case_id: UAT-SA-01
-      title: 登录后查看 Dashboard 与系统设置
-      expected: 首页可见、系统设置页可打开、无 500
-      result: pending
-      evidence: <fill-me>
-    - role: super_admin
-      case_id: UAT-SA-02
-      title: 创建用户并分配角色/校区
-      expected: 用户创建成功，权限生效
-      result: pending
-      evidence: <fill-me>
-    - role: principal
-      case_id: UAT-PR-01
-      title: 查看 Dashboard 总览与学生 360
-      expected: 统计卡片可加载，学生详情完整
-      result: pending
-      evidence: <fill-me>
-    - role: principal
-      case_id: UAT-PR-02
-      title: 查看教师排班与分析报表
-      expected: 列表可查询，报表无权限错误
-      result: pending
-      evidence: <fill-me>
-    - role: teacher
-      case_id: UAT-TE-01
-      title: 查看作业列表并提交复核
-      expected: 列表可筛选，复核保存成功
-      result: pending
-      evidence: <fill-me>
-    - role: teacher
-      case_id: UAT-TE-02
-      title: 记录习惯观察与成长目标
-      expected: 观察与目标创建成功
-      result: pending
-      evidence: <fill-me>
-    - role: finance
-      case_id: UAT-FI-01
-      title: 查看合同/账单/收款记录
-      expected: 金额一致，筛选正常
-      result: pending
-      evidence: <fill-me>
-    - role: finance
-      case_id: UAT-FI-02
-      title: 录入退款与续费跟进
-      expected: 状态回写正确，无越权
-      result: pending
-      evidence: <fill-me>
+    super_admin:
+      username: <fill-me>
+      campus_scope: <fill-me>
+      owner: <fill-me>
+      login_status: pending
+    principal:
+      username: <fill-me>
+      campus_scope: <fill-me>
+      owner: <fill-me>
+      login_status: pending
+    teacher:
+      username: <fill-me>
+      campus_scope: <fill-me>
+      owner: <fill-me>
+      login_status: pending
+    finance:
+      username: <fill-me>
+      campus_scope: <fill-me>
+      owner: <fill-me>
+      login_status: pending
+  evidence_rules:
+    screenshot_naming: <release-id>/<role>/<case-id>-<step>-<pass|fail>.png
+    minimum_evidence_per_case:
+      - 页面截图或录屏
+      - 关键接口返回或网络面板截图
+      - 样本数据核对结果
+    defect_binding_rule: fail 必须绑定 defect_id
+  scripts:
+    super_admin:
+      - case_id: UAT-SA-01
+        priority: must
+        route: /login
+        title: 登录并校验当前用户信息
+        preconditions:
+          - super_admin 账号已可登录
+        steps:
+          - 输入账号密码登录
+          - 进入 Dashboard
+          - 校验当前角色、校区、菜单权限
+        expected:
+          - 登录成功
+          - /auth/me 返回身份正确
+          - 菜单无缺失或越权
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+      - case_id: UAT-SA-02
+        priority: must
+        route: /settings/users
+        title: 创建用户并绑定角色/校区
+        preconditions:
+          - 已准备一组 principal 或 teacher 测试账号资料
+        steps:
+          - 新建用户
+          - 绑定角色和校区
+          - 用新账号重新登录验证
+        expected:
+          - 用户创建成功
+          - 角色/校区绑定生效
+          - 登录后菜单与角色匹配
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+      - case_id: UAT-SA-03
+        priority: should
+        route: /settings/reference-data
+        title: 维护基础字典
+        preconditions:
+          - 至少一条可编辑字典项存在
+        steps:
+          - 查询字典项
+          - 编辑一项说明或状态
+          - 保存并刷新页面
+        expected:
+          - 查询成功
+          - 保存成功
+          - 刷新后仍可见
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+      - case_id: UAT-SA-04
+        priority: should
+        route: /settings/habit-rubrics
+        title: 查看并修改评分规则
+        preconditions:
+          - 已存在至少一套评分规则
+        steps:
+          - 打开评分规则
+          - 修改说明或启停状态
+          - 保存
+        expected:
+          - 列表可见
+          - 保存成功
+          - 无 500 或校验异常
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+      - case_id: UAT-SA-05
+        priority: must
+        route: /settings/users
+        title: 权限边界复查
+        preconditions:
+          - principal 或 teacher 测试账号可登录
+        steps:
+          - 使用低权限账号登录
+          - 尝试访问设置相关页面
+          - 记录被拒绝结果
+        expected:
+          - 非授权页面不可访问
+          - 错误提示明确
+          - 无越权数据暴露
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+    principal:
+      - case_id: UAT-PR-01
+        priority: must
+        route: /dashboard
+        title: 查看 Dashboard 总览
+        preconditions:
+          - principal 账号可登录
+          - UAT 数据已导入
+        steps:
+          - 登录
+          - 查看 KPI 卡片、待办、趋势图
+          - 切换学期或筛选条件
+        expected:
+          - 卡片加载成功
+          - 指标值非空且无明显异常
+          - 切换后结果可更新
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+      - case_id: UAT-PR-02
+        priority: must
+        route: /students
+        title: 学生列表筛选与进入学生 360
+        preconditions:
+          - 已准备 1 名样本学生
+        steps:
+          - 按姓名、学期、老师筛选
+          - 打开学生 360
+        expected:
+          - 筛选生效
+          - 分页和排序正常
+          - 360 页面可打开
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+      - case_id: UAT-PR-03
+        priority: must
+        route: /students/[studentId]
+        title: 审阅学生 360 多 tab 数据
+        preconditions:
+          - 样本学生有家庭、作业、成长、收费数据
+        steps:
+          - 依次查看概览、作业、成长、家庭、收费
+          - 对照样本核对信息
+        expected:
+          - 页面不串数
+          - 关键信息完整
+          - tab 切换稳定
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+      - case_id: UAT-PR-04
+        priority: should
+        route: /analytics/teachers
+        title: 查看教师与学生分析
+        preconditions:
+          - 分析页已有可展示数据
+        steps:
+          - 打开教师分析
+          - 打开学生分析
+          - 切换学期和筛选
+        expected:
+          - 图表加载正常
+          - 数据趋势合理
+          - 无权限报错
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+      - case_id: UAT-PR-05
+        priority: should
+        route: /billing/invoices
+        title: 从管理视角抽查收费链路
+        preconditions:
+          - 样本学生存在账单
+        steps:
+          - 查询账单
+          - 打开账单详情
+          - 核对应收、已收、状态
+        expected:
+          - 金额一致
+          - 状态正确
+          - 详情链路可达
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+    teacher:
+      - case_id: UAT-TE-01
+        priority: must
+        route: /homework/queue
+        title: 查看作业复核队列
+        preconditions:
+          - teacher 账号可登录
+          - 待复核作业样本存在
+        steps:
+          - 按日期或学生筛选
+          - 打开一条提交记录
+        expected:
+          - 列表可筛选
+          - 待复核数据准确
+          - 详情页可打开
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+      - case_id: UAT-TE-02
+        priority: must
+        route: /homework/submissions/[submissionId]
+        title: 保存教师复核结果
+        preconditions:
+          - 打开了一条待复核记录
+        steps:
+          - 查看 AI 结果
+          - 修改正确率、错因、建议
+          - 保存复核
+        expected:
+          - 保存成功
+          - 刷新后结果不丢失
+          - 状态正确回写
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+      - case_id: UAT-TE-03
+        priority: should
+        route: /homework/submissions/[submissionId]
+        title: 录入风险等级与教师建议
+        preconditions:
+          - 已在作业详情页
+        steps:
+          - 调整风险等级
+          - 填写教师建议
+          - 保存并刷新
+        expected:
+          - 建议回写成功
+          - 风险等级显示正确
+          - 无重复提交
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+      - case_id: UAT-TE-04
+        priority: must
+        route: /growth/habits
+        title: 创建习惯观察
+        preconditions:
+          - 已准备样本学生
+        steps:
+          - 选择学生
+          - 填写习惯维度分数和评语
+          - 保存
+        expected:
+          - 观察记录创建成功
+          - 时间线可见
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+      - case_id: UAT-TE-05
+        priority: must
+        route: /growth/goals
+        title: 创建成长目标并添加跟进
+        preconditions:
+          - 样本学生存在
+        steps:
+          - 新建成长目标
+          - 添加跟进记录
+          - 校验状态
+        expected:
+          - 目标创建成功
+          - 跟进记录可见
+          - 状态流转正常
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+      - case_id: UAT-TE-06
+        priority: should
+        route: /students/[studentId]
+        title: 在学生 360 复查作业与成长串联
+        preconditions:
+          - 样本学生已有作业和成长数据
+        steps:
+          - 打开学生 360
+          - 查看作业 tab 和成长 tab
+          - 核对刚刚保存的数据
+        expected:
+          - 数据关联正确
+          - 无跨学生串数
+          - 无越权
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+    finance:
+      - case_id: UAT-FI-01
+        priority: must
+        route: /billing/contracts
+        title: 合同列表与详情核对
+        preconditions:
+          - finance 账号可登录
+          - 样本合同存在
+        steps:
+          - 查询合同
+          - 打开合同详情
+          - 核对学生、家庭、金额
+        expected:
+          - 检索准确
+          - 详情完整
+          - 金额正确
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+      - case_id: UAT-FI-02
+        priority: must
+        route: /billing/invoices
+        title: 账单列表筛选
+        preconditions:
+          - 样本账单存在
+        steps:
+          - 按学生、合同号、状态筛选
+          - 打开一条账单
+        expected:
+          - 筛选准确
+          - 状态标签正确
+          - 详情可打开
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+      - case_id: UAT-FI-03
+        priority: must
+        route: /billing/invoices/[invoiceId]
+        title: 核对收款记录与账单金额
+        preconditions:
+          - 打开了一条样本账单
+        steps:
+          - 查看应收、已收、未收
+          - 查看收款记录
+          - 校验状态
+        expected:
+          - 金额一致
+          - 收款记录完整
+          - 无重复流水
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+      - case_id: UAT-FI-04
+        priority: should
+        route: /billing/invoices/[invoiceId]
+        title: 处理退款
+        preconditions:
+          - 有可退款样本
+        steps:
+          - 发起退款
+          - 刷新详情页
+          - 检查账单状态与退款流水
+        expected:
+          - 退款记录生成
+          - 状态回写正确
+          - 无金额负数异常
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+      - case_id: UAT-FI-05
+        priority: should
+        route: /billing/contracts
+        title: 查看续费跟进与欠费风险
+        preconditions:
+          - 样本合同存在续费或欠费字段
+        steps:
+          - 打开合同或账单
+          - 查看续费跟进状态
+          - 查看欠费提醒
+        expected:
+          - 续费信息可见
+          - 欠费识别准确
+          - 无越权访问
+        result: pending
+        executor: <fill-me>
+        evidence: []
+        defect_ids: []
+        notes: <fill-me>
+  defect_summary:
+    p0_open: 0
+    p1_open: 0
+    p2_open: 0
+    p3_open: 0
+    deferred: []
   signoff:
-    qa: pending
-    pm: pending
-    owner: pending
+    super_admin_representative:
+      name: <fill-me>
+      decision: pending
+      timestamp: <fill-me>
+      notes: <fill-me>
+    principal_representative:
+      name: <fill-me>
+      decision: pending
+      timestamp: <fill-me>
+      notes: <fill-me>
+    teacher_representative:
+      name: <fill-me>
+      decision: pending
+      timestamp: <fill-me>
+      notes: <fill-me>
+    finance_representative:
+      name: <fill-me>
+      decision: pending
+      timestamp: <fill-me>
+      notes: <fill-me>
+    qa_lead:
+      name: <fill-me>
+      decision: pending
+      timestamp: <fill-me>
+      notes: <fill-me>
+    pm:
+      name: <fill-me>
+      decision: pending
+      timestamp: <fill-me>
+      notes: <fill-me>
+    owner:
+      name: <fill-me>
+      decision: pending
+      timestamp: <fill-me>
+      notes: <fill-me>
+    final_decision: pending
+  exit_criteria:
+    p0_open_must_be_zero: true
+    p1_open_must_be_zero_or_owner_waived: true
+    all_failed_cases_have_defect_ids: true
+    all_blocked_cases_have_resolution_plan: true
+    evidence_archived: pending
   notes:
-    - 执行时补充截图、接口返回、缺陷编号与回归结论。
+    - 执行时把真实截图、接口返回、缺陷编号、回归结论写回本文件副本。
+    - 真实 UAT 未发生前，document_status 只能保持 draft 或 partial。

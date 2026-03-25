@@ -741,14 +741,18 @@
   - principal 场景：Dashboard 总览、学生 360、教师排班、分析报表
   - teacher 场景：作业列表、复核工作台、习惯观察、成长目标
   - finance 场景：合同管理、账单开具、收款记录、退费处理
-  - 已准备执行矩阵、证据要求与签收流程，但尚未组织用户实际跑 UAT。
+  - 已将 `docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md` 强化为可执行 UAT 包，补齐 war room 角色职责、时间盒、4 角色逐条执行脚本、证据命名规则与 `pass / conditional-pass / fail` 签收流。
+  - 已扩展 `docs/growthpilot/templates/uat_execution_template.yaml`，可直接记录入口条件、账号状态、逐 case 结果、缺陷绑定与多角色签收。
+  - 尚未组织真实业务用户在 UAT 环境按脚本执行，因此保持进行中。
 
 - [/] `QA-28` **UAT 问题清单收集与修复**：
   - 记录所有问题（blocker / major / minor）
   - blocker 必须修复后才可上线
   - major 最迟上线后 3 天内修复
   - minor 归入后续迭代
-  - 已有 `docs/growthpilot/templates/defect_triage_template.md`，并在 `docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md` 固化分级与处理规则。
+  - 已重写 `docs/growthpilot/templates/defect_triage_template.md`，补齐分级标准、状态流、triage 节奏、修复 SLA、回归关闭模板与放行规则。
+  - 已新增 `docs/growthpilot/templates/uat_defect_log_template.md`，可直接登记 UAT 缺陷清单、回归结果与证据路径。
+  - 已在 `docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md` 固化缺陷来源、处理节奏、修复闭环与 blocker 清零要求。
   - 尚未形成真实 UAT 缺陷清单。
 
 - [/] `QA-29` **性能基准测试**：
@@ -756,7 +760,7 @@
   - 首页加载 < 3s
   - API 列表查询 P95 < 300ms
   - 文件上传 10MB < 5s
-  - 已补基准流程、阈值与证据要求：`docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md`
+  - 已补完整文档包：基准 runbook `docs/growthpilot/43_QA29_QA31_QA32_性能基准与发布后观察运行手册.md`、measurement sheet `docs/growthpilot/templates/performance_benchmark_sheet_template.md`，并回填 `docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md`。
   - 尚未在真实 UAT 环境执行压测。
 
 **验收**：
@@ -877,20 +881,24 @@
   - 监控 API 响应时间
   - 监控数据库连接数和慢查询
   - 监控磁盘和内存使用
-  - 已补 `docs/growthpilot/templates/go_live_observation_log_template.md` 和对应说明；真实 24h 观察尚未发生。
+  - 已补 24h 观察 playbook、采样频率、阈值表、incident escalation tree 与证据模板：`docs/growthpilot/43_QA29_QA31_QA32_性能基准与发布后观察运行手册.md`、`docs/growthpilot/templates/go_live_observation_log_template.md`、`docs/growthpilot/templates/incident_evidence_template.md`。
+  - 真实 24h 观察尚未发生。
 
 - [/] `QA-32` **上线后 72h 稳定性确认**：
   - 无 P0/P1 级别 bug
   - 数据库备份正常执行
   - 用户反馈收集
-  - 已补 72h 稳定性检查模板；真实稳定性观察尚未发生。
+  - 已补 72h 稳定性通过标准、趋势回看要求与收尾模板：`docs/growthpilot/43_QA29_QA31_QA32_性能基准与发布后观察运行手册.md`、`docs/growthpilot/templates/go_live_observation_log_template.md`、`docs/growthpilot/templates/release_acceptance_report_template.md`。
+  - 真实稳定性观察尚未发生。
 
 - [/] `QA-33` **发布验收报告**：
   - 版本号、发布时间、发布人
   - 包含功能列表
   - 已知限制
   - 后续迭代计划
-  - 已新增 `docs/growthpilot/templates/release_acceptance_report_template.md`；真实发布验收报告需待正式上线后填充。
+  - 已增强 `docs/growthpilot/templates/release_acceptance_report_template.md`，补齐入口条件、执行摘要、时间线、UAT/缺陷摘要、观察窗口指标、最终结论与签收字段。
+  - 已在 `docs/growthpilot/40_发布观察窗口与验收模板.md` 明确报告填报顺序及证据来源。
+  - 真实发布验收报告仍需待正式上线并完成 T+24h / T+72h 观察后填充。
 
 #### 运维文档
 
@@ -907,8 +915,8 @@
   - 各角色首次登录指引
   - 核心操作流程截图
   - FAQ
-  - 已新增 `docs/growthpilot/42_用户操作手册_简版.md`，补齐文字版登录指引、核心流程和 FAQ。
-  - 真实环境截图尚未补拍，因此暂不标完成。
+  - 已重写 `docs/growthpilot/42_用户操作手册_简版.md`，补齐通用导航、4 角色快速上手、6 条核心操作流程、异常判断、FAQ 与截图补拍清单，已可直接发给业务用户预习或现场带跑。
+  - 真实环境截图尚未补拍，且未经过真实用户确认最终文案，因此暂不标完成。
 
 **验收**：
 - 生产环境稳定运行 72h 无 P0 故障
