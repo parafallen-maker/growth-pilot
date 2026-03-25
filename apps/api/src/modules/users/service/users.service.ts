@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { PasswordService } from '../../../common/security';
 import { buildPagedResult } from '../../../shared/api-response';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UsersRepository } from '../repository/users.repository';
@@ -6,7 +7,10 @@ import { CurrentUserProfile, Permission, Role, UserRecord } from '../users.types
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly usersRepository: UsersRepository) {}
+  constructor(
+    private readonly usersRepository: UsersRepository,
+    private readonly passwordService: PasswordService = new PasswordService(),
+  ) {}
 
   async listUsers(keyword?: string, pageNo = 1, pageSize = 20) {
     const users = (await this.usersRepository.list(keyword)).map((user) => this.toContractUser(user));
@@ -73,7 +77,7 @@ export class UsersService {
 
     const created = await this.usersRepository.create({
       username: payload.username,
-      password: payload.password,
+      passwordHash: this.passwordService.hash(payload.password),
       displayName: payload.displayName,
       mobile: payload.mobile,
       email: payload.email,
@@ -86,7 +90,7 @@ export class UsersService {
 
   async validateCredentials(username: string, password: string): Promise<UserRecord | undefined> {
     const user = await this.usersRepository.findByUsername(username);
-    if (!user || user.password !== password || user.status !== 'active') {
+    if (!user || user.status !== 'active' || !this.passwordService.verify(password, user.passwordHash)) {
       return undefined;
     }
 

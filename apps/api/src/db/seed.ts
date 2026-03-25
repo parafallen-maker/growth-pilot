@@ -1,11 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
+import { PasswordService, redactSensitiveForLogs } from '../common/security';
 import { authSessions, campuses, permissions, roles, schoolTerms, systemDictionaries, userRoles, users } from './schema';
 
 const now = new Date();
 const currentYear = now.getUTCFullYear();
 const nextYear = currentYear + 1;
+const passwordService = new PasswordService();
 
 export const defaultRoles = [
   { code: 'super_admin', name: 'Super Admin', scopeLevel: 'global', status: 'active' },
@@ -98,7 +100,7 @@ export function buildSeedPlan() {
       {
         id: adminUserId,
         username: 'admin',
-        passwordHash: 'admin123',
+        passwordHash: passwordService.hash('admin123'),
         displayName: '系统管理员',
         mobile: '13800000000',
         email: 'admin@growthpilot.local',
@@ -107,7 +109,7 @@ export function buildSeedPlan() {
       {
         id: teacherUserId,
         username: 'teacher.zhang',
-        passwordHash: 'teacher123',
+        passwordHash: passwordService.hash('teacher123'),
         displayName: '张老师',
         mobile: '13800000001',
         email: 'teacher.zhang@growthpilot.local',
@@ -167,7 +169,7 @@ if (require.main === module) {
       console.log('Seed completed', result);
     })
     .catch((error) => {
-      console.error(error);
+      console.error(redactSensitiveForLogs(error));
       process.exitCode = 1;
     });
 }

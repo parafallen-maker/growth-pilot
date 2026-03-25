@@ -17,6 +17,8 @@ function resetPersistence() {
 }
 
 function createFixture() {
+  process.env.NODE_ENV = 'test';
+  process.env.JWT_SECRET = 'growthpilot-test-secret-with-32-chars!';
   resetPersistence();
   const usersRepository = new UsersRepository();
   const usersService = new UsersService(usersRepository);

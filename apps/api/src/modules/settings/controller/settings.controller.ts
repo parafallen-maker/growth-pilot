@@ -3,6 +3,7 @@ import { ApiAuthGuard } from '../../../common/auth.guard';
 import { PermissionGuard } from '../../../common/permission.guard';
 import { RequirePermission } from '../../../common/permission.decorator';
 import { buildApiResponse } from '../../../shared/api-response';
+import { DictionariesQueryDto, TermsQueryDto } from '../dto/settings-query.dto';
 import { SettingsService } from '../service/settings.service';
 
 @Controller('settings')
@@ -18,13 +19,13 @@ export class SettingsController {
 
   @Get('terms')
   @RequirePermission('settings:view')
-  async listTerms(@Query('campusId') campusId?: string) {
-    return buildApiResponse(await this.settingsService.listTerms(campusId));
+  async listTerms(@Query() query: TermsQueryDto = {}) {
+    return buildApiResponse(await this.settingsService.listTerms(query.campusId));
   }
 
   @Get('dictionaries')
   @RequirePermission('settings:view')
-  async listDictionaries(@Query('dictType') dictType?: string) {
-    return buildApiResponse(await this.settingsService.listDictionaries(dictType));
+  async listDictionaries(@Query() query: DictionariesQueryDto = {}) {
+    return buildApiResponse(await this.settingsService.listDictionaries(query.dictType));
   }
 }

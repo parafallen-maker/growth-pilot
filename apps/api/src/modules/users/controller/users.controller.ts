@@ -5,6 +5,7 @@ import { RequirePermission } from '../../../common/permission.decorator';
 import { buildApiResponse } from '../../../shared/api-response';
 import { AssignRolesDto } from '../dto/assign-roles.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
+import { ListUsersQueryDto } from '../dto/list-users-query.dto';
 import { UsersService } from '../service/users.service';
 
 @Controller('users')
@@ -14,16 +15,12 @@ export class UsersController {
 
   @Get()
   @RequirePermission('users:view')
-  async listUsers(
-    @Query('keyword') keyword?: string,
-    @Query('pageNo') pageNo?: string,
-    @Query('pageSize') pageSize?: string,
-  ) {
+  async listUsers(@Query() query: ListUsersQueryDto = {}) {
     return buildApiResponse(
       await this.usersService.listUsers(
-        keyword,
-        pageNo ? Number(pageNo) : 1,
-        pageSize ? Number(pageSize) : 20,
+        query.keyword,
+        query.pageNo ?? 1,
+        query.pageSize ?? 20,
       ),
     );
   }
