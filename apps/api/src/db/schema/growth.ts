@@ -1,4 +1,4 @@
-import { createId, date, integer, jsonbDefault, numeric, pgTable, text, timestamp, uniqueIndex, varchar } from './base';
+import { createId, date, integer, jsonb, jsonbDefault, numeric, pgTable, sql, text, timestamp, uniqueIndex, varchar } from './base';
 import { students } from './students';
 import { schoolTerms } from './settings';
 import { teachers } from './teachers';
@@ -39,6 +39,10 @@ export const growthObservations = pgTable('growth_observations', {
   templateId: varchar('template_id', { length: 36 }).references(() => rubricTemplates.id, { onDelete: 'set null' }),
   observationDate: date('observation_date').notNull(),
   scene: varchar('scene', { length: 32 }).notNull(),
+  scores: jsonb('scores')
+    .$type<Array<{ dimensionId: string; score: number; note?: string }>>()
+    .default(sql`'[]'::jsonb`)
+    .notNull(),
   totalScore: numeric('total_score', { precision: 8, scale: 2 }),
   strengths: text('strengths'),
   improvementNotes: text('improvement_notes'),

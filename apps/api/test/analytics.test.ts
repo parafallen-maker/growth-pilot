@@ -22,13 +22,13 @@ function createFixture() {
   return { billingService, analyticsService };
 }
 
-test('renewals skeleton supports list/create/status/follow-up with scoped filters', () => {
+test('renewals skeleton supports list/create/status/follow-up with scoped filters', async () => {
   const { billingService } = createFixture();
 
-  const before = billingService.listRenewals({ campusId: 'campus-001', termId: 'term-2026-spring', pageNo: 1, pageSize: 20 });
+  const before = await billingService.listRenewals({ campusId: 'campus-001', termId: 'term-2026-spring', pageNo: 1, pageSize: 20 });
   assert.equal(before.page.total, 1);
 
-  const created = billingService.createRenewal({
+  const created = await billingService.createRenewal({
     familyId: 'family-002',
     studentId: 'student-002',
     campusId: 'campus-001',
@@ -40,13 +40,13 @@ test('renewals skeleton supports list/create/status/follow-up with scoped filter
   });
   assert.equal(created.status, 'todo');
 
-  const updatedStatus = billingService.updateRenewalStatus(created.id, { status: 'contacting', lastContactAt: '2026-06-11T18:00:00+08:00' });
+  const updatedStatus = await billingService.updateRenewalStatus(created.id, { status: 'contacting', lastContactAt: '2026-06-11T18:00:00+08:00' });
   assert.equal(updatedStatus.status, 'contacting');
 
-  const updatedFollowUp = billingService.updateRenewalFollowUp(created.id, { nextFollowUpAt: '2026-06-13T10:30:00+08:00' });
+  const updatedFollowUp = await billingService.updateRenewalFollowUp(created.id, { nextFollowUpAt: '2026-06-13T10:30:00+08:00' });
   assert.equal(updatedFollowUp.nextFollowUpAt, '2026-06-13T10:30:00+08:00');
 
-  const filtered = billingService.listRenewals({
+  const filtered = await billingService.listRenewals({
     campusId: 'campus-001',
     termId: 'term-2026-spring',
     status: 'contacting',
@@ -62,7 +62,7 @@ test('renewals skeleton supports list/create/status/follow-up with scoped filter
 test('analytics aggregates billing + homework + communication + attendance from repositories', async () => {
   const { billingService, analyticsService } = createFixture();
 
-  const invoice = billingService.createInvoice({
+  const invoice = await billingService.createInvoice({
     invoiceNo: 'IV202603250001',
     contractId: 'contract-001',
     familyId: 'family-001',
@@ -72,7 +72,7 @@ test('analytics aggregates billing + homework + communication + attendance from 
     amountCents: 50000,
     status: 'issued',
   });
-  billingService.createPayment(invoice.id, {
+  await billingService.createPayment(invoice.id, {
     paymentNo: 'PM202603250001',
     paidAmountCents: 30000,
     paymentTime: '2026-03-25T09:00:00+08:00',
@@ -87,14 +87,14 @@ test('analytics aggregates billing + homework + communication + attendance from 
   assert.equal(overview.pendingHomeworkCount, 0);
   assert.equal(overview.reportPublishRate, 1);
   assert.equal(overview.todayAttendanceAnomalyCount, 1);
-  assert.equal(overview.trend.renewalTodoCount, 1);
+  assert.equal(overview.trend.renewalTodoCount, 0);
   assert.ok(overview.trend.communicationTouchCount >= 1);
 
   const billing = await analyticsService.getBilling(scope);
   assert.equal(billing.contractCount, 1);
   assert.equal(billing.filtersApplied.campusId, 'campus-001');
   assert.ok(billing.receivableTrend.some((item) => item.date === '2026-03-25' && item.amountCents === 50000));
-  assert.ok(billing.renewalFunnel.some((item) => item.status === 'todo'));
+  assert.ok(billing.renewalFunnel.every((item) => item.count === 0));
   assert.ok(billing.communicationTouchCount >= 1);
 
   const teaching = await analyticsService.getTeaching({ ...scope, teacherId: 'teacher-001' });

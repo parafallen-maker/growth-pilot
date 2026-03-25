@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq } from 'drizzle-orm';
 import type {
   HomeworkAiAnalysis,
   HomeworkReview,
@@ -495,7 +495,7 @@ class DbHomeworkRepository implements HomeworkRepositoryPort {
   private readonly db = createDb();
 
   async listSubmissions() {
-    const rows = await this.db.select().from(dbSchema.homeworkSubmissions).orderBy(asc(dbSchema.homeworkSubmissions.createdAt));
+    const rows = await this.db.select().from(dbSchema.homeworkSubmissions).orderBy(desc(dbSchema.homeworkSubmissions.createdAt));
     return rows.map((row) => this.mapSubmission(row));
   }
 
@@ -595,8 +595,13 @@ class DbHomeworkRepository implements HomeworkRepositoryPort {
   }
 
   async getLatestAnalysis(submissionId: string) {
-    const rows = await this.db.select().from(dbSchema.homeworkAiAnalyses).where(eq(dbSchema.homeworkAiAnalyses.submissionId, submissionId)).orderBy(asc(dbSchema.homeworkAiAnalyses.createdAt));
-    return rows.length ? this.mapAnalysis(rows[rows.length - 1]!) : undefined;
+    const rows = await this.db
+      .select()
+      .from(dbSchema.homeworkAiAnalyses)
+      .where(eq(dbSchema.homeworkAiAnalyses.submissionId, submissionId))
+      .orderBy(desc(dbSchema.homeworkAiAnalyses.createdAt))
+      .limit(1);
+    return rows[0] ? this.mapAnalysis(rows[0]) : undefined;
   }
 
   async getReviewBySubmissionId(submissionId: string) {
@@ -652,23 +657,12 @@ class DbHomeworkRepository implements HomeworkRepositoryPort {
   }
 
   async getReviewDraft(submissionId: string) {
-    const review = await this.getReviewBySubmissionId(submissionId);
-    if (!review) return null;
-    const items = await this.listReviewErrorItems(review.id);
-    return {
-      id: `derived-${review.id}`,
-      submissionId,
-      reviewerTeacherId: review.reviewerTeacherId ?? null,
-      reviewResult: review.reviewResult,
-      finalAccuracyPct: review.finalAccuracyPct ?? null,
-      finalErrorSummary: review.finalErrorSummary ?? null,
-      finalSuggestion: review.finalSuggestion ?? null,
-      publishToFamily: review.publishToFamily,
-      finalErrorItems: items.map((item) => ({ errorTaxonomyId: item.errorTaxonomyId, weight: item.weight, note: item.note })),
-      savedAt: review.updatedAt,
-      createdAt: review.createdAt,
-      updatedAt: review.updatedAt,
-    };
+    const rows = await this.db
+      .select()
+      .from(dbSchema.homeworkReviewDrafts)
+      .where(eq(dbSchema.homeworkReviewDrafts.submissionId, submissionId))
+      .limit(1);
+    return rows[0] ? this.mapReviewDraft(rows[0]) : null;
   }
 
   async saveReviewDraft(submissionId: string, payload: {
@@ -681,22 +675,54 @@ class DbHomeworkRepository implements HomeworkRepositoryPort {
     finalErrorItems?: Array<{ errorTaxonomyId: string; weight?: number; note?: string }>;
   }) {
     const submission = await this.requireSubmission(submissionId);
-    const review = await this.replaceReview({
-      submissionId,
-      reviewerTeacherId: payload.reviewerTeacherId ?? submission.teacherId ?? null,
-      reviewResult: payload.reviewResult ?? 'adjusted',
-      finalAccuracyPct: payload.finalAccuracyPct ?? null,
-      finalErrorSummary: payload.finalErrorSummary ?? null,
-      finalSuggestion: payload.finalSuggestion ?? null,
-      publishToFamily: payload.publishToFamily ?? false,
-      publishedAt: null,
-    });
-    await this.replaceReviewErrorItems(review.id, (payload.finalErrorItems ?? []).map((item) => ({ errorTaxonomyId: item.errorTaxonomyId, weight: item.weight ?? 1, note: item.note })));
-    return (await this.getReviewDraft(submissionId))!;
+    const existing = await this.getReviewDraft(submissionId);
+    const now = new Date();
+    const finalErrorItems = (payload.finalErrorItems ?? []).map((item) => ({
+      errorTaxonomyId: item.errorTaxonomyId,
+      weight: item.weight ?? 1,
+      note: item.note,
+    }));
+
+    if (existing) {
+      const [updated] = await this.db
+        .update(dbSchema.homeworkReviewDrafts)
+        .set({
+          reviewerTeacherId: payload.reviewerTeacherId ?? submission.teacherId ?? null,
+          reviewResult: payload.reviewResult,
+          finalAccuracyPct: payload.finalAccuracyPct?.toString() ?? (payload.finalAccuracyPct === null ? null : undefined),
+          finalErrorSummary: payload.finalErrorSummary ?? null,
+          finalSuggestion: payload.finalSuggestion ?? null,
+          publishToFamily: this.boolString(payload.publishToFamily ?? false),
+          finalErrorItems,
+          savedAt: now,
+          updatedAt: now,
+        })
+        .where(eq(dbSchema.homeworkReviewDrafts.id, existing.id))
+        .returning();
+      return this.mapReviewDraft(updated!);
+    }
+
+    const [created] = await this.db
+      .insert(dbSchema.homeworkReviewDrafts)
+      .values({
+        submissionId,
+        reviewerTeacherId: payload.reviewerTeacherId ?? submission.teacherId ?? null,
+        reviewResult: payload.reviewResult ?? null,
+        finalAccuracyPct: payload.finalAccuracyPct?.toString() ?? null,
+        finalErrorSummary: payload.finalErrorSummary ?? null,
+        finalSuggestion: payload.finalSuggestion ?? null,
+        publishToFamily: this.boolString(payload.publishToFamily ?? false),
+        finalErrorItems,
+        savedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
+    return this.mapReviewDraft(created);
   }
 
-  async deleteReviewDraft(_submissionId: string) {
-    // DB mode currently stores review draft in review/review_items tables; keep latest saved draft until final review overwrites it.
+  async deleteReviewDraft(submissionId: string) {
+    await this.db.delete(dbSchema.homeworkReviewDrafts).where(eq(dbSchema.homeworkReviewDrafts.submissionId, submissionId));
   }
 
   async listErrorTaxonomies() {
@@ -713,7 +739,7 @@ class DbHomeworkRepository implements HomeworkRepositoryPort {
       category: input.stageScope ?? input.subject ?? 'general',
       subjectScope: input.subject ?? null,
       description: input.description ?? null,
-      active: input.status === 'active' ? 'true' : 'false',
+      status: input.status,
       sortOrder: input.sortOrder,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -734,7 +760,7 @@ class DbHomeworkRepository implements HomeworkRepositoryPort {
       category: patch.stageScope ?? current.category,
       subjectScope: patch.subject,
       description: patch.description,
-      active: patch.status ? (patch.status === 'active' ? 'true' : 'false') : undefined,
+      status: patch.status,
       sortOrder: patch.sortOrder,
       updatedAt: new Date(),
     }).where(eq(dbSchema.errorTaxonomies.id, taxonomyId)).returning();
@@ -749,17 +775,23 @@ class DbHomeworkRepository implements HomeworkRepositoryPort {
   }
 
   async enqueueOutboxEvent(eventName: HomeworkOutboxEvent['eventName'], bizId: string, payload: Record<string, unknown>) {
-    return {
-      id: `homework-outbox-${Date.now()}`,
-      eventName,
-      bizId,
-      payload,
-      status: 'pending' as const,
-      createdAt: new Date().toISOString(),
-    };
+    const [created] = await this.db
+      .insert(dbSchema.homeworkOutboxEvents)
+      .values({
+        eventName,
+        bizId,
+        payload,
+        status: 'pending',
+        createdAt: new Date(),
+      })
+      .returning();
+    return this.mapOutboxEvent(created);
   }
 
-  async listOutboxEvents() { return []; }
+  async listOutboxEvents() {
+    const rows = await this.db.select().from(dbSchema.homeworkOutboxEvents).orderBy(desc(dbSchema.homeworkOutboxEvents.createdAt));
+    return rows.map((row) => this.mapOutboxEvent(row));
+  }
 
   async runInTransaction<T>(runner: () => Promise<T> | T): Promise<T> {
     return this.db.transaction(async () => runner());
@@ -854,10 +886,44 @@ class DbHomeworkRepository implements HomeworkRepositoryPort {
       subject: row.subjectScope ?? undefined,
       stageScope: stageScope ?? (row.category !== 'general' ? row.category : undefined),
       description: row.description ?? undefined,
-      status: row.active === 'true' ? 'active' : 'inactive',
+      status: row.status as HomeworkErrorTaxonomy['status'],
       sortOrder: row.sortOrder,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
+    };
+  }
+
+  private mapReviewDraft(row: typeof dbSchema.homeworkReviewDrafts.$inferSelect): HomeworkReviewDraft {
+    return {
+      id: row.id,
+      submissionId: row.submissionId,
+      reviewerTeacherId: row.reviewerTeacherId ?? null,
+      reviewResult: (row.reviewResult ?? undefined) as HomeworkReviewDraft['reviewResult'],
+      finalAccuracyPct: this.toNumber(row.finalAccuracyPct),
+      finalErrorSummary: row.finalErrorSummary ?? null,
+      finalSuggestion: row.finalSuggestion ?? null,
+      publishToFamily: row.publishToFamily === 'true',
+      finalErrorItems: Array.isArray(row.finalErrorItems)
+        ? row.finalErrorItems.map((item) => ({
+            errorTaxonomyId: item.errorTaxonomyId,
+            weight: item.weight,
+            note: item.note,
+          }))
+        : [],
+      savedAt: row.savedAt.toISOString(),
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    };
+  }
+
+  private mapOutboxEvent(row: typeof dbSchema.homeworkOutboxEvents.$inferSelect): HomeworkOutboxEvent {
+    return {
+      id: row.id,
+      eventName: row.eventName as HomeworkOutboxEvent['eventName'],
+      bizId: row.bizId,
+      payload: (row.payload ?? {}) as Record<string, unknown>,
+      status: row.status as HomeworkOutboxEvent['status'],
+      createdAt: row.createdAt.toISOString(),
     };
   }
 
@@ -875,8 +941,8 @@ class DbHomeworkRepository implements HomeworkRepositoryPort {
 export class HomeworkRepository {
   private readonly adapter: HomeworkRepositoryPort;
 
-  constructor() {
-    this.adapter = isDbPersistenceEnabled() ? new DbHomeworkRepository() : new FileHomeworkRepository();
+  constructor(filePath?: string) {
+    this.adapter = isDbPersistenceEnabled() ? new DbHomeworkRepository() : new FileHomeworkRepository(filePath);
   }
 
   listSubmissions() { return this.adapter.listSubmissions(); }

@@ -98,7 +98,7 @@ test('homework submission -> draft -> analyze -> review persists across reposito
 
 test('homework error taxonomy CRUD enforces uniqueness and reference guard', async () => {
   resetDataDir();
-  const { service } = createHomeworkFixture();
+  const { service, filesService } = createHomeworkFixture();
 
   const taxonomy = await service.createErrorTaxonomy({
     code: 'MATH_READ',
@@ -121,6 +121,29 @@ test('homework error taxonomy CRUD enforces uniqueness and reference guard', asy
 
   await service.deleteErrorTaxonomy(taxonomy.id);
   assert.equal((await service.listErrorTaxonomies({ keyword: '审题偏差' })).length, 0);
+
+  const uploaded = await filesService.uploadOne({
+    fileName: 'taxonomy-guard.jpg',
+    mimeType: 'image/jpeg',
+    sizeBytes: 1024,
+    purpose: 'homework',
+    uploadedBy: 'teacher-001',
+  });
+  const submission = await service.createSubmission({
+    studentId: 'student-001',
+    campusId: 'campus-001',
+    termId: 'term-2026-spring',
+    teacherId: 'teacher-001',
+    subject: 'math',
+    homeworkDate: '2026-03-25',
+    fileIds: [uploaded.fileId],
+  });
+  await service.submitReview(submission.id, {
+    reviewResult: 'adjusted',
+    finalAccuracyPct: 90,
+    publishToFamily: false,
+    finalErrorItems: [{ errorTaxonomyId: 'taxonomy-001', weight: 1 }],
+  });
 
   await assert.rejects(() => service.deleteErrorTaxonomy('taxonomy-001'));
 });

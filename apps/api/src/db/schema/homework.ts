@@ -1,4 +1,4 @@
-import { createId, date, integer, jsonbDefault, numeric, pgTable, text, timestamp, uniqueIndex, varchar } from './base';
+import { createId, date, integer, jsonb, jsonbDefault, numeric, pgTable, sql, text, timestamp, uniqueIndex, varchar } from './base';
 import { students } from './students';
 import { campuses, schoolTerms } from './settings';
 import { teachers } from './teachers';
@@ -11,7 +11,7 @@ export const errorTaxonomies = pgTable('error_taxonomies', {
   category: varchar('category', { length: 32 }).notNull(),
   subjectScope: varchar('subject_scope', { length: 32 }),
   description: text('description'),
-  active: varchar('active', { length: 5 }).default('true').notNull(),
+  status: varchar('status', { length: 16 }).default('active').notNull(),
   sortOrder: integer('sort_order').default(100).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
@@ -94,3 +94,30 @@ export const homeworkSubmissionFiles = pgTable('homework_submission_files', {
   sortOrder: integer('sort_order').default(100).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [uniqueIndex('homework_submission_files_submission_file_uq').on(table.submissionId, table.fileId)]);
+
+export const homeworkReviewDrafts = pgTable('homework_review_drafts', {
+  id: createId(),
+  submissionId: varchar('submission_id', { length: 36 }).notNull().references(() => homeworkSubmissions.id, { onDelete: 'cascade' }),
+  reviewerTeacherId: varchar('reviewer_teacher_id', { length: 36 }).references(() => teachers.id, { onDelete: 'set null' }),
+  reviewResult: varchar('review_result', { length: 16 }),
+  finalAccuracyPct: numeric('final_accuracy_pct', { precision: 5, scale: 2 }),
+  finalErrorSummary: text('final_error_summary'),
+  finalSuggestion: text('final_suggestion'),
+  publishToFamily: varchar('publish_to_family', { length: 5 }).default('false').notNull(),
+  finalErrorItems: jsonb('final_error_items')
+    .$type<Array<{ errorTaxonomyId: string; weight: number; note?: string }>>()
+    .default(sql`'[]'::jsonb`)
+    .notNull(),
+  savedAt: timestamp('saved_at', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [uniqueIndex('homework_review_drafts_submission_id_uq').on(table.submissionId)]);
+
+export const homeworkOutboxEvents = pgTable('homework_outbox_events', {
+  id: createId(),
+  eventName: varchar('event_name', { length: 32 }).notNull(),
+  bizId: varchar('biz_id', { length: 36 }).notNull(),
+  payload: jsonbDefault<Record<string, unknown>>('payload'),
+  status: varchar('status', { length: 16 }).default('pending').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
