@@ -1,0 +1,73 @@
+{
+  "viewportWidths": [
+    1280,
+    1440,
+    1920
+  ],
+  "routeCount": 31,
+  "businessRouteCount": 29,
+  "routes": [
+    "/",
+    "/analytics/billing",
+    "/analytics/overview",
+    "/analytics/teaching",
+    "/attendance/board",
+    "/attendance/devices",
+    "/attendance/homework-time",
+    "/billing/contracts",
+    "/billing/invoices",
+    "/billing/products",
+    "/billing/renewals",
+    "/communication/messages",
+    "/communication/records",
+    "/dashboard",
+    "/families",
+    "/families/family-001",
+    "/growth/goals",
+    "/growth/observations",
+    "/growth/reports",
+    "/growth/rubrics",
+    "/homework/error-taxonomies",
+    "/homework/review/submission-001",
+    "/homework/submissions",
+    "/login",
+    "/settings/system",
+    "/settings/users",
+    "/students",
+    "/students/import",
+    "/students/student-001",
+    "/teachers",
+    "/teachers/teacher-001"
+  ],
+  "responsiveMetrics": {
+    "cssPath": "/private/tmp/w35-runtime-smoke/apps/web/src/app/globals.css",
+    "mediaQueryMaxWidths": [
+      1280,
+      1100,
+      720
+    ],
+    "declarationsChecked": 8,
+    "largeFixedWidthDeclarations": [],
+    "hasStackingBreakpoint": true
+  },
+  "runtimeMetrics": {
+    "runtimeMode": "compiled",
+    "routeExecutionFailures": 0,
+    "clientBoundaryRoutes": [
+      "/families",
+      "/homework/review/submission-001",
+      "/homework/submissions",
+      "/students",
+      "/students/student-001",
+      "/teachers"
+    ],
+    "inlineStyleDeclarationsChecked": 0,
+    "runtimeInlineWidthRisks": []
+  },
+  "status": "runtime-static-pass",
+  "notes": [
+    "Static audit checks CSS width declarations and breakpoint inventory only.",
+    "Compiled runtime adds in-process page execution and inline-style width inspection without binding localhost.",
+    "Browser-level overflow validation still requires a localhost-capable runtime."
+  ]
+}

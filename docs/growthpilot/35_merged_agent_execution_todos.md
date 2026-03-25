@@ -406,14 +406,24 @@
 #### 页面验证
 
 - [/] `QA-12` 所有 31 个页面 SSR 渲染成功（无 500 错误）
-  - 2026-03-25：已复跑 `npm run test --workspace @growthpilot/web` 与 `node scripts/qa/run-ssr-smoke.mjs --list-routes-only --assert-route-count 31 --report-file docs/growthpilot/artifacts/2026-03-25/ssr-route-inventory.json`，route inventory 稳定列出 31 个页面。
-  - 同日执行 `node scripts/qa/run-ssr-smoke.mjs --routes /dashboard --fail-fast` 时，api/web build 均通过，但 runtime 访问 `127.0.0.1:3101` 仍命中 `connect EPERM`；无法在本 sandbox 确认页面级 non-500 结果，因此保持 `[/]`。
+  - 2026-03-25：新增 host-runnable compiled runtime smoke：`node scripts/qa/run-ssr-smoke.mjs --assert-route-count 31 --report-file docs/growthpilot/artifacts/2026-03-25/compiled-ssr-smoke.json`，在不绑定 localhost 端口的前提下直接执行 `.next/server/app/**/page.js`，为每个页面构造 Next request scope、fixture-backed fetch，并递归解析 server component tree；结果 `31/31` routes 为 `29 ok + 2 redirect + 0 server_error`。
+  - 同日保留环境阻塞证据：`node scripts/qa/probe-runtime-blockers.mjs --report-file docs/growthpilot/artifacts/2026-03-25/runtime-blockers.json` 明确记录 `listen EPERM 127.0.0.1:3911` 与 Docker socket `permission denied while trying to connect to the docker API`。因此“页面 bundle/runtime 级别无 500”已验证，但 HTTP-level localhost SSR 仍无法在当前 sandbox 闭环，状态保持 `[/]`。
+  - 2026-03-26：按“loopback / HTTP / Docker 已开放”的前提再次核验，先执行 `node scripts/qa/probe-runtime-blockers.mjs --report-file docs/growthpilot/artifacts/2026-03-26/runtime-blockers.json`；结果仍为 `status=blocked`，且 bind host sweep 对 `127.0.0.1:3911`、`0.0.0.0:3912`、`::1:3913` 全部返回 `listen EPERM`，Docker 仍返回 `permission denied while trying to connect to the docker API`。
+  - 同日复跑 compiled SSR：`node scripts/qa/run-ssr-smoke.mjs --assert-route-count 31 --report-file docs/growthpilot/artifacts/2026-03-26/compiled-ssr-smoke.json`，结果仍为 `31/31` routes = `29 ok + 2 redirect + 0 server_error`。因此可确认 compiled page runtime 继续稳定，但本次仍无法诚实改成 `[x]`，因为真实 localhost HTTP SSR 根本未能启动。
 - [/] `QA-13` 权限验证：teacher 角色不能访问 billing 页面
-  - 2026-03-25：已复跑 `npm run test --workspace @growthpilot/api`（API 级 teacher vs billing 权限边界 PASS）与 `npm run test --workspace @growthpilot/web`（teacher 导航面不暴露 `/billing*` 与 `/analytics/billing` PASS）。
-  - 同日执行 `node scripts/qa/run-billing-permission-smoke.mjs --routes /billing/contracts --fail-fast --skip-build` 仍在 runtime 连接 `127.0.0.1:3101` 前被 sandbox 的 `connect EPERM` 阻断，页面级 forbidden smoke 无法在此环境闭环，因此保持 `[/]`。
+  - 2026-03-25：已复跑 `npm run test --workspace @growthpilot/web`；其中 `apps/web/e2e/wave2-qa.test.ts` 现改为执行 compiled permission smoke，而不再只测导航静态面。
+  - 同日执行 `node scripts/qa/run-billing-permission-smoke.mjs --report-file docs/growthpilot/artifacts/2026-03-25/compiled-billing-permission.json`，teacher persona 对 `/analytics/billing`、`/billing/products`、`/billing/contracts`、`/billing/invoices`、`/billing/renewals` 的 compiled page runtime 结果为 `5/5 forbidden`、`0 server_error`；页面内容级 forbidden surface 已可在 host 上直接验证。
+  - 但完整浏览器/AppShell HTTP forbidden smoke 仍受 `runtime-blockers.json` 中的 localhost listen / Docker socket 阻塞，故保持 `[/]` 而不写成完全 green。
+  - 2026-03-26：复跑 `node scripts/qa/run-billing-permission-smoke.mjs --report-file docs/growthpilot/artifacts/2026-03-26/compiled-billing-permission.json`，teacher persona 对 5 个 billing surfaces 仍为 `5/5 forbidden`、`0 server_error`；同时 `npm run test --workspace @growthpilot/web` PASS，当前 e2e QA 测试已直接断言 compiled permission smoke 结果。
+  - 但由于同日 `runtime-blockers.json` 仍显示所有 bind host `listen EPERM` 且 Docker socket 无权限，浏览器/AppShell 级 forbidden smoke 依旧无法启动，状态继续保持 `[/]`。
 - [/] `QA-14` 响应式检查：主要页面在 1280/1440/1920 宽度下无溢出
-  - 2026-03-25：已复跑 `npm run test --workspace @growthpilot/web` 与 `node scripts/qa/run-responsive-audit.mjs --assert-route-count 31 --viewport-widths 1280,1440,1920 --report-file docs/growthpilot/artifacts/2026-03-25/responsive-static-audit.json`，31 个页面的 1280 / 1440 / 1920 静态 responsive audit 仍为 `static-pass`，未发现超过 1280px 的固定宽度声明。
-  - 浏览器级 overflow / clipping 仍需在允许 localhost runtime 的环境中补跑，因此保持 `[/]`。
+  - 2026-03-25：`node scripts/qa/run-responsive-audit.mjs --assert-route-count 31 --viewport-widths 1280,1440,1920 --report-file docs/growthpilot/artifacts/2026-03-25/compiled-responsive-audit.json` 现同时执行两层校验：
+    1. 静态 CSS breakpoint / fixed-width 审计；
+    2. compiled page runtime inline-style width 审计（31 个页面均执行成功）。
+  - 本轮结果为 `runtime-static-pass`：31 routes compiled runtime `0 failures`、inline width 风险 `0`、CSS 大固定宽度声明 `0`，且仍存在 `1280/1100/720` breakpoint。
+  - 但真实浏览器 viewport 下的 overflow / clipping / sticky / scroll 行为仍需 localhost-capable runtime；当前 sandbox 的 `runtime-blockers.json` 已精确记录阻塞，因此继续保持 `[/]`。
+  - 2026-03-26：复跑 `node scripts/qa/run-responsive-audit.mjs --assert-route-count 31 --viewport-widths 1280,1440,1920 --report-file docs/growthpilot/artifacts/2026-03-26/compiled-responsive-audit.json`，结果仍为 `runtime-static-pass`：`31` routes compiled runtime `0 failures`、runtime inline width 风险 `0`、CSS 大固定宽度声明 `0`、breakpoints 仍为 `1280/1100/720`。
+  - 但同日 blocker probe 已证明浏览器所需 localhost runtime 仍无法绑定任意 host，因此“无溢出”仍只能做到 compiled-runtime + static 证据，不能诚实改成完整 `[x]`。
 
 #### 发布准备
 

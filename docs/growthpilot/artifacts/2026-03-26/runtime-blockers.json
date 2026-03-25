@@ -1,0 +1,50 @@
+{
+  "checkedAt": "2026-03-25T17:22:42.701Z",
+  "sandboxEvidence": {
+    "loopbackListen": {
+      "host": "127.0.0.1",
+      "ok": false,
+      "code": "EPERM",
+      "syscall": "listen",
+      "address": "127.0.0.1",
+      "port": 3911,
+      "message": "listen EPERM: operation not permitted 127.0.0.1:3911"
+    },
+    "listenHosts": [
+      {
+        "host": "127.0.0.1",
+        "ok": false,
+        "code": "EPERM",
+        "syscall": "listen",
+        "address": "127.0.0.1",
+        "port": 3911,
+        "message": "listen EPERM: operation not permitted 127.0.0.1:3911"
+      },
+      {
+        "host": "0.0.0.0",
+        "ok": false,
+        "code": "EPERM",
+        "syscall": "listen",
+        "address": "0.0.0.0",
+        "port": 3912,
+        "message": "listen EPERM: operation not permitted 0.0.0.0:3912"
+      },
+      {
+        "host": "::1",
+        "ok": false,
+        "code": "EPERM",
+        "syscall": "listen",
+        "address": "::1",
+        "port": 3913,
+        "message": "listen EPERM: operation not permitted ::1:3913"
+      }
+    ],
+    "dockerSocket": {
+      "ok": false,
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": "permission denied while trying to connect to the docker API at unix:///Users/kgiot/.docker/run/docker.sock"
+    }
+  },
+  "status": "blocked"
+}
