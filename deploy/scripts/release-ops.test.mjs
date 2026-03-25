@@ -34,12 +34,21 @@ test('bootstrap-release-workspace creates a populated release directory', () => 
     assert.equal(summary.batchId, 'BATCH-PROD-001');
     assert.ok(existsSync(resolve(tempDir, 'release-gate.yaml')));
     assert.ok(existsSync(resolve(tempDir, 'uat-execution.yaml')));
+    assert.ok(existsSync(resolve(tempDir, 'migration-execution-log.md')));
+    assert.ok(existsSync(resolve(tempDir, 'migration-validation-checklist.md')));
+    assert.ok(existsSync(resolve(tempDir, 'prod-db-init-checklist.md')));
+    assert.ok(existsSync(resolve(tempDir, 'sql', 'migration-validation.sql')));
+    assert.ok(existsSync(resolve(tempDir, 'checks')));
+    assert.ok(existsSync(resolve(tempDir, 'evidence')));
+    assert.ok(existsSync(resolve(tempDir, 'logs')));
     assert.ok(existsSync(resolve(tempDir, 'README.md')));
 
     const readme = readFileSync(resolve(tempDir, 'README.md'), 'utf8');
     assert.match(readme, /wave5-prod-cutover-001 Release Workspace/);
     assert.match(readme, /BATCH-PROD-001/);
     assert.match(readme, /npm run ops:env:check/);
+    assert.match(readme, /migration-execution-log\.md/);
+    assert.match(readme, /DEPLOY_ENV_FILE=.env\.prod npm run db:backup/);
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }

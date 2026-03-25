@@ -23,6 +23,11 @@ if (!['uat', 'prod'].includes(targetEnv)) {
 
 mkdirSync(outputDir, { recursive: true });
 
+const subdirectories = ['checks', 'evidence', 'logs', 'sql'];
+for (const directory of subdirectories) {
+  mkdirSync(resolve(outputDir, directory), { recursive: true });
+}
+
 const templates = [
   {
     source: resolve(repoRoot, 'docs/growthpilot/templates/qa_release_gate_template.yaml'),
@@ -43,6 +48,26 @@ const templates = [
   {
     source: resolve(repoRoot, 'docs/growthpilot/templates/release_acceptance_report_template.md'),
     target: resolve(outputDir, 'release-acceptance-report.md'),
+  },
+  {
+    source: resolve(repoRoot, 'docs/growthpilot/templates/migration_execution_log_template.md'),
+    target: resolve(outputDir, 'migration-execution-log.md'),
+  },
+  {
+    source: resolve(repoRoot, 'docs/growthpilot/templates/migration_validation_checklist.md'),
+    target: resolve(outputDir, 'migration-validation-checklist.md'),
+  },
+  {
+    source: resolve(repoRoot, 'docs/growthpilot/templates/migration_validation_queries.sql'),
+    target: resolve(outputDir, 'sql', 'migration-validation.sql'),
+  },
+  {
+    source: resolve(repoRoot, 'docs/growthpilot/templates/uat_environment_checklist.md'),
+    target: resolve(outputDir, 'uat-environment-checklist.md'),
+  },
+  {
+    source: resolve(repoRoot, 'docs/growthpilot/templates/prod_db_init_checklist.md'),
+    target: resolve(outputDir, 'prod-db-init-checklist.md'),
   },
 ];
 
@@ -94,20 +119,34 @@ function buildReadme(context) {
     '- `release-gate.yaml`: Go/No-Go gate and signoff state',
     '- `defect-triage.md`: defect log and severity rubric',
     '- `uat-execution.yaml`: role-based UAT execution matrix',
+    '- `uat-environment-checklist.md`: runtime/data/account readiness checklist',
+    '- `migration-execution-log.md`: report-only / dry-run / db-apply timeline',
+    '- `migration-validation-checklist.md`: row-count, sample and integrity validation sheet',
+    '- `prod-db-init-checklist.md`: production DB initialization checklist',
+    '- `sql/migration-validation.sql`: rendered SQL template for batch validation',
     '- `go-live-observation.md`: 24h / 72h observation log',
     '- `release-acceptance-report.md`: final acceptance report shell',
+    '',
+    '## Included Directories',
+    '',
+    '- `checks/`: env check, sha256, curl and SQL result snapshots',
+    '- `evidence/`: screenshots, exported CSV/PDF, signed artifacts',
+    '- `logs/`: command stdout/stderr captured with `tee`',
+    '- `sql/`: rendered SQL used during validation',
     '',
     '## Recommended Commands',
     '',
     `\`\`\`bash`,
     `npm run ops:env:check -- --env-file ${envFile} --mode ${envMode}`,
+    `DEPLOY_ENV_FILE=${envFile} npm run db:backup -- --label ${context.batchId}-preflight`,
     `npm run migration:release -- --dry-run --target-env ${context.targetEnv} --batch-id ${context.batchId} --csv scripts/migration/fixtures/staging-import-sample.csv`,
     `npm run migration:release -- --report-only --target-env ${context.targetEnv} --batch-id ${context.batchId} --csv scripts/migration/fixtures/staging-import-sample.csv`,
     '```',
     '',
     '## Usage Notes',
     '',
-    '- Fill release owners, commit, signoff, and observed timestamps before execution.',
+    '- Fill release owners, commit, signoff, source hashes, and observed timestamps before execution.',
+    '- Pass `--artifacts-dir` to `migration:release` so generated summaries land in this same directory.',
     '- Do not mark migration, deploy, or smoke checks complete until the real environment run is finished.',
     '- Save generated evidence in this directory so Go/No-Go review only needs one path.',
     '',
