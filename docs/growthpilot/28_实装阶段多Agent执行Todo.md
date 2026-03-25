@@ -73,8 +73,8 @@
 - [x] JWT access token / refresh token 持久化
 - [ ] refresh rotation
 - [ ] logout token 失效链路
-- [ ] 权限 guard / permission policy 真化
-- [ ] 401 / 403 / 409 / 422 标准错误体收口
+- [x] 权限 guard / permission policy 真化
+- [x] 401 / 403 / 409 / 422 标准错误体收口
 
 ### A4-2 真实文件上传
 - [x] multipart 上传入口
@@ -112,11 +112,11 @@
 ### A5-2 Student 360 真聚合
 - [x] student 基础信息真实聚合
 - [x] family / guardians / enrollment 真聚合
-- [ ] homework / growth / attendance / billing 摘要位接真实查询
+- [x] homework / growth / attendance / billing 摘要位接真实查询
 - [x] recentTimeline 统一口径
 - notes:
   - 2026-03-25：`GET /students/{studentId}/360` 已从真实 repository 聚合 student + currentEnrollment + family + guardians，recentTimeline 首屏加入主档/家庭/在读档真实落库事件。
-  - homework / growth / attendance / billing 仍是适配层摘要，但已不再是 Student/Family/Enrollment 全量假拼装；后续等 A6/A7 真仓储后可平滑替换摘要来源。
+  - 2026-03-25：`StudentsService` 已改为直接读取 homework / growth / attendance / billing 仓储，`homeworkSummary` / `growthSummary` / `attendanceSummary` / `billingSummary` 与 `recentTimeline` 不再依赖硬编码 snapshot；测试已覆盖真实仓储聚合。
 
 **DoD**
 - Student 360 不再返回纯 mock summary
@@ -284,7 +284,8 @@
 > - auth：从 in-memory session 改为文件持久化 session store + HMAC JWT access/refresh，refresh 走 rotation，logout 可失效持久化会话。
 > - files：新增 `/files/upload/multipart` 骨架，object storage 默认切到本地 `local-s3-compatible` 实现，并保留 mock adapter 便于替换/测试；file asset 元数据改为文件持久化。
 > - jobs：jobs repository 改为文件持久化，新增 `GET /jobs` 列表接口，并补 attempts/queuedAt/startedAt/finishedAt/retry 基础字段链路。
-> - 当前仍未真化项：permission guard / 401-403-409-422 标准错误体统一、refresh token 黑名单/多端策略、真实 S3 SDK 接入、数据库/Redis/BullMQ 真队列。
+> - 2026-03-25 第二波补齐：已增加全局 HTTP exception filter，统一输出 401/403/409/422 标准错误体；已增加 `ApiAuthGuard` + `PermissionGuard` + `@RequirePermission()` 权限守卫基础层。
+- 当前仍未真化项：refresh token 黑名单/多端策略、真实 S3 SDK 接入、数据库/Redis/BullMQ 真队列。
 
 ### NOW-2 A5 主数据真化
 - [x] students / families / teachers / enrollments repository 真化

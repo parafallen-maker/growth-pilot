@@ -6,6 +6,7 @@ import type {
   HomeworkTimeSession,
   StudentDeviceBinding,
 } from '@growthpilot/schema/index';
+import { PersistentJsonStore } from '../../../common/persistent-json.store';
 
 interface AttendanceState {
   devices: AttendanceDevice[];
@@ -17,7 +18,10 @@ interface AttendanceState {
 
 @Injectable()
 export class AttendanceRepository {
-  private state: AttendanceState = {
+  private readonly store: PersistentJsonStore<AttendanceState>;
+
+  constructor(filePath = '.data/attendance.json') {
+    this.store = new PersistentJsonStore<AttendanceState>(filePath, () => ({
     devices: [
       {
         id: 'device-001',
@@ -85,7 +89,10 @@ export class AttendanceRepository {
         generatedAt: '2026-03-24T19:45:00+08:00',
       },
     ],
-  };
+  }));
+  }
+
+  private get state() { return this.store.get(); }
 
   listDevices() { return [...this.state.devices]; }
   listBindings() { return [...this.state.bindings]; }
@@ -114,7 +121,9 @@ export class AttendanceRepository {
       createdAt: now,
       updatedAt: now,
     };
-    this.state.devices.unshift(device);
+    this.store.update((state) => {
+      state.devices.unshift(device);
+    });
     return device;
   }
 
@@ -126,14 +135,21 @@ export class AttendanceRepository {
       createdAt: now,
       updatedAt: now,
     };
-    this.state.bindings.unshift(binding);
+    this.store.update((state) => {
+      state.bindings.unshift(binding);
+    });
     return binding;
   }
 
   updateBinding(bindingId: string, patch: Partial<StudentDeviceBinding>) {
-    const binding = this.getBindingOrThrow(bindingId);
-    Object.assign(binding, patch, { updatedAt: new Date().toISOString() });
-    return binding;
+    let updated!: StudentDeviceBinding;
+    this.store.update((state) => {
+      const binding = state.bindings.find((item) => item.id === bindingId);
+      if (!binding) throw new NotFoundException(`binding ${bindingId} not found`);
+      Object.assign(binding, patch, { updatedAt: new Date().toISOString() });
+      updated = binding;
+    });
+    return updated;
   }
 
   createEvent(input: Omit<AttendanceEvent, 'id' | 'createdAt'>) {
@@ -142,7 +158,9 @@ export class AttendanceRepository {
       id: `attendance-event-${String(this.state.events.length + 1).padStart(3, '0')}`,
       createdAt: new Date().toISOString(),
     };
-    this.state.events.unshift(event);
+    this.store.update((state) => {
+      state.events.unshift(event);
+    });
     return event;
   }
 
@@ -155,16 +173,26 @@ export class AttendanceRepository {
       (item) => item.studentId === record.studentId && item.statDate === record.statDate && item.subject === record.subject,
     );
     const now = new Date().toISOString();
+    let updated: HomeworkTimeDailyStat | undefined;
     if (existing) {
-      Object.assign(existing, record, { generatedAt: now });
-      return existing;
+      this.store.update((state) => {
+        const target = state.dailyStats.find(
+          (item) => item.studentId === record.studentId && item.statDate === record.statDate && item.subject === record.subject,
+        );
+        if (!target) return;
+        Object.assign(target, record, { generatedAt: now });
+        updated = target;
+      });
+      return updated!;
     }
     const stat: HomeworkTimeDailyStat = {
       ...record,
       id: `hw-stat-${String(this.state.dailyStats.length + 1).padStart(3, '0')}`,
       generatedAt: now,
     };
-    this.state.dailyStats.unshift(stat);
+    this.store.update((state) => {
+      state.dailyStats.unshift(stat);
+    });
     return stat;
   }
 
@@ -174,7 +202,9 @@ export class AttendanceRepository {
       id: `hw-session-${String(this.state.sessions.length + 1).padStart(3, '0')}`,
       createdAt: new Date().toISOString(),
     };
-    this.state.sessions.unshift(session);
+    this.store.update((state) => {
+      state.sessions.unshift(session);
+    });
     return session;
   }
 
@@ -187,24 +217,29 @@ export class AttendanceRepository {
   }
 
   updateDevice(deviceId: string, patch: Partial<AttendanceDevice>) {
-    const device = this.getDeviceOrThrow(deviceId);
-    Object.assign(device, patch, { updatedAt: new Date().toISOString() });
-    return device;
+    let updated!: AttendanceDevice;
+    this.store.update((state) => {
+      const device = state.devices.find((item) => item.id === deviceId);
+      if (!device) throw new NotFoundException(`device ${deviceId} not found`);
+      Object.assign(device, patch, { updatedAt: new Date().toISOString() });
+      updated = device;
+    });
+    return updated;
   }
 
   runInTransaction<T>(runner: () => T): T {
-    const snapshot: AttendanceState = JSON.parse(JSON.stringify(this.state));
+    const snapshot = this.store.snapshot();
     try {
       return runner();
     } catch (error) {
-      this.state = snapshot;
+      this.store.replace(snapshot);
       throw error;
     }
   }
 
   private ensureUnique(field: string, exists: boolean) {
     if (exists) {
-      throw new ConflictException(`${field} already exists`);
+      throw new ConflictException({ code: 'DATA_409', message: `${field} already exists` });
     }
   }
 }

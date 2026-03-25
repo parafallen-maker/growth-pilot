@@ -3,24 +3,33 @@ import assert from 'node:assert/strict';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { AttendanceRepository } from '../src/modules/attendance/repository/attendance.repository';
+import { BillingRepository } from '../src/modules/billing/repository/billing.repository';
 import { FamiliesRepository } from '../src/modules/families/repository/families.repository';
 import { FamiliesService } from '../src/modules/families/families.service';
+import { GrowthRepository } from '../src/modules/growth/repository/growth.repository';
+import { HomeworkRepository } from '../src/modules/homework/repository/homework.repository';
 import { MasterDataStore } from '../src/modules/master-data/master-data.store';
 import { StudentsRepository } from '../src/modules/students/repository/students.repository';
 import { StudentsService } from '../src/modules/students/students.service';
 
 function buildServices(storePath?: string) {
   const filePath = storePath ?? join(mkdtempSync(join(tmpdir(), 'growthpilot-master-data-')), 'master-data.json');
+  const dir = filePath.slice(0, filePath.lastIndexOf('/'));
   const store = new MasterDataStore(filePath);
   if (!storePath) {
     store.reset();
   }
   const familiesRepository = new FamiliesRepository(store);
   const studentsRepository = new StudentsRepository(store);
+  const homeworkRepository = new HomeworkRepository(join(dir, 'homework.json'));
+  const growthRepository = new GrowthRepository(join(dir, 'growth.json'));
+  const attendanceRepository = new AttendanceRepository(join(dir, 'attendance.json'));
+  const billingRepository = new BillingRepository(join(dir, 'billing.json'));
   return {
     filePath,
     familiesService: new FamiliesService(familiesRepository),
-    service: new StudentsService(studentsRepository, familiesRepository),
+    service: new StudentsService(studentsRepository, familiesRepository, homeworkRepository, growthRepository, attendanceRepository, billingRepository),
   };
 }
 
@@ -64,9 +73,9 @@ test('student 360 aggregate reads persisted student/family/enrollment data', () 
 
   assert.equal(detail360.homeworkSummary.reviewedCount, 1);
   assert.equal(detail360.homeworkSummary.pendingReviewCount, 1);
-  assert.equal(detail360.growthSummary.activeGoalCount, 2);
-  assert.equal(detail360.attendanceSummary.presentDays, 2);
-  assert.equal(detail360.billingSummary.outstandingAmount, 1200);
+  assert.equal(detail360.growthSummary.activeGoalCount, 1);
+  assert.equal(detail360.attendanceSummary.presentDays, 1);
+  assert.equal(detail360.billingSummary.outstandingAmount, 360000);
 });
 
 test('master-data uniqueness rules are enforced via persisted repositories', () => {
