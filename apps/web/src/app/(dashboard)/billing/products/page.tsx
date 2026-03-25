@@ -2,11 +2,11 @@ import { DataTable, FilterBar, MetricGrid, PageHeader, StateBlock } from '@/comp
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { billingPermissions } from '@/features/billing/constants';
 import { queryKeys } from '@/features/shared/query-keys';
-import { getCurrentUser } from '@/lib/current-user';
+import { requireCurrentUser } from '@/lib/current-user';
 import { billingService } from '@/services/billing-service';
 
 export default async function BillingProductsPage() {
-  const currentUser = await getCurrentUser();
+  const currentUser = await requireCurrentUser();
   const allowed = hasPermission(currentUser.permissions, billingPermissions.productsView);
   const filters = { pageNo: 1, pageSize: 20, status: 'active', sortBy: 'updatedAt', sortOrder: 'desc' as const };
   const result = await billingService.queryProducts(filters);

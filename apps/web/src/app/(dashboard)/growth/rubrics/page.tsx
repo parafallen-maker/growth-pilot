@@ -3,10 +3,10 @@ import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/compone
 import { queryKeys } from '@/features/shared/query-keys';
 import { growthPermissions } from '@/features/growth/constants';
 import { growthService } from '@/services/growth-service';
-import { getCurrentUser } from '@/lib/current-user';
+import { requireCurrentUser } from '@/lib/current-user';
 
 export default async function GrowthRubricsPage() {
-  const currentUser = await getCurrentUser();
+  const currentUser = await requireCurrentUser();
   const allowed = hasPermission(currentUser.permissions, growthPermissions.rubricsView);
   const result = await growthService.queryRubrics({ pageNo: 1, pageSize: 20, sortBy: 'updatedAt', sortOrder: 'desc' });
   const detail = await growthService.detailRubric(result.list[0]?.rubricId ?? 'rubric-weekly-core');

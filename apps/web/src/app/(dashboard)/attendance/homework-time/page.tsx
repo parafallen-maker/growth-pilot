@@ -2,11 +2,11 @@ import { DataTable, FilterBar, MetricGrid, PageHeader, StateBlock, SummaryPanel 
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { attendancePermissions } from '@/features/attendance/constants';
 import { queryKeys } from '@/features/shared/query-keys';
-import { getCurrentUser } from '@/lib/current-user';
+import { requireCurrentUser } from '@/lib/current-user';
 import { attendanceService } from '@/services/attendance-service';
 
 export default async function AttendanceHomeworkTimePage() {
-  const currentUser = await getCurrentUser();
+  const currentUser = await requireCurrentUser();
   const allowed = hasPermission(currentUser.permissions, attendancePermissions.homeworkTimeView);
   const filters = {
     pageNo: 1,

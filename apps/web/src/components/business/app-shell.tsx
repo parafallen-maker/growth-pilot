@@ -2,14 +2,21 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { pruneNavSections } from '@/components/business/permission-guard';
 import { navSections } from '@/lib/navigation';
 import type { CurrentUser } from '@/lib/current-user';
 
 export function AppShell({ children, currentUser }: { children: ReactNode; currentUser: CurrentUser }) {
   const pathname = usePathname();
+  const router = useRouter();
   const sections = pruneNavSections(navSections, currentUser.permissions);
+
+  async function handleLogout() {
+    await fetch('/api/auth/session/logout', { method: 'POST' });
+    router.replace('/login');
+    router.refresh();
+  }
 
   return (
     <div className="dashboard-shell shell">
@@ -42,11 +49,11 @@ export function AppShell({ children, currentUser }: { children: ReactNode; curre
         <header className="topbar panel">
           <div>
             <strong>Admin Console</strong>
-            <div className="subtle">已预埋导航裁剪、权限占位、统一页面状态组件。</div>
+            <div className="subtle">当前用户来自 /auth/me，菜单已按 permissions 裁剪。</div>
           </div>
           <div className="button-row">
-            <Link className="btn" href="/login">切到登录页</Link>
-            <button className="btn">切校区（占位）</button>
+            <button className="btn" onClick={() => router.refresh()}>刷新权限</button>
+            <button className="btn danger" onClick={handleLogout}>退出登录</button>
           </div>
         </header>
         {children}

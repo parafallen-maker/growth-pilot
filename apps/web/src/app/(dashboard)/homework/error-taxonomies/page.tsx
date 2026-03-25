@@ -2,11 +2,11 @@ import { PermissionGuard } from '@/components/business/permission-guard';
 import { DataTable, FilterBar, PageHeader, StateBlock } from '@/components/business/page-blocks';
 import { homeworkPermissions } from '@/features/homework/constants';
 import { queryKeys } from '@/features/shared/query-keys';
-import { getCurrentUser } from '@/lib/current-user';
+import { requireCurrentUser } from '@/lib/current-user';
 import { homeworkService } from '@/services/homework-service';
 
 export default async function HomeworkErrorTaxonomiesPage() {
-  const currentUser = await getCurrentUser();
+  const currentUser = await requireCurrentUser();
   const filters = { pageNo: 1, pageSize: 20, keyword: '', status: 'enabled', sortBy: 'sort', sortOrder: 'asc' as const };
   const result = await homeworkService.taxonomyQuery(filters);
 

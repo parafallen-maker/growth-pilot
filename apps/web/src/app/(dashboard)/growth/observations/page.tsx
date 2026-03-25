@@ -3,10 +3,10 @@ import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/compone
 import { queryKeys } from '@/features/shared/query-keys';
 import { growthPermissions } from '@/features/growth/constants';
 import { growthService } from '@/services/growth-service';
-import { getCurrentUser } from '@/lib/current-user';
+import { requireCurrentUser } from '@/lib/current-user';
 
 export default async function GrowthObservationsPage() {
-  const currentUser = await getCurrentUser();
+  const currentUser = await requireCurrentUser();
   const allowed = hasPermission(currentUser.permissions, growthPermissions.observationsView);
   const result = await growthService.queryObservations({ pageNo: 1, pageSize: 20, scene: 'all', reportPublished: 'all', sortBy: 'observedAt', sortOrder: 'desc' });
   const createMeta = growthService.createObservation();

@@ -92,7 +92,8 @@
 
 **允许编辑**：`docs/growthpilot/`、根目录 `README.md`
 
-- [ ] `SPEC-01` 将以下 `hongji_vibe_docs` 文件复制到 `docs/growthpilot/` 并重命名：
+- [!] `SPEC-01` 将以下 `hongji_vibe_docs` 文件复制到 `docs/growthpilot/` 并重命名：
+  - 阻塞说明：已在 `/Users/kgiot/.openclaw/workspace` 及 `growth-pilot` 邻近目录按文件名与目录名检索，**未找到 `hongji_vibe_docs` 源目录，也未找到所需成套源文件**；按要求不凭空造文档。
   | 源文件 | 目标 |
   |---|---|
   | `01_scope_and_principles.md` | `35a_scope_and_principles.md` |
@@ -103,7 +104,7 @@
   | `08_page_prototypes.md` | `35f_page_prototypes.md` |
   | `09_excel_migration.md` | `35g_excel_migration.md` |
 
-- [ ] `SPEC-02` 将以下 5 个**文档有但代码缺失**的接口做出决定并记录：
+- [x] `SPEC-02` 将以下 5 个**文档有但代码缺失**的接口做出决定并记录：
   | 接口 | 建议决定 |
   |---|---|
   | `POST /students/import` | **保留，Wave 1 实现** |
@@ -121,13 +122,13 @@
   - communication: GET /communication/message-tasks, GET /communication/records/{id}, GET /communication/templates, PATCH /communication/message-tasks/{id}/status, PATCH /communication/templates/{id}, POST /communication/message-tasks, POST /communication/templates
   - jobs: GET /jobs
 
-- [ ] `SPEC-04` 更新 `README.md`：
+- [x] `SPEC-04` 更新 `README.md`：
   - 删除"当前是最小可运行脚手架"表述
   - 更新为"Persisted JSON Beta，后端模块完整，前端骨架就绪"
   - 新增 docker-compose 启动说明
   - 新增文档索引（指向本文件）
 
-- [ ] `SPEC-05` 在 `docs/growthpilot/` 创建 `00_start_here_merged.md`：
+- [x] `SPEC-05` 在 `docs/growthpilot/` 创建 `00_start_here_merged.md`：
   - 列出当前文档优先级
   - 列出 Source of Truth 规则
   - 列出推荐阅读顺序
@@ -229,24 +230,24 @@
 
 #### Phase 1：核心流程（P0，先做）
 
-- [ ] `FE-01` **登录页真化**：
+- [x] `FE-01` **登录页真化**：
   - 表单提交调用 `POST /auth/login`
   - 成功后存 token（cookie 或 localStorage）
   - 失败显示错误信息
   - 成功跳转 `/dashboard`
   - 拦截未登录访问跳转 `/login`
 
-- [ ] `FE-02` **AppShell 接真**：
+- [x] `FE-02` **AppShell 接真**：
   - 顶栏调用 `GET /auth/me` 获取当前用户
   - 侧边菜单根据 `permissions` 做权限裁剪
   - 退出按钮调用 `POST /auth/logout`
 
-- [ ] `FE-03` **API Client 统一层**：
+- [x] `FE-03` **API Client 统一层**：
   - `lib/api-client.ts` 添加 token 自动附加
   - 添加 401 自动 refresh 或跳转 login
   - 添加统一错误处理
 
-- [ ] `FE-04` **Dashboard 接真**：
+- [x] `FE-04` **Dashboard 接真**：
   - 调用 `GET /analytics/overview`
   - MetricGrid 显示真实数据
   - 移除 `dashboard-service` mock
@@ -272,7 +273,7 @@
   - users 调用 `GET /users`
   - system 调用 `GET /settings/campuses`、`GET /settings/terms`、`GET /settings/dictionaries`
 
-- [ ] `FE-10` **统一四态组件**：
+- [x] `FE-10` **统一四态组件**：
   - `LoadingState` — 骨架屏/spinner
   - `EmptyState` — 无数据提示 + 操作引导
   - `ErrorState` — 错误信息 + 重试按钮

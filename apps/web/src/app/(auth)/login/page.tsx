@@ -1,28 +1,24 @@
-import Link from 'next/link';
-import { StateBlock } from '@/components/business/page-blocks';
+import { redirect } from 'next/navigation';
+import { ErrorState } from '@/components/business/page-blocks';
+import { LoginForm } from '@/components/business/login-form';
+import { getCurrentUser } from '@/lib/current-user';
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const currentUser = await getCurrentUser();
+  if (currentUser) {
+    redirect('/dashboard');
+  }
+
   return (
     <main className="auth-shell">
       <section className="auth-card stack">
         <div>
           <div className="badge">P01 Login</div>
           <h1 style={{ marginBottom: 8 }}>Growth Pilot 后台登录</h1>
-          <p className="subtle">已预埋用户名/密码表单位、登录失败提示位、成功跳转 dashboard 入口。</p>
+          <p className="subtle">真实登录已接到 /auth/login。登录成功写入会话 Cookie，失败直接回显错误信息。</p>
         </div>
-        <div className="field">
-          <label>用户名</label>
-          <input className="input" defaultValue="super_admin@growthpilot.local" />
-        </div>
-        <div className="field">
-          <label>密码</label>
-          <input className="input" type="password" defaultValue="••••••••" />
-        </div>
-        <div className="button-row">
-          <Link className="btn primary" href="/dashboard">登录进入 Dashboard</Link>
-          <button className="btn">刷新 Token（占位）</button>
-        </div>
-        <StateBlock state="error" title="登录接口" actionLabel="重新登录" />
+        <LoginForm />
+        <ErrorState title="登录失败时会显示这里的同款错误容器" description="现在错误态已统一到 ErrorState，别再各页自己拼了。" />
       </section>
     </main>
   );

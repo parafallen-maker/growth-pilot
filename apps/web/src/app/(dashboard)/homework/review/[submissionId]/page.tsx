@@ -3,12 +3,12 @@ import { PageHeader, SummaryPanel, TabStrip, TimelinePanel } from '@/components/
 import { homeworkPermissions, reviewViewModes } from '@/features/homework/constants';
 import { homeworkReviewDefaultValues, homeworkReviewFormSchema } from '@/features/homework/schema';
 import { queryKeys } from '@/features/shared/query-keys';
-import { getCurrentUser } from '@/lib/current-user';
+import { requireCurrentUser } from '@/lib/current-user';
 import { homeworkService } from '@/services/homework-service';
 import { homeworkReviewDraftStore } from '@/store/homework-review-store';
 
 export default async function HomeworkReviewWorkbenchPage({ params }: { params: Promise<{ submissionId: string }> }) {
-  const currentUser = await getCurrentUser();
+  const currentUser = await requireCurrentUser();
   const { submissionId } = await params;
   const detail = await homeworkService.detail(submissionId);
   const draft = homeworkReviewDraftStore.getInitialDraft(submissionId);

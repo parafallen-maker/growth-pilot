@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { NavSection } from '@/lib/navigation';
+import { ForbiddenState } from '@/components/business/page-blocks';
 
 export function hasPermission(permissions: string[], permissionCode: string) {
   return permissions.includes(permissionCode);
@@ -32,15 +33,10 @@ export function PermissionGuard({
 
 export function PermissionDeniedState({ resource, permissionCode }: { resource: string; permissionCode: string }) {
   return (
-    <section className="state-card">
-      <div className="badge danger">403 Permission Denied</div>
-      <h3 style={{ marginTop: 12 }}>你能看见入口，不代表你能进门。</h3>
-      <p>
-        当前账号缺少 <strong>{resource}</strong> 所需权限：<code>{permissionCode}</code>
-      </p>
-      <div className="button-row">
-        <button className="btn">申请权限（占位）</button>
-      </div>
-    </section>
+    <ForbiddenState
+      title="你能看见入口，不代表你能进门。"
+      description={`当前账号缺少 ${resource} 所需权限：${permissionCode}`}
+      action={<button className="btn">申请权限（占位）</button>}
+    />
   );
 }

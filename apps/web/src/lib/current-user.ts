@@ -1,7 +1,8 @@
 import 'server-only';
 
 import { cache } from 'react';
-import { apiRequest } from '@/lib/api-client';
+import { redirect } from 'next/navigation';
+import { apiRequest, ApiClientError } from '@/lib/api-client';
 import { rolePermissions, type AppRole } from '@/lib/navigation';
 
 export type CurrentUser = {
@@ -16,19 +17,7 @@ export type CurrentUser = {
   permissions: string[];
 };
 
-const fallbackUser: CurrentUser = {
-  id: 'u-web-fallback-super-admin',
-  username: 'super_admin@growthpilot.local',
-  displayName: '运营总控台',
-  name: '运营总控台',
-  roles: ['super_admin'],
-  role: 'super_admin',
-  campusIds: ['campus-guiyang'],
-  campusName: '贵阳主校区',
-  permissions: rolePermissions.super_admin,
-};
-
-export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   try {
     const profile = await apiRequest<{
       id: string;
@@ -48,10 +37,22 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
       role: primaryRole,
       campusName: primaryCampusId === 'campus-guiyang' ? '贵阳主校区' : primaryCampusId ?? '全局',
     };
-  } catch {
-    return fallbackUser;
+  } catch (error) {
+    if (error instanceof ApiClientError && error.status === 401) {
+      return null;
+    }
+
+    throw error;
   }
 });
+
+export async function requireCurrentUser(): Promise<CurrentUser> {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    redirect('/login');
+  }
+  return currentUser;
+}
 
 export function asAppRole(role: string): AppRole | null {
   return role in rolePermissions ? (role as AppRole) : null;

@@ -2,11 +2,11 @@ import { DataTable, FilterBar, PageHeader, SummaryPanel, TabStrip } from '@/comp
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { billingPermissions, billingTabs } from '@/features/billing/constants';
 import { queryKeys } from '@/features/shared/query-keys';
-import { getCurrentUser } from '@/lib/current-user';
+import { requireCurrentUser } from '@/lib/current-user';
 import { billingService } from '@/services/billing-service';
 
 export default async function BillingInvoicesPage() {
-  const currentUser = await getCurrentUser();
+  const currentUser = await requireCurrentUser();
   const allowed = hasPermission(currentUser.permissions, billingPermissions.invoicesView);
   const filters = { pageNo: 1, pageSize: 20, status: 'all', tab: 'invoices' as const, sortBy: 'dueDate', sortOrder: 'asc' as const };
   const result = await billingService.queryInvoices(filters);

@@ -1,11 +1,11 @@
 import { PermissionGuard } from '@/components/business/permission-guard';
 import { DataTable, PageHeader, StateBlock, TabStrip } from '@/components/business/page-blocks';
-import { getCurrentUser } from '@/lib/current-user';
+import { requireCurrentUser } from '@/lib/current-user';
 import { queryKeys } from '@/features/shared/query-keys';
 import { settingsService } from '@/services/settings-service';
 
 export default async function SettingsUsersPage() {
-  const currentUser = await getCurrentUser();
+  const currentUser = await requireCurrentUser();
   const result = settingsService.query({ pageNo: 1, pageSize: 20, sortBy: 'createdAt', sortOrder: 'desc' });
 
   return (
