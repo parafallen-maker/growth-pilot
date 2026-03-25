@@ -16,7 +16,10 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "migration:dry-run": "node scripts/migration/run-staging-import.mjs --dry-run",
-    "ci:check": "npm run lint && npm run typecheck && npm run test"
+    "ci:check": "npm run lint && npm run typecheck && npm run test",
+    "smoke:api": "cd apps/api && node -e \"require('./dist/main')\" || echo 'dist not built, run npm run build first'",
+    "dev:all": "npm run dev:web & npm run dev:api",
+    "clean": "rm -rf apps/*/dist apps/*/.next apps/*/tsconfig.tsbuildinfo packages/*/dist"
   },
   "devDependencies": {
     "typescript": "^5.8.2"

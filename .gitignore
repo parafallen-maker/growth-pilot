@@ -8,3 +8,11 @@ coverage
 .env.*
 !.env.example
 .DS_Store
+node_modules/
+.next/
+dist/
+.data/
+.runtime/
+.env.local
+!.data/.gitkeep
+!apps/api/.data/.gitkeep
