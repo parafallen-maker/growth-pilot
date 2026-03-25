@@ -6,7 +6,8 @@
 
 ```bash
 node scripts/qa/run-ssr-smoke.mjs \
-  --report-file docs/growthpilot/artifacts/2026-03-25/ssr-admin-report.json
+  --routes /dashboard \
+  --fail-fast
 ```
 
 结果：

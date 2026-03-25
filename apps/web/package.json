@@ -9,7 +9,7 @@
     "lint": "tsc --noEmit -p tsconfig.json",
     "format": "node -e \"console.log('web format placeholder')\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node -e \"console.log('web test placeholder')\""
+    "test": "node --test --experimental-strip-types e2e/**/*.test.ts"
   },
   "dependencies": {
     "next": "15.2.4",

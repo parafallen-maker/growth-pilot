@@ -2477,6 +2477,56 @@ paths:
                                 type: boolean
                         page:
                           $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - homework
+      summary: 创建错因词典项
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - code
+              - name
+              properties:
+                code:
+                  type: string
+                name:
+                  type: string
+                category:
+                  type: string
+                subjectScope:
+                  type: string
+                active:
+                  type: boolean
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        code:
+                          type: string
+                        name:
+                          type: string
+                        category:
+                          type: string
+                        subjectScope:
+                          type: string
+                        active:
+                          type: boolean
   /homework/submissions/{submissionId}/review-draft:
     get:
       tags:
