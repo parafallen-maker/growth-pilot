@@ -777,39 +777,39 @@
   - 配置防火墙：只开放 80/443/22
   - 创建部署用户（非 root）
   - 配置 SSH key 登录（禁用密码登录）
-  - 已在 `docs/growthpilot/39_Wave5_正式上线操作手册.md` 固化基线、步骤与记录项；未对真实服务器执行。
+  - 已在 `docs/growthpilot/39_Wave5_正式上线操作手册.md` 和 `docs/growthpilot/43_Wave5_生产环境矩阵.md` 固化主机基线、初始化命令、目录约定、SSH/防火墙检查项和证据要求；未对真实服务器执行。
 
 - [/] `INF-31` **域名与 DNS**：
   - 域名 A 记录指向服务器 IP
   - 配置 www → 非 www 重定向（或反之）
-  - 已补 DNS 切换检查项与放行前核验；未修改真实域名。
+  - 已在 `docs/growthpilot/39_Wave5_正式上线操作手册.md` 和 `docs/growthpilot/43_Wave5_生产环境矩阵.md` 固化单域名 `/api` 代理策略、DNS 记录矩阵、TTL 切换步骤与 `dig` 验证命令；未修改真实域名。
 
 - [/] `INF-32` **SSL 证书配置**：
   - 安装 certbot / acme.sh
   - 申请 Let's Encrypt 证书
   - 配置自动续期（cron）
   - Nginx 启用 HTTPS + HTTP→HTTPS 重定向
-  - 已补 certbot 流程，并新增 `deploy/examples/nginx.growthpilot.conf.example`；未申请真实证书。
+  - 已将首次生产推荐拓扑明确为“主机侧 Nginx/LB 终止 TLS -> Compose 内 Nginx”，补充 `deploy/examples/nginx.growthpilot.edge.conf.example`、`deploy/README.md` 和 `docs/growthpilot/39_Wave5_正式上线操作手册.md` 的证书签发/续期/验收流程；未申请真实证书。
 
 - [/] `INF-33` **生产环境变量配置**：
   - 在服务器创建 `.env.prod`（从 `.env.prod.example` 复制并填写真实值）
   - JWT_SECRET 生成 64 位随机字符串
   - 数据库密码使用强密码
   - S3 密钥配置
-  - 已新增根目录 `.env.prod.example` 与 `deploy/scripts/validate-release-env.mjs` 校验入口；真实 `.env.prod` 尚未生成/校验。
+  - 已在 `docs/growthpilot/43_Wave5_生产环境矩阵.md` 固化环境变量矩阵、消费者、填写规则和特殊注意事项，并在 `docs/growthpilot/39_Wave5_正式上线操作手册.md` 固化 `.env.prod` 生成/校验步骤；真实 `.env.prod` 尚未生成/校验。
 
 - [/] `INF-34` **日志收集配置**：
   - Docker logs 输出到文件
   - 配置 logrotate（日志轮转，保留 30 天）
   - 或接入日志服务（阿里云 SLS / 自建 Loki）
-  - 已新增 `deploy/examples/growthpilot.logrotate.conf` 并在上线手册、运维手册中固化日志方案；真实主机未落配置。
+  - 已在 `docs/growthpilot/39_Wave5_正式上线操作手册.md`、`docs/growthpilot/41_运维手册.md` 固化日志源、`tee` 归档方式、`logrotate` 安装和发布日必留字段，并复用 `deploy/examples/growthpilot.logrotate.conf`；真实主机未落配置。
 
 - [/] `INF-35` **监控告警**：
   - 配置 uptime 检查（UptimeRobot / 自建）
   - 监控端点：`/health` + `/health/ready`
   - 磁盘空间告警（> 80%）
   - 数据库连接数告警
-  - 已补监控项、阈值和观察窗口模板：`docs/growthpilot/39_Wave5_正式上线操作手册.md`、`docs/growthpilot/templates/go_live_observation_log_template.md`
+  - 已在 `docs/growthpilot/39_Wave5_正式上线操作手册.md`、`docs/growthpilot/41_运维手册.md`、`docs/growthpilot/43_Wave5_生产环境矩阵.md` 固化监控面、阈值、SQL/HTTP 检查命令、值班分工，并补充 `docs/growthpilot/templates/go_live_observation_log_template.md`
   - 尚未接入真实监控系统。
 
 #### 上线执行
@@ -839,7 +839,7 @@
   # 3. 等待所有服务健康
   # 4. 访问域名验证
   ```
-  - 已补首次部署顺序、前置依赖与阻断说明；但 Wave 3 正式部署资产尚未在本仓库闭环，未执行真实部署。
+  - 已在 `docs/growthpilot/39_Wave5_正式上线操作手册.md` 和 `deploy/README.md` 固化 clean host 首次部署顺序：代码检出、`.env.prod` 校验、DB 状态确认与必要备份、底座启动、`db:migrate`/按需 `db:seed`、`docker compose ... up -d --build api web nginx`、健康检查与失败即停条件；未执行真实部署。
 
 - [/] `INF-39` **上线冒烟验证**：
   - 访问首页可加载
@@ -847,7 +847,7 @@
   - 学生列表可显示迁移数据
   - 作业上传可正常工作
   - 文件下载可正常工作
-  - 已补烟测清单与观察模板；未在真实生产环境执行。
+  - 已新增 `docs/growthpilot/templates/go_live_smoke_checklist_template.md`，并在 `docs/growthpilot/40_发布观察窗口与验收模板.md`、`docs/growthpilot/templates/go_live_observation_log_template.md` 中串起 T+0/T+24h/T+72h 观察流程；未在真实生产环境执行。
 
 ### Agent QA — 上线验收
 

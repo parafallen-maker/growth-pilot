@@ -12,6 +12,7 @@
 |---|---|---|---|---|
 | <HH:mm> | `/health` = 200 | pending | <link/path> | <fill-me> |
 | <HH:mm> | `/health/ready` = 200 | pending | <link/path> | <fill-me> |
+| <HH:mm> | `go_live_smoke_checklist_template.md` 已执行完毕 | pending | <link/path> | <fill-me> |
 | <HH:mm> | 首页加载 | pending | <link/path> | <fill-me> |
 | <HH:mm> | 登录与 `/auth/me` | pending | <link/path> | <fill-me> |
 | <HH:mm> | 学生列表可见迁移数据 | pending | <link/path> | <fill-me> |
