@@ -8,6 +8,8 @@ import { familyService } from '@/services/families-service';
 import { studentService } from '@/services/students-service';
 import { createBillingContract } from './actions';
 
+const lineItemSlots = [1, 2, 3] as const;
+
 export default async function BillingContractsPage({
   searchParams,
 }: {
@@ -39,7 +41,7 @@ export default async function BillingContractsPage({
           <div className="page-header">
             <div>
               <h3>新建合同</h3>
-              <p>表单已接入 POST /billing/contracts。当前先支持单条收费项，覆盖最常见的签约动作。</p>
+              <p>表单已接入 POST /billing/contracts，当前支持最多 3 条收费项一次提交，直接匹配后端 items[] 结构。</p>
             </div>
             <span className="badge success">POST /billing/contracts</span>
           </div>
@@ -54,10 +56,44 @@ export default async function BillingContractsPage({
             <div className="field"><label>生效日期</label><input className="input" type="date" name="startDate" required /></div>
             <div className="field"><label>到期日期</label><input className="input" type="date" name="endDate" required /></div>
             <div className="field"><label>优惠金额（元）</label><input className="input" type="number" step="0.01" min="0" name="discountAmount" defaultValue="0" /></div>
-            <div className="field"><label>收费产品</label><select className="select" name="productId" defaultValue=""><option value="">自定义收费项</option>{products.list.map((product) => <option key={product.productCode} value={product.productCode}>{product.name} / {product.unitPriceYuan}</option>)}</select></div>
-            <div className="field"><label>收费项名称</label><input className="input" name="itemName" placeholder="春季课程包" required /></div>
-            <div className="field"><label>单价（元）</label><input className="input" type="number" step="0.01" min="0" name="unitPrice" defaultValue="0" required /></div>
-            <div className="field"><label>数量</label><input className="input" type="number" min="1" name="quantity" defaultValue="1" required /></div>
+            <div className="field form-span-2">
+              <label>收费项（最多 3 条）</label>
+              <div className="stack">
+                {lineItemSlots.map((index) => (
+                  <article key={index} className="selection-card">
+                    <div className="page-header" style={{ marginBottom: 12 }}>
+                      <strong>收费项 {index}</strong>
+                      <span className={`badge${index === 1 ? ' success' : ''}`}>{index === 1 ? '必填首项' : '可选追加项'}</span>
+                    </div>
+                    <div className="form-grid">
+                      <div className="field">
+                        <label>收费产品</label>
+                        <select className="select" name={`productId_${index}`} defaultValue="">
+                          <option value="">自定义收费项</option>
+                          {products.list.map((product) => (
+                            <option key={`${index}-${product.productId}`} value={product.productId}>
+                              {product.name} / {product.productCode} / {product.unitPriceYuan}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="field">
+                        <label>收费项名称</label>
+                        <input className="input" name={`itemName_${index}`} placeholder={index === 1 ? '春季课程包' : '可选：教材费 / 延时服务 / 其他'} required={index === 1} />
+                      </div>
+                      <div className="field">
+                        <label>单价（元）</label>
+                        <input className="input" type="number" step="0.01" min="0" name={`unitPrice_${index}`} defaultValue="0" required={index === 1} />
+                      </div>
+                      <div className="field">
+                        <label>数量</label>
+                        <input className="input" type="number" min="1" name={`quantity_${index}`} defaultValue="1" required={index === 1} />
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
             <div className="field form-span-2"><label>备注</label><textarea className="textarea" name="remark" placeholder="补充约定、折扣说明、签约渠道等" /></div>
             <div className="button-row form-span-2"><button className="btn primary" type="submit">创建合同</button></div>
           </form>

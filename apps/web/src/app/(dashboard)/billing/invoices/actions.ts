@@ -36,7 +36,11 @@ export async function createInvoicePayment(formData: FormData) {
     );
 
     revalidatePath('/billing/invoices');
-    bounce({ paid: created.paymentNo ?? created.id });
+    bounce({
+      paid: created.paymentId,
+      status: created.status,
+      replayed: created.replayed ? '1' : '0',
+    });
   } catch (error) {
     bounce({ error: error instanceof Error ? error.message : '记录支付失败' });
   }

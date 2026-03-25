@@ -34,6 +34,8 @@ export type CreateContractPayload = {
   }>;
 };
 
+export type CreateContractLineItemPayload = CreateContractPayload['items'][number];
+
 export type CreatePaymentPayload = {
   paymentNo: string;
   paidAmountCents: number;
@@ -45,6 +47,7 @@ export type CreatePaymentPayload = {
 };
 
 type BillingProductItem = {
+  productId: string;
   productCode: string;
   name: string;
   billingMode: string;
@@ -124,10 +127,11 @@ function buildQuery(params: Record<string, string | number | undefined>) {
 export const billingService = {
   async queryProducts(params: QueryBase = {}): Promise<PageResult<BillingProductItem>> {
     const auth = await getAuthTokens();
-    const result = await apiRequest<PageResult<{ code: string; name: string; billingMode: string; priceCents: number; status: string }>>(`/billing/products${buildQuery(params)}`, { auth, retryOn401: Boolean(auth.refreshToken) });
+    const result = await apiRequest<PageResult<{ id: string; code: string; name: string; billingMode: string; priceCents: number; status: string }>>(`/billing/products${buildQuery(params)}`, { auth, retryOn401: Boolean(auth.refreshToken) });
     return {
       ...result,
       list: result.list.map((item) => ({
+        productId: item.id,
         productCode: item.code,
         name: item.name,
         billingMode: item.billingMode,
@@ -217,7 +221,7 @@ export const billingService = {
 
   async createPayment(invoiceId: string, payload: CreatePaymentPayload, idempotencyKey?: string) {
     const auth = await getAuthTokens();
-    return apiRequest<{ id: string; paymentNo: string }>(`/billing/invoices/${invoiceId}/payments`, {
+    return apiRequest<{ paymentId: string; status: string; replayed?: boolean }>(`/billing/invoices/${invoiceId}/payments`, {
       method: 'POST',
       body: payload,
       headers: idempotencyKey ? { 'idempotency-key': idempotencyKey } : undefined,
