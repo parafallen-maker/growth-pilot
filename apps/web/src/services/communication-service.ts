@@ -12,6 +12,38 @@ export type CommunicationFilters = QueryBase & {
   dateTo?: string;
 };
 
+export type CreateCommunicationRecordPayload = {
+  familyId?: string;
+  studentId?: string;
+  channel: string;
+  direction: string;
+  topic: string;
+  summary?: string;
+  nextAction?: string;
+};
+
+export type CreateMessageTemplatePayload = {
+  code: string;
+  name: string;
+  channel: string;
+  subject?: string;
+  bodyTemplate: string;
+  variables?: string[];
+  status?: string;
+};
+
+export type CreateMessageTaskPayload = {
+  templateId?: string;
+  familyId?: string;
+  studentId?: string;
+  channel: string;
+  subject?: string;
+  body?: string;
+  scheduledAt?: string;
+  status?: 'draft' | 'pending' | 'sent' | 'failed' | 'read';
+  failureReason?: string;
+};
+
 type CommunicationRecordItem = {
   recordId: string;
   occurredAt: string;
@@ -189,6 +221,13 @@ export const communicationService = {
     };
   },
 
+  async createRecord(payload: CreateCommunicationRecordPayload) {
+    return serverApiRequest<{ id: string; topic: string }>(`/communication/records`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
   async queryMessages(params: CommunicationFilters = {}) {
     const [templates, drafts, queued, sent, failed, sentAndRead, familyNameById, studentNameById] = await Promise.all([
       serverApiRequest<PageResult<{ id: string; code: string; name: string; channel: string; updatedAt: string }>>(`/communication/templates${buildQuery({ pageNo: 1, pageSize: 20, channel: params.channel })}`),
@@ -238,6 +277,27 @@ export const communicationService = {
         { name: '后端缺口', detail: '真实渠道发送 adapter 仍未接，当前仅消费 message_tasks 持久化结果。' },
       ],
     };
+  },
+
+  async createTemplate(payload: CreateMessageTemplatePayload) {
+    return serverApiRequest<{ id: string; code: string; name: string }>(`/communication/templates`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  async createMessageTask(payload: CreateMessageTaskPayload) {
+    return serverApiRequest<{ id: string; status: string }>(`/communication/message-tasks`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  async updateMessageTaskStatus(taskId: string, payload: { status: string; failureReason?: string; sentAt?: string }) {
+    return serverApiRequest<{ id: string; status: string }>(`/communication/message-tasks/${taskId}/status`, {
+      method: 'PATCH',
+      body: payload,
+    });
   },
 
   actionMessage() {

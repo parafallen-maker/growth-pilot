@@ -59,10 +59,27 @@ export type HomeworkReviewDraftPayload = {
 
 export type HomeworkReviewSubmitPayload = Required<Pick<HomeworkReviewDraftPayload, 'reviewResult'>> & HomeworkReviewDraftPayload;
 
+export type TriggerHomeworkAnalysisPayload = {
+  force?: boolean;
+  provider?: string;
+  modelName?: string;
+  promptVersion?: string;
+};
+
 const formatAccuracy = (value?: number | null) => (typeof value === 'number' ? `${value}%` : '--');
 const formatAt = (value?: string | null) => (value ? value.replace('T', ' ').slice(0, 16) : '--');
 const reviewStatusLabel = (value?: string | null) => value ?? '--';
 const formatSize = (value?: number | null) => (typeof value === 'number' ? `${(value / 1024).toFixed(value >= 1024 * 1024 ? 1 : 0)} KB` : '--');
+
+async function fetchStudentNameById() {
+  const result = await serverApiRequest<PageResult<{ id: string; name: string }>>('/students?pageNo=1&pageSize=200');
+  return new Map(result.list.map((item) => [item.id, item.name]));
+}
+
+async function fetchTeacherNameById() {
+  const result = await serverApiRequest<PageResult<{ id: string; name: string }>>('/teachers?pageNo=1&pageSize=200');
+  return new Map(result.list.map((item) => [item.id, item.name]));
+}
 
 function buildQuery(params: Record<string, string | number | undefined>) {
   const query = new URLSearchParams();
@@ -106,7 +123,7 @@ export const homeworkService = {
   },
 
   async detail(submissionId: string) {
-    const [detail, allSubmissions] = await Promise.all([
+    const [detail, allSubmissions, studentNameById, teacherNameById] = await Promise.all([
       serverApiRequest<{
         submission: {
           id: string;
@@ -148,6 +165,8 @@ export const homeworkService = {
         } | null;
       }>(`/homework/submissions/${submissionId}`),
       this.query({ pageNo: 1, pageSize: 100, sortBy: 'homeworkDate', sortOrder: 'desc' }),
+      fetchStudentNameById().catch(() => new Map<string, string>()),
+      fetchTeacherNameById().catch(() => new Map<string, string>()),
     ]);
     const currentIndex = allSubmissions.list.findIndex((item) => item.submissionId === submissionId);
     const prevSubmission = currentIndex >= 0 ? allSubmissions.list[currentIndex - 1] ?? null : null;
@@ -189,9 +208,9 @@ export const homeworkService = {
     return {
       submissionId,
       submissionNo: detail.submission.submissionNo ?? submissionId,
-      studentName: detail.submission.studentId,
+      studentName: studentNameById.get(detail.submission.studentId) ?? detail.submission.studentId,
       subject: detail.submission.subject,
-      teacherName: detail.submission.teacherId ?? '--',
+      teacherName: detail.submission.teacherId ? teacherNameById.get(detail.submission.teacherId) ?? detail.submission.teacherId : '--',
       aiJob: {
         jobId: detail.latestAiAnalysis?.jobId ?? 'job_pending',
         status: detail.latestAiAnalysis?.status ?? detail.submission.reviewStatus ?? 'pending',
@@ -245,6 +264,13 @@ export const homeworkService = {
 
   async submitReview(submissionId: string, payload: HomeworkReviewSubmitPayload) {
     return serverApiRequest(`/homework/submissions/${submissionId}/review`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  async triggerAnalysis(submissionId: string, payload: TriggerHomeworkAnalysisPayload = {}) {
+    return serverApiRequest<{ jobId: string; status: string }>(`/homework/submissions/${submissionId}/analyze`, {
       method: 'POST',
       body: payload,
     });

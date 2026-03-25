@@ -313,16 +313,20 @@
 #### Phase 2：业务页面接真（P1）
 
 - [x] `FE-11` Homework submissions 列表接真 `GET /homework/submissions`
-- [/] `FE-12` Homework review 工作台接真 `GET /homework/submissions/{id}` + `PUT review-draft` + `POST review`
-  - 已接真实 detail / review-draft / review submit；上一条/下一条导航与附件 file 元数据入口已补上，本轮追加真实文件名 / mime / size 展示，并在 files 返回 HTTP URL 时直接开放文件打开；`local-s3://` / `mock-s3://` 非 HTTP 地址场景下浏览器二进制预览/下载仍受后端 storage adapter 限制。
+- [x] `FE-12` Homework review 工作台接真 `GET /homework/submissions/{id}` + `PUT review-draft` + `POST review`
+  - 已接真实 detail / review-draft / review submit；上一条/下一条导航、AI 重新触发、学生/教师名解析、附件 file 元数据入口与 HTTP 直开已补上；`local-s3://` / `mock-s3://` 非 HTTP 地址场景下浏览器二进制预览/下载仍受后端 storage adapter 限制，但不再阻塞 FE-12 核心链路验收。
+  - 2026-03-26 复核：`npm run typecheck --workspace @growthpilot/web`、`npm run test --workspace @growthpilot/web`、`npm run build --workspace @growthpilot/web` 均通过；本轮未再发现 FE-12 专属前端阻塞。
 - [x] `FE-13` Growth rubrics/observations/goals/reports 各页面接真
   - rubrics/observations/goals/reports 列表与关键 detail 已接真实 API；本轮补上 rubric 模板真实创建 + 详情切换，以及 goals create/check-in、reports generate/review/publish、observations template-aware create 的真实提交入口。
-- [/] `FE-14` Billing products/contracts/invoices/renewals 各页面接真
-  - 已接 `billing/products`、`billing/contracts`、`billing/contracts/{id}`、`billing/invoices`、`billing/renewals` 真接口；本轮移除了前端硬编码的无效 campus/term 预筛，并通过现有 families/students/users 真接口补齐合同/账单/续费里的家庭、学生、负责人展示名；payments/refunds/adjustments 列表仍受后端接口缺口限制，页面明确显示缺口而不伪造数据。
-- [/] `FE-15` Attendance board/devices/homework-time 各页面接真
-  - 已接 `attendance/events`、`attendance/devices`、`attendance/devices/bindings`、`attendance/homework-time/daily-stats` 真接口；本轮把 `/attendance/*` 默认查询从硬编码无效校区改为当前登录账号可见校区，并修正看板“最近 1h 事件”统计口径与 roster 缺口说明；未签到名单 roster、异常修正 workflow、专用趋势序列仍待后端补齐。
-- [/] `FE-16` Communication records/messages 各页面接真
-  - 已接 `communication/records`、`communication/records/{id}`、`communication/templates`、`communication/message-tasks` 真接口；本轮移除了前端硬编码 keyword 与未受后端支持的 query 参数，改为严格按当前接口契约拉取真实记录/任务并补上 SSR 降级；family/student 展示名继续通过现有 families/students 真接口补全，meeting/task 反查聚合与真实渠道发送 adapter 仍待后端。
+- [x] `FE-14` Billing products/contracts/invoices/renewals 各页面接真
+  - 已接 `billing/products`、`billing/contracts`、`billing/contracts/{id}`、`billing/invoices`、`billing/renewals` 真接口；本轮补上产品创建、账单创建、收款录入、基于 payment detail 的退款提交、续费任务创建与状态/跟进更新表单，并继续通过现有 families/students/users 真接口补齐合同/账单/续费里的家庭、学生、负责人展示名；同时修正 invoices 页此前误把 UI-only `tab` 参数传给严格 query DTO 的 422 风险；payments/refunds/adjustments 列表聚合仍受后端接口缺口限制，页面明确显示缺口而不伪造数据。
+  - 2026-03-26 复核：`npm run typecheck --workspace @growthpilot/web`、`npm run test --workspace @growthpilot/web`、`npm run build --workspace @growthpilot/web` 均通过；当前剩余缺口均为后端未开放聚合接口，不再属于 FE-14 收口阻塞。
+- [x] `FE-15` Attendance board/devices/homework-time 各页面接真
+  - 已接 `attendance/events`、`attendance/devices`、`attendance/devices/bindings`、`attendance/homework-time/daily-stats` 真接口；本轮补上手动出勤事件录入、设备创建、设备绑定/解绑表单，把 `/attendance/*` 默认查询维持在当前登录账号可见校区，并修正看板“最近 1h 事件”统计口径、手动事件标签，以及 board/devices 页此前误把 UI-only `date` / `tab` 参数传给严格 query DTO 的 422 风险；未签到名单 roster、异常修正 workflow、homework-time 专用写入口与趋势序列仍待后端补齐。
+  - 2026-03-26 复核：`npm run typecheck --workspace @growthpilot/web`、`npm run test --workspace @growthpilot/web`、`npm run build --workspace @growthpilot/web` 均通过；当前剩余缺口均为 roster / workflow / trend 类后端能力未开放，不再属于 FE-15 收口阻塞。
+- [x] `FE-16` Communication records/messages 各页面接真
+  - 已接 `communication/records`、`communication/records/{id}`、`communication/templates`、`communication/message-tasks` 真接口；本轮补上沟通记录创建、消息模板创建、消息任务创建与状态更新表单，继续严格按当前接口契约拉取真实记录/任务并补上 SSR 降级；family/student 展示名继续通过现有 families/students 真接口补全，meeting/task 反查聚合与真实渠道发送 adapter 仍待后端。
+  - 2026-03-26 复核：`npm run typecheck --workspace @growthpilot/web`、`npm run test --workspace @growthpilot/web`、`npm run build --workspace @growthpilot/web` 均通过；当前剩余缺口均为反查聚合与发送 adapter 等后端能力，不再属于 FE-16 收口阻塞。
 - [x] `FE-17` Analytics overview/teaching/billing 各页面接真图表
   - 已接 `analytics/overview`、`analytics/teaching`、`analytics/billing` 真聚合数据；本轮补了共享条形图组件并把 overview/teaching/billing 三页切到真实图表渲染，同时保留 SSR 友好降级与导出占位。
 
