@@ -20,6 +20,37 @@ export type HomeworkTimeQuery = QueryBase & {
   dateTo?: string;
 };
 
+export type CreateAttendanceEventPayload = {
+  studentId: string;
+  campusId?: string;
+  deviceId?: string;
+  eventType: string;
+  eventTime: string;
+  operatorUserId?: string;
+  remark?: string;
+};
+
+export type CreateAttendanceDevicePayload = {
+  campusId?: string;
+  serialNo: string;
+  deviceType?: string;
+  status?: string;
+  note?: string;
+};
+
+export type CreateDeviceBindingPayload = {
+  studentId: string;
+  deviceId: string;
+  status?: string;
+  boundAt?: string;
+  createdBy?: string;
+};
+
+export type UpdateDeviceBindingPayload = {
+  status?: string;
+  unboundAt?: string;
+};
+
 type AttendanceEventItem = {
   eventId: string;
   studentName: string;
@@ -61,12 +92,16 @@ type HomeworkTimeItem = {
 
 const deviceTypeMap: Record<string, string> = {
   beacon: '手环',
-  card: '卡片',
+  tablet: '平板',
+  gate: '闸机',
+  manual: '手工设备',
 };
 
 const eventTypeMap: Record<string, string> = {
   checkin: '签到',
   checkout: '签退',
+  manual_checkin: '手动签到',
+  manual_checkout: '手动签退',
   late: '迟到',
   'manual-fix': '手动修正',
 };
@@ -102,6 +137,7 @@ function toEventTypeName(eventType?: string | null) {
 
 function toEventStatus(item: { eventType: string; remark?: string | null }) {
   if (item.eventType === 'late') return '异常';
+  if (item.eventType.startsWith('manual_')) return '补录';
   if (item.remark?.includes('补')) return '补录';
   return '正常';
 }
@@ -124,6 +160,7 @@ async function fetchCampusNameById() {
 
 export const attendanceService = {
   async queryBoard(params: AttendanceBoardQuery = {}) {
+    const { date, ...query } = params;
     const [result, studentNameById, campusNameById] = await Promise.all([
       serverApiRequest<PageResult<{
         id: string;
@@ -132,7 +169,7 @@ export const attendanceService = {
         eventType: string;
         eventTime: string;
         remark?: string | null;
-      }>>(`/attendance/events${buildQuery({ ...params, dateFrom: params.date, dateTo: params.date })}`),
+      }>>(`/attendance/events${buildQuery({ ...query, dateFrom: date, dateTo: date })}`),
       fetchStudentNameById(),
       fetchCampusNameById(),
     ]);
@@ -148,7 +185,7 @@ export const attendanceService = {
     }));
 
     const abnormalEvents = latestEvents.filter((item) => item.status !== '正常');
-    const normalCheckins = result.list.filter((item) => item.eventType === 'checkin').length;
+    const normalCheckins = result.list.filter((item) => item.eventType === 'checkin' || item.eventType === 'manual_checkin').length;
     const latestEventTime = result.list.reduce<number | null>((latest, item) => {
       const timestamp = Date.parse(item.eventTime);
       if (Number.isNaN(timestamp)) return latest;
@@ -182,8 +219,9 @@ export const attendanceService = {
   },
 
   async queryDevices(params: AttendanceDeviceQuery = {}): Promise<PageResult<DeviceItem>> {
+    const { tab: _tab, ...query } = params;
     const [devices, bindings, studentNameById, campusNameById] = await Promise.all([
-      serverApiRequest<PageResult<{ id: string; serialNo: string; deviceType: string; campusId?: string | null; status: string }>>(`/attendance/devices${buildQuery(params)}`),
+      serverApiRequest<PageResult<{ id: string; serialNo: string; deviceType: string; campusId?: string | null; status: string }>>(`/attendance/devices${buildQuery(query)}`),
       serverApiRequest<PageResult<{ deviceId: string; studentId: string; status: string }>>(`/attendance/devices/bindings${buildQuery({ pageNo: 1, pageSize: 200, status: 'active' })}`),
       fetchStudentNameById(),
       fetchCampusNameById(),
@@ -204,9 +242,17 @@ export const attendanceService = {
     };
   },
 
+  async createDevice(payload: CreateAttendanceDevicePayload) {
+    return serverApiRequest<{ id: string; serialNo: string; status: string }>(`/attendance/devices`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
   async queryCurrentBindings(params: AttendanceDeviceQuery = {}): Promise<PageResult<BindingItem>> {
+    const { tab: _tab, ...query } = params;
     const [bindings, devices, studentNameById] = await Promise.all([
-      serverApiRequest<PageResult<{ id: string; deviceId: string; studentId: string; boundAt: string; unboundAt?: string | null; status: string }>>(`/attendance/devices/bindings${buildQuery({ ...params, status: 'active' })}`),
+      serverApiRequest<PageResult<{ id: string; deviceId: string; studentId: string; boundAt: string; unboundAt?: string | null; status: string }>>(`/attendance/devices/bindings${buildQuery({ ...query, status: 'active' })}`),
       serverApiRequest<PageResult<{ id: string; serialNo: string }>>('/attendance/devices?pageNo=1&pageSize=200'),
       fetchStudentNameById(),
     ]);
@@ -226,8 +272,9 @@ export const attendanceService = {
   },
 
   async queryBindingHistory(params: AttendanceDeviceQuery = {}): Promise<PageResult<BindingItem>> {
+    const { tab: _tab, ...query } = params;
     const [bindings, devices, studentNameById] = await Promise.all([
-      serverApiRequest<PageResult<{ id: string; deviceId: string; studentId: string; boundAt: string; unboundAt?: string | null; status: string }>>(`/attendance/devices/bindings${buildQuery({ ...params, status: 'inactive' })}`),
+      serverApiRequest<PageResult<{ id: string; deviceId: string; studentId: string; boundAt: string; unboundAt?: string | null; status: string }>>(`/attendance/devices/bindings${buildQuery({ ...query, status: 'inactive' })}`),
       serverApiRequest<PageResult<{ id: string; serialNo: string }>>('/attendance/devices?pageNo=1&pageSize=200'),
       fetchStudentNameById(),
     ]);
@@ -246,12 +293,33 @@ export const attendanceService = {
     };
   },
 
+  async createBinding(payload: CreateDeviceBindingPayload) {
+    return serverApiRequest<{ id: string; studentId: string; deviceId: string; status: string }>(`/attendance/devices/bindings`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  async updateBinding(bindingId: string, payload: UpdateDeviceBindingPayload) {
+    return serverApiRequest<{ id: string; status: string; unboundAt?: string | null }>(`/attendance/devices/bindings/${bindingId}`, {
+      method: 'PATCH',
+      body: payload,
+    });
+  },
+
   actionBinding() {
     return {
       bindPermission: 'attendance:devices:manage',
       unbindPermission: 'attendance:devices:manage',
       note: '设备/绑定列表已换真接口；批量绑定、批量换绑工作流仍待后端补批处理接口。',
     };
+  },
+
+  async createEvent(payload: CreateAttendanceEventPayload) {
+    return serverApiRequest<{ id: string; eventType: string; eventTime: string; replayed?: boolean }>(`/attendance/events`, {
+      method: 'POST',
+      body: payload,
+    });
   },
 
   async queryHomeworkTime(params: HomeworkTimeQuery = {}): Promise<PageResult<HomeworkTimeItem>> {

@@ -6,7 +6,7 @@ import { homeworkReviewFormSchema } from '@/features/homework/schema';
 import { queryKeys } from '@/features/shared/query-keys';
 import { requireCurrentUser } from '@/lib/current-user';
 import { homeworkService } from '@/services/homework-service';
-import { saveHomeworkReviewDraft, submitHomeworkReview } from './actions';
+import { saveHomeworkReviewDraft, submitHomeworkReview, triggerHomeworkAnalysis } from './actions';
 
 export default async function HomeworkReviewWorkbenchPage({
   params,
@@ -46,6 +46,7 @@ export default async function HomeworkReviewWorkbenchPage({
         />
 
         {query?.saved === '1' ? <section className="panel"><div className="badge success">草稿已保存</div></section> : null}
+        {query?.saved?.startsWith('analysis:') ? <section className="panel"><div className="badge success">AI 分析已触发：{query.saved.replace(/^analysis:/, '')}</div></section> : null}
         {query?.submitted === '1' ? <section className="panel"><div className="badge success">正式复核已提交</div></section> : null}
         {query?.error ? <section className="panel"><div className="badge warning">{decodeURIComponent(query.error)}</div></section> : null}
 
@@ -83,6 +84,9 @@ export default async function HomeworkReviewWorkbenchPage({
               <div className="button-row">
                 <span className="badge">{detail.aiJob.status}</span>
                 <span className="badge">jobId: {detail.aiJob.jobId}</span>
+                <form action={triggerHomeworkAnalysis.bind(null, submissionId)}>
+                  <button className="btn" type="submit">重新触发 AI</button>
+                </form>
               </div>
             </div>
 

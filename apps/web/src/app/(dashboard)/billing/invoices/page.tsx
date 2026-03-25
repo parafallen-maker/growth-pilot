@@ -2,20 +2,30 @@ import { DataTable, FilterBar, PageHeader, SummaryPanel, TabStrip } from '@/comp
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { billingPermissions, billingTabs } from '@/features/billing/constants';
 import { queryKeys } from '@/features/shared/query-keys';
+import type { PageResult } from '@/lib/api-client';
 import { requireCurrentUser } from '@/lib/current-user';
+import { serverApiRequest } from '@/lib/server-api';
 import { billingService } from '@/services/billing-service';
-import { createInvoicePayment } from './actions';
+import { createBillingInvoice, createInvoicePayment, createInvoiceRefund } from './actions';
 
 export default async function BillingInvoicesPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ paid?: string; status?: string; replayed?: string; error?: string }>;
+  searchParams?: Promise<{ invoice?: string; payment?: string; paymentStatus?: string; paymentReplayed?: string; refund?: string; refundStatus?: string; error?: string }>;
 }) {
   const currentUser = await requireCurrentUser();
   const query = await searchParams;
   const allowed = hasPermission(currentUser.permissions, billingPermissions.invoicesView);
   const filters = { pageNo: 1, pageSize: 20, status: 'all', tab: 'invoices' as const, sortBy: 'dueDate', sortOrder: 'asc' as const };
-  const result = await billingService.queryInvoices(filters);
+  const [result, contracts, products, families, students, paymentDetail, refundDetail] = await Promise.all([
+    billingService.queryInvoices(filters),
+    billingService.queryContracts({ pageNo: 1, pageSize: 50, status: 'all' }),
+    billingService.queryProducts({ pageNo: 1, pageSize: 50, status: 'active' }),
+    serverApiRequest<PageResult<{ id: string; familyName?: string | null; primaryContactName?: string | null; familyCode: string }>>('/families?pageNo=1&pageSize=50').catch(() => ({ list: [], page: { pageNo: 1, pageSize: 50, total: 0 } })),
+    serverApiRequest<PageResult<{ id: string; name: string; studentNo: string }>>('/students?pageNo=1&pageSize=50').catch(() => ({ list: [], page: { pageNo: 1, pageSize: 50, total: 0 } })),
+    query?.payment ? billingService.detailPayment(query.payment).catch(() => null) : Promise.resolve(null),
+    query?.refund ? billingService.detailRefund(query.refund).catch(() => null) : Promise.resolve(null),
+  ]);
   const action = billingService.actionInvoice(result.invoices.list[0]?.invoiceNo ?? 'INV-202603-201');
 
   return (
@@ -24,10 +34,40 @@ export default async function BillingInvoicesPage({
         <PageHeader
           title="账单 / 支付 / 退款"
           description={`当前展示 billing/invoices 真实数据；payment/refund 列表仍受后端接口缺口限制。query key: ${JSON.stringify(queryKeys.billingInvoices(filters))}`}
-          actions={<><button className="btn primary">新建账单</button><a className="btn" href="#payment-create-form">记录支付</a><button className="btn">发起退款</button><button className="btn">添加调整</button></>}
+          actions={<><a className="btn primary" href="#invoice-create-form">新建账单</a><a className="btn" href="#payment-create-form">记录支付</a><a className="btn" href="#refund-create-form">发起退款</a><button className="btn">添加调整</button></>}
         />
-        {query?.paid ? <section className="panel"><div className="badge success">{query.replayed === '1' ? '幂等重放成功' : '支付已记录'}：{query.paid}{query.status ? ` / status=${query.status}` : ''}</div></section> : null}
+        {query?.invoice ? <section className="panel"><div className="badge success">账单已创建：{query.invoice}</div></section> : null}
+        {query?.payment ? <section className="panel"><div className="badge success">{query.paymentReplayed === '1' ? '幂等重放成功' : '支付已记录'}：{query.payment}{query.paymentStatus ? ` / status=${query.paymentStatus}` : ''}</div></section> : null}
+        {query?.refund ? <section className="panel"><div className="badge success">退款已创建：{query.refund}{query.refundStatus ? ` / status=${query.refundStatus}` : ''}</div></section> : null}
         {query?.error ? <section className="panel"><div className="badge warning">{decodeURIComponent(query.error)}</div></section> : null}
+        <section className="panel stack" id="invoice-create-form">
+          <div className="page-header">
+            <div>
+              <h3>新建账单</h3>
+              <p>当前表单直连 POST /billing/invoices，并允许带 1 条真实账单项创建。</p>
+            </div>
+            <span className="badge success">POST /billing/invoices</span>
+          </div>
+          <form className="form-grid" action={createBillingInvoice}>
+            <div className="field"><label>账单编号</label><input className="input" name="invoiceNo" placeholder="INV-202603-001" required /></div>
+            <div className="field"><label>关联合同（可选）</label><select className="select" name="contractId" defaultValue=""><option value="">不关联合同</option>{contracts.list.map((contract) => <option key={contract.contractId} value={contract.contractId}>{contract.contractNo} / {contract.familyName} / {contract.studentName}</option>)}</select></div>
+            <div className="field"><label>家庭</label><select className="select" name="familyId" defaultValue={families.list[0]?.id ?? ''} required>{families.list.length ? families.list.map((family) => <option key={family.id} value={family.id}>{family.familyName ?? family.primaryContactName ?? family.familyCode}</option>) : <option value="">暂无家庭</option>}</select></div>
+            <div className="field"><label>学生</label><select className="select" name="studentId" defaultValue={students.list[0]?.id ?? ''} required>{students.list.length ? students.list.map((student) => <option key={student.id} value={student.id}>{student.name} / {student.studentNo}</option>) : <option value="">暂无学生</option>}</select></div>
+            <div className="field"><label>账期</label><input className="input" name="billingPeriod" placeholder="2026-03" required /></div>
+            <div className="field"><label>状态</label><select className="select" name="status" defaultValue="issued"><option value="draft">draft</option><option value="issued">issued</option><option value="paid">paid</option></select></div>
+            <div className="field"><label>开票日期</label><input className="input" type="date" name="issueDate" required /></div>
+            <div className="field"><label>到期日期</label><input className="input" type="date" name="dueDate" required /></div>
+            <div className="field"><label>应收金额（元）</label><input className="input" type="number" min="0" step="0.01" name="amount" required /></div>
+            <div className="field"><label>账单项产品（可选）</label><select className="select" name="productId" defaultValue=""><option value="">自定义账单项</option>{products.list.map((product) => <option key={product.productId} value={product.productId}>{product.name} / {product.productCode}</option>)}</select></div>
+            <div className="field"><label>账单项名称</label><input className="input" name="itemName" placeholder="3 月学费" /></div>
+            <div className="field"><label>数量</label><input className="input" type="number" min="1" name="quantity" defaultValue="1" /></div>
+            <div className="field"><label>单价（元）</label><input className="input" type="number" min="0" step="0.01" name="unitPrice" defaultValue="0" /></div>
+            <div className="field"><label>账单项金额（元）</label><input className="input" type="number" min="0" step="0.01" name="itemAmount" defaultValue="0" /></div>
+            <div className="field form-span-2"><label>账单备注</label><textarea className="textarea" name="note" placeholder="开票备注、分期说明、财务备注等" /></div>
+            <div className="field form-span-2"><label>账单项备注</label><textarea className="textarea" name="itemRemark" placeholder="该条账单项的明细说明" /></div>
+            <div className="button-row form-span-2"><button className="btn primary" type="submit">创建账单</button></div>
+          </form>
+        </section>
         <section className="panel stack" id="payment-create-form">
           <div className="page-header">
             <div>
@@ -42,11 +82,40 @@ export default async function BillingInvoicesPage({
             <div className="field"><label>支付金额（元）</label><input className="input" type="number" min="0" step="0.01" name="paidAmount" required /></div>
             <div className="field"><label>支付时间</label><input className="input" type="datetime-local" name="paymentTime" required /></div>
             <div className="field"><label>支付渠道</label><select className="select" name="channel" defaultValue="wechat_pay"><option value="wechat_pay">wechat_pay</option><option value="alipay">alipay</option><option value="bank_transfer">bank_transfer</option><option value="cash">cash</option></select></div>
-            <div className="field"><label>状态</label><select className="select" name="status" defaultValue="success"><option value="success">success</option><option value="pending">pending</option><option value="failed">failed</option></select></div>
+            <div className="field"><label>状态</label><select className="select" name="status" defaultValue="success"><option value="success">success</option><option value="failed">failed</option><option value="canceled">canceled</option></select></div>
             <div className="field"><label>交易流水号</label><input className="input" name="transactionNo" placeholder="wx_20260325_xxx" /></div>
             <div className="field form-span-2"><label>备注</label><textarea className="textarea" name="remark" placeholder="收款说明、分次支付备注等" /></div>
             <div className="button-row form-span-2"><button className="btn primary" type="submit" disabled={!result.invoices.list.length}>记录收款</button></div>
           </form>
+        </section>
+        <section className="panel stack" id="refund-create-form">
+          <div className="page-header">
+            <div>
+              <h3>发起退款</h3>
+              <p>当前退款表单依赖最近一次成功创建并回显的支付详情，不伪造 payments/refunds 聚合列表。</p>
+            </div>
+            <span className="badge">POST /billing/payments/{'{id}'}/refunds</span>
+          </div>
+          {paymentDetail ? (
+            <>
+              <SummaryPanel title="当前支付详情" items={[
+                { name: '支付单', detail: `${paymentDetail.payment.paymentNo} / ${paymentDetail.payment.status}` },
+                { name: '关联账单', detail: `${paymentDetail.invoice.invoiceNo} / ${paymentDetail.invoice.status}` },
+                { name: '已有关联退款', detail: paymentDetail.refunds.length ? paymentDetail.refunds.map((refund) => `${refund.refundNo} / ¥${(refund.refundAmountCents / 100).toFixed(2)} / ${refund.status}`).join(' / ') : '暂无退款记录' },
+              ]} />
+              <form className="form-grid" action={createInvoiceRefund}>
+                <input type="hidden" name="paymentId" value={paymentDetail.payment.id} />
+                <div className="field"><label>退款编号</label><input className="input" name="refundNo" placeholder="RF-202603-001" required /></div>
+                <div className="field"><label>退款金额（元）</label><input className="input" type="number" min="0" step="0.01" name="refundAmount" required /></div>
+                <div className="field"><label>退款时间</label><input className="input" type="datetime-local" name="refundTime" required /></div>
+                <div className="field"><label>状态</label><select className="select" name="status" defaultValue="pending"><option value="pending">pending</option><option value="completed">completed</option><option value="rejected">rejected</option></select></div>
+                <div className="field form-span-2"><label>退款原因</label><textarea className="textarea" name="reason" placeholder="退费原因、班型调整说明、结转备注等" required /></div>
+                <div className="button-row form-span-2"><button className="btn primary" type="submit">发起退款</button></div>
+              </form>
+            </>
+          ) : (
+            <SummaryPanel title="当前退款入口状态" items={[{ name: '需要支付详情', detail: '先通过本页“记录支付”成功创建一笔 payment，本页再用 GET /billing/payments/{id} 展示可退款上下文。' }]} />
+          )}
         </section>
         <FilterBar fields={[
           { label: '家庭', value: '全部家庭', kind: 'select' },
@@ -69,6 +138,7 @@ export default async function BillingInvoicesPage({
           { name: '统一动作位', detail: action.actions.join(' / ') },
           { name: '状态流', detail: action.statusFlow },
           { name: '页面状态', detail: result.invoices.list.length ? '账单列表已接真；支付/退款列表继续明确依赖后端聚合接口。' : '当前无账单结果，已保留真实录入表单并禁用提交。' },
+          refundDetail ? { name: '最近退款详情', detail: `${refundDetail.refund.refundNo} / ${refundDetail.refund.status} / ${refundDetail.invoice?.invoiceNo ?? '未关联账单'}` } : { name: '退款详情入口', detail: '当 refundId 已知时，本页会额外调用 GET /billing/refunds/{id} 展示最近一次退款上下文。' },
         ].map((item) => ({ name: 'name' in item ? item.name : item.title, detail: item.detail }))} />
       </div>
     </PermissionGuard>

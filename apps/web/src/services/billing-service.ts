@@ -36,6 +36,38 @@ export type CreateContractPayload = {
 
 export type CreateContractLineItemPayload = CreateContractPayload['items'][number];
 
+export type CreateBillingProductPayload = {
+  code: string;
+  name: string;
+  category: string;
+  billingMode: string;
+  priceCents: number;
+  unit?: string;
+  description?: string;
+  status?: string;
+};
+
+export type CreateInvoicePayload = {
+  invoiceNo: string;
+  contractId?: string;
+  familyId: string;
+  studentId: string;
+  billingPeriod: string;
+  issueDate: string;
+  dueDate: string;
+  amountCents: number;
+  status?: string;
+  note?: string;
+  items?: Array<{
+    itemName: string;
+    productId?: string;
+    quantity?: number;
+    unitPriceCents?: number;
+    amountCents: number;
+    remark?: string;
+  }>;
+};
+
 export type CreatePaymentPayload = {
   paymentNo: string;
   paidAmountCents: number;
@@ -44,6 +76,28 @@ export type CreatePaymentPayload = {
   transactionNo?: string;
   remark?: string;
   status?: string;
+};
+
+export type CreateRefundPayload = {
+  refundNo: string;
+  refundAmountCents: number;
+  refundTime: string;
+  reason: string;
+  status?: string;
+};
+
+export type CreateRenewalPayload = {
+  familyId: string;
+  studentId: string;
+  campusId?: string;
+  termId?: string;
+  contractId?: string;
+  ownerUserId?: string;
+  expectedEndDate?: string;
+  status?: string;
+  lastContactAt?: string;
+  nextFollowUpAt?: string;
+  note?: string;
 };
 
 type BillingProductItem = {
@@ -160,6 +214,16 @@ export const billingService = {
     };
   },
 
+  async createProduct(payload: CreateBillingProductPayload) {
+    const auth = await getAuthTokens();
+    return apiRequest<{ id: string; code: string; name: string }>(`/billing/products`, {
+      method: 'POST',
+      body: payload,
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
+  },
+
   async queryContracts(params: BillingFilters = {}): Promise<PageResult<ContractItem>> {
     const auth = await getAuthTokens();
     const [result, lookups] = await Promise.all([
@@ -219,10 +283,21 @@ export const billingService = {
     });
   },
 
+  async createInvoice(payload: CreateInvoicePayload) {
+    const auth = await getAuthTokens();
+    return apiRequest<{ id: string; invoiceNo: string }>(`/billing/invoices`, {
+      method: 'POST',
+      body: payload,
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
+  },
+
   async queryInvoices(params: BillingFilters = {}) {
+    const { tab: _tab, ...query } = params;
     const auth = await getAuthTokens();
     const [result, lookups] = await Promise.all([
-      apiRequest<PageResult<{ id: string; invoiceNo: string; familyId: string; studentId: string; amountCents: number; dueDate: string; status: string }>>(`/billing/invoices${buildQuery(params)}`, { auth, retryOn401: Boolean(auth.refreshToken) }),
+      apiRequest<PageResult<{ id: string; invoiceNo: string; familyId: string; studentId: string; amountCents: number; dueDate: string; status: string }>>(`/billing/invoices${buildQuery(query)}`, { auth, retryOn401: Boolean(auth.refreshToken) }),
       fetchBillingLookups(auth),
     ]);
     const invoiceRows: InvoiceItem[] = result.list.map((item) => ({
@@ -258,6 +333,34 @@ export const billingService = {
     });
   },
 
+  async detailPayment(paymentId: string) {
+    const auth = await getAuthTokens();
+    return apiRequest<{
+      payment: { id: string; invoiceId: string; paymentNo: string; paidAmountCents: number; paymentTime: string; channel: string; status: string; transactionNo?: string | null; remark?: string | null };
+      invoice: { id: string; invoiceNo: string; familyId: string; studentId: string; amountCents: number; dueDate: string; status: string };
+      refunds: Array<{ id: string; refundNo: string; refundAmountCents: number; refundTime: string; reason: string; status: string }>;
+    }>(`/billing/payments/${paymentId}`, { auth, retryOn401: Boolean(auth.refreshToken) });
+  },
+
+  async createRefund(paymentId: string, payload: CreateRefundPayload) {
+    const auth = await getAuthTokens();
+    return apiRequest<{ refundId: string; status: string }>(`/billing/payments/${paymentId}/refunds`, {
+      method: 'POST',
+      body: payload,
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
+  },
+
+  async detailRefund(refundId: string) {
+    const auth = await getAuthTokens();
+    return apiRequest<{
+      refund: { id: string; paymentId: string; refundNo: string; refundAmountCents: number; refundTime: string; reason: string; status: string };
+      payment: { id: string; paymentNo: string; invoiceId: string; paidAmountCents: number; paymentTime: string; channel: string; status: string } | null;
+      invoice: { id: string; invoiceNo: string; familyId: string; studentId: string; amountCents: number; dueDate: string; status: string } | null;
+    }>(`/billing/refunds/${refundId}`, { auth, retryOn401: Boolean(auth.refreshToken) });
+  },
+
   actionInvoice(invoiceNo: string) {
     return {
       invoiceNo,
@@ -285,5 +388,35 @@ export const billingService = {
         actions: '更新跟进 / 新建沟通 / 转创建账单',
       })),
     };
+  },
+
+  async createRenewal(payload: CreateRenewalPayload) {
+    const auth = await getAuthTokens();
+    return apiRequest<{ id: string; status: string }>(`/billing/renewals`, {
+      method: 'POST',
+      body: payload,
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
+  },
+
+  async updateRenewalStatus(renewalId: string, payload: { status: string; lastContactAt?: string; note?: string }) {
+    const auth = await getAuthTokens();
+    return apiRequest<{ id: string; status: string }>(`/billing/renewals/${renewalId}/status`, {
+      method: 'PATCH',
+      body: payload,
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
+  },
+
+  async updateRenewalFollowUp(renewalId: string, payload: { nextFollowUpAt: string; note?: string }) {
+    const auth = await getAuthTokens();
+    return apiRequest<{ id: string; nextFollowUpAt?: string | null }>(`/billing/renewals/${renewalId}/follow-up`, {
+      method: 'PATCH',
+      body: payload,
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
   },
 };

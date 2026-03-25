@@ -72,3 +72,18 @@ export async function submitHomeworkReview(submissionId: string, formData: FormD
     bounce(submissionId, 'error', message);
   }
 }
+
+export async function triggerHomeworkAnalysis(submissionId: string) {
+  try {
+    const created = await homeworkService.triggerAnalysis(submissionId, {
+      force: true,
+      promptVersion: 'homework-review-v3',
+    });
+    revalidatePath(`/homework/review/${submissionId}`);
+    revalidatePath('/homework/submissions');
+    bounce(submissionId, 'saved', `analysis:${created.status}:${created.jobId}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '触发 AI 分析失败';
+    bounce(submissionId, 'error', message);
+  }
+}
