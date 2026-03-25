@@ -1,0 +1,8 @@
+batchId,sourceFile,sourceSheet,sourceRowNo,sourcePk,targetDomain,businessKey,rejectCode,rejectReason,fieldName,rawValue,expectedRule,suggestedAction,owner,status
+BATCH-QA-STATEFUL-INVALID,mock-history.xlsx,2026上半学年学生信息表,3,student-row-002,students,S-001,CONFLICT_STUDENT_NO,同一 student_no 对应多个不同学生主体,studentNo,S-001,student_no 必须稳定指向唯一学生主体,人工重编或补 old->new 编号映射,A2/A5,open
+BATCH-QA-STATEFUL-INVALID,mock-history.xlsx,2026上半学年每日作业完成质量表,4,hw-row-001,homework,S-404,FK_TEACHER_MISSING,老师主数据未命中教师种子或正式表,teacherName,不存在老师,teacher 外键必须先命中 teachers 映射,先补 teachers 映射后再回放,A5/A6,open
+BATCH-QA-STATEFUL-INVALID,mock-history.xlsx,2026上半学年每日作业完成质量表,4,hw-row-001,homework,S-404,FK_STUDENT_MISSING,作业记录未命中 student 主档映射,studentNo,S-404,student 外键必须先命中 students 映射,先完成 students/families/enrollments 主数据导入,A5/A6,open
+BATCH-QA-STATEFUL-INVALID,mock-history.xlsx,2026上半学年每日作业完成质量表,4,hw-row-001,homework,S-404,DICT_SUBJECT_UNMAPPED,学科字典未命中标准 subject code,subjectRaw,物理,学科必须映射为 math/chinese/english,补充 subject 映射表后重放,A2/A6,open
+BATCH-QA-STATEFUL-INVALID,mock-history.xlsx,2026上半学年每日作业完成质量表,4,hw-row-001,homework,S-404,DICT_ERROR_TAXONOMY_UNMAPPED,错因字典未命中标准 taxonomy code,errorTaxonomyRaw,神秘错误,错因必须映射为标准 taxonomy code,补错因映射字典或人工标注,A2/A6,open
+BATCH-QA-STATEFUL-INVALID,mock-history.xlsx,历史账单表,5,invoice-row-001,billing,I-001,BALANCE_CONTRACT_PAYABLE_MISMATCH,应收 payable 必须等于 total - discount,payableAmountCents,9500,payable_amount_cents = total_amount_cents - discount_amount_cents,修正合同金额链路后重放,A7,open
+BATCH-QA-STATEFUL-INVALID,mock-history.xlsx,历史账单表,5,invoice-row-001,billing,I-001,BALANCE_REFUND_EXCEEDS_PAYMENT,退款金额不能超过成功支付金额,refundsAmountCents,7000,refund_amount_cents <= paid_amount_cents,核对 payment/refund 明细,A7,open

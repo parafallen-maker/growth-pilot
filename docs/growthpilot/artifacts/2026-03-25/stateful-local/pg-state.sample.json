@@ -1,0 +1,399 @@
+{
+  "operations": [
+    {
+      "type": "connect",
+      "connectionString": "postgresql://qa:qa@localhost:5432/growthpilot"
+    },
+    {
+      "type": "query",
+      "sql": "create schema if not exists qa_staging; create table if not exists qa_staging.import_batches ( batch_id text primary key, source_system text not null, source_file text not null, mode text not null, raw_row_count integer not null, normalized_row_count integer not null, ready_row_count integer not null, rejected_row_count integer not null, created_at timestamptz not null default now(), updated_at timestamptz not null default now() ); create table if not exists qa_staging.staging_raw_rows ( batch_id text not null, source_system text not null, source_file text not null, source_sheet text not null, source_row_no integer not null, source_pk text not null, source_hash text not null, idempotency_key text not null, import_status text not null, raw_payload jsonb not null, created_at timestamptz not null default now(), updated_at timestamptz not null default now(), primary key (batch_id, source_file, source_sheet, source_row_no) ); create table if not exists qa_staging.staging_normalized_rows ( batch_id text not null, source_file text not null, source_sheet text not null, source_row_no integer not null, source_pk text not null, target_domain text not null, business_key text not null, idempotency_key text not null, import_status text not null, normalized_payload jsonb not null, mapping_snapshot jsonb not null, created_at timestamptz not null default now(), updated_at timestamptz not null default now(), primary key (batch_id, source_file, source_sheet, source_row_no) ); create table if not exists qa_staging.staging_rejects ( batch_id text not null, source_file text not null, source_sheet text not null, source_row_no integer not null, source_pk text not null, target_domain text not null, business_key text not null, reject_code text not null, reject_reason text not null, field_name text not null, raw_value text, expected_rule text not null, suggested_action text not null, owner text not null, status text not null, created_at timestamptz not null default now(), updated_at timestamptz not null default now(), primary key (batch_id, source_file, source_sheet, source_row_no, reject_code) );",
+      "params": []
+    },
+    {
+      "type": "query",
+      "sql": "begin",
+      "params": []
+    },
+    {
+      "type": "query",
+      "sql": "insert into qa_staging.import_batches ( batch_id, source_system, source_file, mode, raw_row_count, normalized_row_count, ready_row_count, rejected_row_count ) values ($1,$2,$3,$4,$5,$6,$7,$8) on conflict (batch_id) do update set source_system = excluded.source_system, source_file = excluded.source_file, mode = excluded.mode, raw_row_count = excluded.raw_row_count, normalized_row_count = excluded.normalized_row_count, ready_row_count = excluded.ready_row_count, rejected_row_count = excluded.rejected_row_count, updated_at = now()",
+      "params": [
+        "BATCH-QA-STATEFUL-SAMPLE",
+        "file",
+        "staging-import-sample.csv",
+        "db-apply",
+        3,
+        3,
+        3,
+        0
+      ]
+    },
+    {
+      "type": "query",
+      "sql": "insert into qa_staging.staging_raw_rows ( batch_id, source_system, source_file, source_sheet, source_row_no, source_pk, source_hash, idempotency_key, import_status, raw_payload ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb) on conflict (batch_id, source_file, source_sheet, source_row_no) do update set source_pk = excluded.source_pk, source_hash = excluded.source_hash, idempotency_key = excluded.idempotency_key, import_status = excluded.import_status, raw_payload = excluded.raw_payload, updated_at = now()",
+      "params": [
+        "BATCH-QA-STATEFUL-SAMPLE",
+        "file",
+        "staging-import-sample.csv",
+        "2026上半学年学生信息表",
+        2,
+        "student-row-101",
+        "cbe94ae7142a56f77a92be719dbfdca5bf2043d053e3de473208b4dad02a4bec",
+        "dea1acd68e953232b4836eb94301c77b2e4a12dfb119422217785debe7ed25dd",
+        "raw",
+        "{\"targetDomain\":\"students\",\"sourceSheet\":\"2026上半学年学生信息表\",\"sourcePk\":\"student-row-101\",\"studentNo\":\"S-101\",\"studentName\":\"赵六\",\"gradeLabel\":\"一年级\",\"primaryTeacherName\":\"胡忠芸\",\"familyPhone\":\"138-0000-0101\",\"familyStructureRaw\":\"是\",\"enrollDateRaw\":46083,\"subjectRaw\":null,\"homeworkDateRaw\":null,\"accuracyRaw\":null,\"errorTaxonomyRaw\":null,\"teacherName\":\"胡忠芸\",\"contractNo\":null,\"invoiceNo\":null,\"totalAmountCents\":null,\"discountAmountCents\":null,\"payableAmountCents\":null,\"invoiceItemsAmountCents\":null,\"paymentsAmountCents\":null,\"refundsAmountCents\":null}"
+      ]
+    },
+    {
+      "type": "query",
+      "sql": "insert into qa_staging.staging_raw_rows ( batch_id, source_system, source_file, source_sheet, source_row_no, source_pk, source_hash, idempotency_key, import_status, raw_payload ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb) on conflict (batch_id, source_file, source_sheet, source_row_no) do update set source_pk = excluded.source_pk, source_hash = excluded.source_hash, idempotency_key = excluded.idempotency_key, import_status = excluded.import_status, raw_payload = excluded.raw_payload, updated_at = now()",
+      "params": [
+        "BATCH-QA-STATEFUL-SAMPLE",
+        "file",
+        "staging-import-sample.csv",
+        "2026上半学年每日作业完成质量表",
+        3,
+        "hw-row-101",
+        "7f0af6f46ab2f33705a31fd1447602f05bb49803090ced3668f1716ae39a2606",
+        "ce8e2d2e9aae6fd20638f91eb725e0892ef4a0726ba9257feafe5511f0cb4fb0",
+        "raw",
+        "{\"targetDomain\":\"homework\",\"sourceSheet\":\"2026上半学年每日作业完成质量表\",\"sourcePk\":\"hw-row-101\",\"studentNo\":\"S-101\",\"studentName\":\"赵六\",\"gradeLabel\":null,\"primaryTeacherName\":\"胡忠芸\",\"familyPhone\":13800000101,\"familyStructureRaw\":null,\"enrollDateRaw\":null,\"subjectRaw\":\"数学\",\"homeworkDateRaw\":46104,\"accuracyRaw\":\"92%\",\"errorTaxonomyRaw\":\"无\",\"teacherName\":\"胡忠芸\",\"contractNo\":null,\"invoiceNo\":null,\"totalAmountCents\":null,\"discountAmountCents\":null,\"payableAmountCents\":null,\"invoiceItemsAmountCents\":null,\"paymentsAmountCents\":null,\"refundsAmountCents\":null}"
+      ]
+    },
+    {
+      "type": "query",
+      "sql": "insert into qa_staging.staging_raw_rows ( batch_id, source_system, source_file, source_sheet, source_row_no, source_pk, source_hash, idempotency_key, import_status, raw_payload ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb) on conflict (batch_id, source_file, source_sheet, source_row_no) do update set source_pk = excluded.source_pk, source_hash = excluded.source_hash, idempotency_key = excluded.idempotency_key, import_status = excluded.import_status, raw_payload = excluded.raw_payload, updated_at = now()",
+      "params": [
+        "BATCH-QA-STATEFUL-SAMPLE",
+        "file",
+        "staging-import-sample.csv",
+        "历史账单表",
+        4,
+        "invoice-row-101",
+        "b1becc04297ac93d80fee54ea6c7aa37fef61b8ade9d418826c978bdb61fb673",
+        "6b2ba0075c81b1d35ce895c05294576584023e4795370784cecd3e88d56459fe",
+        "raw",
+        "{\"targetDomain\":\"billing\",\"sourceSheet\":\"历史账单表\",\"sourcePk\":\"invoice-row-101\",\"studentNo\":null,\"studentName\":null,\"gradeLabel\":null,\"primaryTeacherName\":null,\"familyPhone\":null,\"familyStructureRaw\":null,\"enrollDateRaw\":null,\"subjectRaw\":null,\"homeworkDateRaw\":null,\"accuracyRaw\":null,\"errorTaxonomyRaw\":null,\"teacherName\":null,\"contractNo\":\"C-101\",\"invoiceNo\":\"I-101\",\"totalAmountCents\":128000,\"discountAmountCents\":8000,\"payableAmountCents\":120000,\"invoiceItemsAmountCents\":128000,\"paymentsAmountCents\":120000,\"refundsAmountCents\":0}"
+      ]
+    },
+    {
+      "type": "query",
+      "sql": "insert into qa_staging.staging_normalized_rows ( batch_id, source_file, source_sheet, source_row_no, source_pk, target_domain, business_key, idempotency_key, import_status, normalized_payload, mapping_snapshot ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb) on conflict (batch_id, source_file, source_sheet, source_row_no) do update set source_pk = excluded.source_pk, target_domain = excluded.target_domain, business_key = excluded.business_key, idempotency_key = excluded.idempotency_key, import_status = excluded.import_status, normalized_payload = excluded.normalized_payload, mapping_snapshot = excluded.mapping_snapshot, updated_at = now()",
+      "params": [
+        "BATCH-QA-STATEFUL-SAMPLE",
+        "staging-import-sample.csv",
+        "2026上半学年学生信息表",
+        2,
+        "student-row-101",
+        "students",
+        "S-101",
+        "dea1acd68e953232b4836eb94301c77b2e4a12dfb119422217785debe7ed25dd",
+        "ready_to_load",
+        "{\"targetDomain\":\"students\",\"businessKey\":\"S-101\",\"studentNo\":\"S-101\",\"studentName\":\"赵六\",\"gradeLabel\":\"一年级\",\"primaryTeacherName\":\"胡忠芸\",\"familyPhone\":\"13800000101\",\"familyStructure\":\"single_parent\",\"enrollDate\":\"2026-03-02\",\"homeworkDate\":null,\"subject\":null,\"accuracyPct\":null,\"errorTaxonomyCode\":null,\"amounts\":null}",
+        "{\"dictionaries\":{\"familyStructure\":\"single_parent\",\"subject\":null,\"errorTaxonomyCode\":null},\"transforms\":{\"familyPhone\":\"13800000101\",\"enrollDate\":\"2026-03-02\",\"homeworkDate\":null,\"accuracyPct\":null}}"
+      ]
+    },
+    {
+      "type": "query",
+      "sql": "insert into qa_staging.staging_normalized_rows ( batch_id, source_file, source_sheet, source_row_no, source_pk, target_domain, business_key, idempotency_key, import_status, normalized_payload, mapping_snapshot ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb) on conflict (batch_id, source_file, source_sheet, source_row_no) do update set source_pk = excluded.source_pk, target_domain = excluded.target_domain, business_key = excluded.business_key, idempotency_key = excluded.idempotency_key, import_status = excluded.import_status, normalized_payload = excluded.normalized_payload, mapping_snapshot = excluded.mapping_snapshot, updated_at = now()",
+      "params": [
+        "BATCH-QA-STATEFUL-SAMPLE",
+        "staging-import-sample.csv",
+        "2026上半学年每日作业完成质量表",
+        3,
+        "hw-row-101",
+        "homework",
+        "S-101",
+        "ce8e2d2e9aae6fd20638f91eb725e0892ef4a0726ba9257feafe5511f0cb4fb0",
+        "ready_to_load",
+        "{\"targetDomain\":\"homework\",\"businessKey\":\"S-101\",\"studentNo\":\"S-101\",\"studentName\":\"赵六\",\"gradeLabel\":null,\"primaryTeacherName\":\"胡忠芸\",\"familyPhone\":\"13800000101\",\"familyStructure\":null,\"enrollDate\":null,\"homeworkDate\":\"2026-03-23\",\"subject\":\"math\",\"accuracyPct\":92,\"errorTaxonomyCode\":\"NO_ERROR\",\"amounts\":null}",
+        "{\"dictionaries\":{\"familyStructure\":null,\"subject\":\"math\",\"errorTaxonomyCode\":\"NO_ERROR\"},\"transforms\":{\"familyPhone\":\"13800000101\",\"enrollDate\":null,\"homeworkDate\":\"2026-03-23\",\"accuracyPct\":92}}"
+      ]
+    },
+    {
+      "type": "query",
+      "sql": "insert into qa_staging.staging_normalized_rows ( batch_id, source_file, source_sheet, source_row_no, source_pk, target_domain, business_key, idempotency_key, import_status, normalized_payload, mapping_snapshot ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb) on conflict (batch_id, source_file, source_sheet, source_row_no) do update set source_pk = excluded.source_pk, target_domain = excluded.target_domain, business_key = excluded.business_key, idempotency_key = excluded.idempotency_key, import_status = excluded.import_status, normalized_payload = excluded.normalized_payload, mapping_snapshot = excluded.mapping_snapshot, updated_at = now()",
+      "params": [
+        "BATCH-QA-STATEFUL-SAMPLE",
+        "staging-import-sample.csv",
+        "历史账单表",
+        4,
+        "invoice-row-101",
+        "billing",
+        "I-101",
+        "6b2ba0075c81b1d35ce895c05294576584023e4795370784cecd3e88d56459fe",
+        "ready_to_load",
+        "{\"targetDomain\":\"billing\",\"businessKey\":\"I-101\",\"studentNo\":null,\"studentName\":null,\"gradeLabel\":null,\"primaryTeacherName\":null,\"familyPhone\":null,\"familyStructure\":null,\"enrollDate\":null,\"homeworkDate\":null,\"subject\":null,\"accuracyPct\":null,\"errorTaxonomyCode\":null,\"amounts\":{\"contractNo\":\"C-101\",\"invoiceNo\":\"I-101\",\"totalAmountCents\":128000,\"discountAmountCents\":8000,\"payableAmountCents\":120000,\"invoiceItemsAmountCents\":128000,\"paymentsAmountCents\":120000,\"refundsAmountCents\":0}}",
+        "{\"dictionaries\":{\"familyStructure\":null,\"subject\":null,\"errorTaxonomyCode\":null},\"transforms\":{\"familyPhone\":null,\"enrollDate\":null,\"homeworkDate\":null,\"accuracyPct\":null}}"
+      ]
+    },
+    {
+      "type": "query",
+      "sql": "commit",
+      "params": []
+    },
+    {
+      "type": "end"
+    }
+  ],
+  "state": {
+    "schemas": {
+      "qa_staging": {
+        "import_batches": [
+          {
+            "batch_id": "BATCH-QA-STATEFUL-SAMPLE",
+            "source_system": "file",
+            "source_file": "staging-import-sample.csv",
+            "mode": "db-apply",
+            "raw_row_count": 3,
+            "normalized_row_count": 3,
+            "ready_row_count": 3,
+            "rejected_row_count": 0
+          }
+        ],
+        "staging_raw_rows": [
+          {
+            "batch_id": "BATCH-QA-STATEFUL-SAMPLE",
+            "source_system": "file",
+            "source_file": "staging-import-sample.csv",
+            "source_sheet": "2026上半学年学生信息表",
+            "source_row_no": 2,
+            "source_pk": "student-row-101",
+            "source_hash": "cbe94ae7142a56f77a92be719dbfdca5bf2043d053e3de473208b4dad02a4bec",
+            "idempotency_key": "dea1acd68e953232b4836eb94301c77b2e4a12dfb119422217785debe7ed25dd",
+            "import_status": "raw",
+            "raw_payload": {
+              "targetDomain": "students",
+              "sourceSheet": "2026上半学年学生信息表",
+              "sourcePk": "student-row-101",
+              "studentNo": "S-101",
+              "studentName": "赵六",
+              "gradeLabel": "一年级",
+              "primaryTeacherName": "胡忠芸",
+              "familyPhone": "138-0000-0101",
+              "familyStructureRaw": "是",
+              "enrollDateRaw": 46083,
+              "subjectRaw": null,
+              "homeworkDateRaw": null,
+              "accuracyRaw": null,
+              "errorTaxonomyRaw": null,
+              "teacherName": "胡忠芸",
+              "contractNo": null,
+              "invoiceNo": null,
+              "totalAmountCents": null,
+              "discountAmountCents": null,
+              "payableAmountCents": null,
+              "invoiceItemsAmountCents": null,
+              "paymentsAmountCents": null,
+              "refundsAmountCents": null
+            }
+          },
+          {
+            "batch_id": "BATCH-QA-STATEFUL-SAMPLE",
+            "source_system": "file",
+            "source_file": "staging-import-sample.csv",
+            "source_sheet": "2026上半学年每日作业完成质量表",
+            "source_row_no": 3,
+            "source_pk": "hw-row-101",
+            "source_hash": "7f0af6f46ab2f33705a31fd1447602f05bb49803090ced3668f1716ae39a2606",
+            "idempotency_key": "ce8e2d2e9aae6fd20638f91eb725e0892ef4a0726ba9257feafe5511f0cb4fb0",
+            "import_status": "raw",
+            "raw_payload": {
+              "targetDomain": "homework",
+              "sourceSheet": "2026上半学年每日作业完成质量表",
+              "sourcePk": "hw-row-101",
+              "studentNo": "S-101",
+              "studentName": "赵六",
+              "gradeLabel": null,
+              "primaryTeacherName": "胡忠芸",
+              "familyPhone": 13800000101,
+              "familyStructureRaw": null,
+              "enrollDateRaw": null,
+              "subjectRaw": "数学",
+              "homeworkDateRaw": 46104,
+              "accuracyRaw": "92%",
+              "errorTaxonomyRaw": "无",
+              "teacherName": "胡忠芸",
+              "contractNo": null,
+              "invoiceNo": null,
+              "totalAmountCents": null,
+              "discountAmountCents": null,
+              "payableAmountCents": null,
+              "invoiceItemsAmountCents": null,
+              "paymentsAmountCents": null,
+              "refundsAmountCents": null
+            }
+          },
+          {
+            "batch_id": "BATCH-QA-STATEFUL-SAMPLE",
+            "source_system": "file",
+            "source_file": "staging-import-sample.csv",
+            "source_sheet": "历史账单表",
+            "source_row_no": 4,
+            "source_pk": "invoice-row-101",
+            "source_hash": "b1becc04297ac93d80fee54ea6c7aa37fef61b8ade9d418826c978bdb61fb673",
+            "idempotency_key": "6b2ba0075c81b1d35ce895c05294576584023e4795370784cecd3e88d56459fe",
+            "import_status": "raw",
+            "raw_payload": {
+              "targetDomain": "billing",
+              "sourceSheet": "历史账单表",
+              "sourcePk": "invoice-row-101",
+              "studentNo": null,
+              "studentName": null,
+              "gradeLabel": null,
+              "primaryTeacherName": null,
+              "familyPhone": null,
+              "familyStructureRaw": null,
+              "enrollDateRaw": null,
+              "subjectRaw": null,
+              "homeworkDateRaw": null,
+              "accuracyRaw": null,
+              "errorTaxonomyRaw": null,
+              "teacherName": null,
+              "contractNo": "C-101",
+              "invoiceNo": "I-101",
+              "totalAmountCents": 128000,
+              "discountAmountCents": 8000,
+              "payableAmountCents": 120000,
+              "invoiceItemsAmountCents": 128000,
+              "paymentsAmountCents": 120000,
+              "refundsAmountCents": 0
+            }
+          }
+        ],
+        "staging_normalized_rows": [
+          {
+            "batch_id": "BATCH-QA-STATEFUL-SAMPLE",
+            "source_file": "staging-import-sample.csv",
+            "source_sheet": "2026上半学年学生信息表",
+            "source_row_no": 2,
+            "source_pk": "student-row-101",
+            "target_domain": "students",
+            "business_key": "S-101",
+            "idempotency_key": "dea1acd68e953232b4836eb94301c77b2e4a12dfb119422217785debe7ed25dd",
+            "import_status": "ready_to_load",
+            "normalized_payload": {
+              "targetDomain": "students",
+              "businessKey": "S-101",
+              "studentNo": "S-101",
+              "studentName": "赵六",
+              "gradeLabel": "一年级",
+              "primaryTeacherName": "胡忠芸",
+              "familyPhone": "13800000101",
+              "familyStructure": "single_parent",
+              "enrollDate": "2026-03-02",
+              "homeworkDate": null,
+              "subject": null,
+              "accuracyPct": null,
+              "errorTaxonomyCode": null,
+              "amounts": null
+            },
+            "mapping_snapshot": {
+              "dictionaries": {
+                "familyStructure": "single_parent",
+                "subject": null,
+                "errorTaxonomyCode": null
+              },
+              "transforms": {
+                "familyPhone": "13800000101",
+                "enrollDate": "2026-03-02",
+                "homeworkDate": null,
+                "accuracyPct": null
+              }
+            }
+          },
+          {
+            "batch_id": "BATCH-QA-STATEFUL-SAMPLE",
+            "source_file": "staging-import-sample.csv",
+            "source_sheet": "2026上半学年每日作业完成质量表",
+            "source_row_no": 3,
+            "source_pk": "hw-row-101",
+            "target_domain": "homework",
+            "business_key": "S-101",
+            "idempotency_key": "ce8e2d2e9aae6fd20638f91eb725e0892ef4a0726ba9257feafe5511f0cb4fb0",
+            "import_status": "ready_to_load",
+            "normalized_payload": {
+              "targetDomain": "homework",
+              "businessKey": "S-101",
+              "studentNo": "S-101",
+              "studentName": "赵六",
+              "gradeLabel": null,
+              "primaryTeacherName": "胡忠芸",
+              "familyPhone": "13800000101",
+              "familyStructure": null,
+              "enrollDate": null,
+              "homeworkDate": "2026-03-23",
+              "subject": "math",
+              "accuracyPct": 92,
+              "errorTaxonomyCode": "NO_ERROR",
+              "amounts": null
+            },
+            "mapping_snapshot": {
+              "dictionaries": {
+                "familyStructure": null,
+                "subject": "math",
+                "errorTaxonomyCode": "NO_ERROR"
+              },
+              "transforms": {
+                "familyPhone": "13800000101",
+                "enrollDate": null,
+                "homeworkDate": "2026-03-23",
+                "accuracyPct": 92
+              }
+            }
+          },
+          {
+            "batch_id": "BATCH-QA-STATEFUL-SAMPLE",
+            "source_file": "staging-import-sample.csv",
+            "source_sheet": "历史账单表",
+            "source_row_no": 4,
+            "source_pk": "invoice-row-101",
+            "target_domain": "billing",
+            "business_key": "I-101",
+            "idempotency_key": "6b2ba0075c81b1d35ce895c05294576584023e4795370784cecd3e88d56459fe",
+            "import_status": "ready_to_load",
+            "normalized_payload": {
+              "targetDomain": "billing",
+              "businessKey": "I-101",
+              "studentNo": null,
+              "studentName": null,
+              "gradeLabel": null,
+              "primaryTeacherName": null,
+              "familyPhone": null,
+              "familyStructure": null,
+              "enrollDate": null,
+              "homeworkDate": null,
+              "subject": null,
+              "accuracyPct": null,
+              "errorTaxonomyCode": null,
+              "amounts": {
+                "contractNo": "C-101",
+                "invoiceNo": "I-101",
+                "totalAmountCents": 128000,
+                "discountAmountCents": 8000,
+                "payableAmountCents": 120000,
+                "invoiceItemsAmountCents": 128000,
+                "paymentsAmountCents": 120000,
+                "refundsAmountCents": 0
+              }
+            },
+            "mapping_snapshot": {
+              "dictionaries": {
+                "familyStructure": null,
+                "subject": null,
+                "errorTaxonomyCode": null
+              },
+              "transforms": {
+                "familyPhone": null,
+                "enrollDate": null,
+                "homeworkDate": null,
+                "accuracyPct": null
+              }
+            }
+          }
+        ],
+        "staging_rejects": []
+      }
+    }
+  }
+}
