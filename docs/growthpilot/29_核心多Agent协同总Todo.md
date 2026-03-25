@@ -315,12 +315,14 @@
 
 ### NOW-A｜A4 基础设施接线
 - [ ] 把 `ApiAuthGuard` / `PermissionGuard` 真挂到主要控制器
-- [ ] Web 去掉 `mockCurrentUser` 入口，改接 `/auth/me`
+- [x] Web 去掉 `mockCurrentUser` 入口，改接共享 current-user source（优先 `/auth/me`，无 token 时 dev bootstrap login fallback）
 
 ### NOW-B｜A8/A9 Web 去 mock
-- [ ] 先打通 homework submissions/review 真接口
-- [ ] 再打通 growth reports/observations/goals 真接口
-- [ ] 再接 billing/contracts/invoices 与 analytics overview
+- [x] 先打通 homework submissions/review 真接口
+- [x] 再打通 growth reports/observations/goals 真接口
+- [x] 再接 billing/contracts/invoices 与 analytics overview
+- [~] billing products/renewals、analytics billing/teaching 也已顺手接真接口；payments/refunds/adjustments 详情聚合因后端未给列表接口，暂保留占位块
+- [~] growth rubrics 详情与列表已接真接口；report publish / report review 因后端 API 未落地，编辑/发布动作仍为前端骨架
 
 ### NOW-C｜A3/A6 教学闭环收口
 - [x] growth report review/publish 契约与实现

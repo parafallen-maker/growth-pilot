@@ -2,7 +2,7 @@ import { DataTable, FilterBar, MetricGrid, PageHeader, StateBlock, SummaryPanel,
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { communicationPermissions, messageStatusTabs } from '@/features/communication/constants';
 import { queryKeys } from '@/features/shared/query-keys';
-import { mockCurrentUser } from '@/lib/navigation';
+import { getCurrentUser } from '@/lib/current-user';
 import { communicationService } from '@/services/communication-service';
 
 function MessageStatusTable({
@@ -17,8 +17,9 @@ function MessageStatusTable({
   return <DataTable title={title} columns={columns} rows={rows} />;
 }
 
-export default function CommunicationMessagesPage() {
-  const allowed = hasPermission(mockCurrentUser.permissions, communicationPermissions.messagesView);
+export default async function CommunicationMessagesPage() {
+  const currentUser = await getCurrentUser();
+  const allowed = hasPermission(currentUser.permissions, communicationPermissions.messagesView);
   const filters = { pageNo: 1, pageSize: 20, campusId: 'campus-guiyang', channel: 'all', dateFrom: '2026-03-20', dateTo: '2026-03-25', sortBy: 'scheduledAt', sortOrder: 'desc' as const };
   const result = communicationService.queryMessages(filters);
   const action = communicationService.actionMessage();

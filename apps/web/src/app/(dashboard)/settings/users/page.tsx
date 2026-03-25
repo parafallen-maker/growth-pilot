@@ -1,14 +1,15 @@
 import { PermissionGuard } from '@/components/business/permission-guard';
 import { DataTable, PageHeader, StateBlock, TabStrip } from '@/components/business/page-blocks';
-import { mockCurrentUser } from '@/lib/navigation';
+import { getCurrentUser } from '@/lib/current-user';
 import { queryKeys } from '@/features/shared/query-keys';
 import { settingsService } from '@/services/settings-service';
 
-export default function SettingsUsersPage() {
+export default async function SettingsUsersPage() {
+  const currentUser = await getCurrentUser();
   const result = settingsService.query({ pageNo: 1, pageSize: 20, sortBy: 'createdAt', sortOrder: 'desc' });
 
   return (
-    <PermissionGuard allowed={mockCurrentUser.permissions.includes('users:view')}>
+    <PermissionGuard allowed={currentUser.permissions.includes('users:view')}>
       <div className="stack">
         <PageHeader
           title="用户与角色页面骨架"

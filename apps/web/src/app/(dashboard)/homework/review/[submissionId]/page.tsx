@@ -3,20 +3,22 @@ import { PageHeader, SummaryPanel, TabStrip, TimelinePanel } from '@/components/
 import { homeworkPermissions, reviewViewModes } from '@/features/homework/constants';
 import { homeworkReviewDefaultValues, homeworkReviewFormSchema } from '@/features/homework/schema';
 import { queryKeys } from '@/features/shared/query-keys';
-import { mockCurrentUser } from '@/lib/navigation';
+import { getCurrentUser } from '@/lib/current-user';
 import { homeworkService } from '@/services/homework-service';
 import { homeworkReviewDraftStore } from '@/store/homework-review-store';
 
-export default function HomeworkReviewWorkbenchPage({ params }: { params: { submissionId: string } }) {
-  const detail = homeworkService.detail(params.submissionId);
-  const draft = homeworkReviewDraftStore.getInitialDraft(params.submissionId);
+export default async function HomeworkReviewWorkbenchPage({ params }: { params: Promise<{ submissionId: string }> }) {
+  const currentUser = await getCurrentUser();
+  const { submissionId } = await params;
+  const detail = await homeworkService.detail(submissionId);
+  const draft = homeworkReviewDraftStore.getInitialDraft(submissionId);
 
   return (
-    <PermissionGuard allowed={mockCurrentUser.permissions.includes(homeworkPermissions.review)}>
+    <PermissionGuard allowed={currentUser.permissions.includes(homeworkPermissions.review)}>
       <div className="stack">
         <PageHeader
-          title={`作业复核工作台 / ${params.submissionId}`}
-          description={`P11 三栏布局已落骨架。detail key: ${JSON.stringify(queryKeys.homeworkSubmissionDetail(params.submissionId))} / review key: ${JSON.stringify(queryKeys.homeworkReviewDraft(params.submissionId))}`}
+          title={`作业复核工作台 / ${submissionId}`}
+          description={`P11 三栏布局已落骨架。detail key: ${JSON.stringify(queryKeys.homeworkSubmissionDetail(submissionId))} / review key: ${JSON.stringify(queryKeys.homeworkReviewDraft(submissionId))}`}
           actions={
             <>
               <button className="btn">上一条</button>

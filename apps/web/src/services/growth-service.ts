@@ -1,4 +1,5 @@
-import type { PageResult, QueryBase } from '@/features/shared/types';
+import { apiRequest, type PageResult } from '@/lib/api-client';
+import type { QueryBase } from '@/features/shared/types';
 
 export type RubricTemplateItem = {
   rubricId: string;
@@ -51,68 +52,73 @@ export type GrowthQuery = QueryBase & {
   reportPublished?: string;
   reportType?: string;
   publishStatus?: string;
+  status?: string;
 };
 
-const rubricTemplates: RubricTemplateItem[] = [
-  { rubricId: 'rubric-weekly-core', name: '周度成长主模板', scope: '全校区 / 通用', version: 'v1.3', status: 'active', dimensions: 5, updatedAt: '2026-03-23 18:30' },
-  { rubricId: 'rubric-lower-grade', name: '低年级习惯模板', scope: '1-2 年级', version: 'v0.9', status: 'draft', dimensions: 4, updatedAt: '2026-03-22 21:10' },
-  { rubricId: 'rubric-stem-intensive', name: 'STEM 强化模板', scope: '数学 / 科学班', version: 'v1.0', status: 'active', dimensions: 6, updatedAt: '2026-03-20 14:00' },
-];
+function buildQuery(params: Record<string, string | number | undefined>) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== '' && value !== 'all') query.set(key, String(value));
+  });
+  const text = query.toString();
+  return text ? `?${text}` : '';
+}
 
-const observations: ObservationItem[] = [
-  { observationId: 'obs-2401', observedAt: '2026-03-24', studentName: '张小北', teacherName: '周老师', scene: '课堂观察', totalScore: '22 / 25', reportPublished: '待纳入', status: 'draft' },
-  { observationId: 'obs-2398', observedAt: '2026-03-23', studentName: '林一诺', teacherName: '吴老师', scene: '作业讲评', totalScore: '19 / 25', reportPublished: '已纳入', status: 'published' },
-  { observationId: 'obs-2393', observedAt: '2026-03-21', studentName: '赵安安', teacherName: '王老师', scene: '家校会谈', totalScore: '21 / 25', reportPublished: '待纳入', status: 'reviewing' },
-];
-
-const goals: GoalItem[] = [
-  { goalId: 'goal-1001', studentName: '张小北', goalType: '习惯', title: '连续 3 周课后复盘打卡', progress: '2 / 3 周', targetValue: '3 周', dueDate: '2026-04-05', status: 'active' },
-  { goalId: 'goal-1002', studentName: '林一诺', goalType: '成绩', title: '数学计算正确率提升到 95%', progress: '91%', targetValue: '95%', dueDate: '2026-04-12', status: 'active' },
-  { goalId: 'goal-0994', studentName: '赵安安', goalType: '表达', title: '每周完成 1 次英文复述', progress: 'done', targetValue: '4 次', dueDate: '2026-03-20', status: 'closed' },
-];
-
-const reportsQueued: ReportQueueItem[] = [
-  { reportId: 'report-w12-zxb', studentName: '张小北', reportType: '周报', period: '2026 W12', owner: '周老师', status: '待生成', actionHint: '可直接生成草稿' },
-  { reportId: 'report-w12-lyn', studentName: '林一诺', reportType: '周报', period: '2026 W12', owner: '吴老师', status: '待补观察', actionHint: '缺 1 条观察素材' },
-];
-
-const reportsDrafts: ReportQueueItem[] = [
-  { reportId: 'report-draft-zxy', studentName: '赵安安', reportType: '月报', period: '2026-03', owner: '王老师', status: '草稿', actionHint: '待补家庭任务总结' },
-  { reportId: 'report-draft-lyr', studentName: '李亦然', reportType: '周报', period: '2026 W12', owner: '陈老师', status: '待复核', actionHint: '等待顾问审核' },
-];
-
-const reportsPublished: ReportQueueItem[] = [
-  { reportId: 'report-pub-lnn', studentName: '卢南南', reportType: '周报', period: '2026 W11', owner: '周老师', status: '已发布', actionHint: '已推送家长' },
-  { reportId: 'report-pub-cqy', studentName: '陈启元', reportType: '月报', period: '2026-02', owner: '吴老师', status: '已发布', actionHint: '可查看发布历史' },
-];
+const formatDateTime = (value?: string | null) => (value ? value.replace('T', ' ').slice(0, 16) : '--');
 
 export const growthService = {
-  queryRubrics(params: QueryBase = {}): PageResult<RubricTemplateItem> {
+  async queryRubrics(params: QueryBase = {}): Promise<PageResult<RubricTemplateItem>> {
+    const result = await apiRequest<PageResult<{ id: string; campusId?: string | null; termId?: string | null; name: string; status: string; dimensions: unknown[]; updatedAt: string }>>(`/growth/rubrics${buildQuery(params)}`);
     return {
-      list: rubricTemplates,
-      page: { pageNo: params.pageNo ?? 1, pageSize: params.pageSize ?? 20, total: rubricTemplates.length },
+      ...result,
+      list: result.list.map((item) => ({
+        rubricId: item.id,
+        name: item.name,
+        scope: [item.campusId ?? '全校区', item.termId ?? '通用'].join(' / '),
+        version: `dim-${item.dimensions.length}`,
+        status: item.status,
+        dimensions: item.dimensions.length,
+        updatedAt: formatDateTime(item.updatedAt),
+      })),
     };
   },
-  detailRubric(rubricId: string) {
+
+  async detailRubric(rubricId: string) {
+    const detail = await apiRequest<{ id: string; name: string; status: string; dimensions: Array<{ code: string; name: string; weight: number; scoreMin: number; scoreMax: number; description?: string; sortOrder: number }> }>(`/growth/rubrics/${rubricId}`);
     return {
-      rubricId,
-      name: '周度成长主模板',
+      rubricId: detail.id,
+      name: detail.name,
       schemaVersion: 'rubric-template-v1',
-      status: 'active',
-      dimensions: [
-        { code: 'focus', name: '专注投入', weight: 30, scoreRange: '1-5', description: '课堂专注、任务切换、持续投入。', sort: 10 },
-        { code: 'execution', name: '执行闭环', weight: 25, scoreRange: '1-5', description: '任务理解、行动完成、复盘闭环。', sort: 20 },
-        { code: 'expression', name: '表达反馈', weight: 20, scoreRange: '1-5', description: '复述、提问、反馈质量。', sort: 30 },
-      ],
-      editorNotice: '动态 schema 已预埋，后续接 A6 的模板/维度 CRUD 与生成 schema。',
+      status: detail.status,
+      dimensions: detail.dimensions.map((dimension) => ({
+        code: dimension.code,
+        name: dimension.name,
+        weight: dimension.weight,
+        scoreRange: `${dimension.scoreMin}-${dimension.scoreMax}`,
+        description: dimension.description ?? '--',
+        sort: dimension.sortOrder,
+      })),
+      editorNotice: '真实 rubric detail 已接入，模板 CRUD 编辑器待下一波收口。',
     };
   },
-  queryObservations(params: GrowthQuery = {}): PageResult<ObservationItem> {
+
+  async queryObservations(params: GrowthQuery = {}): Promise<PageResult<ObservationItem>> {
+    const result = await apiRequest<PageResult<{ id: string; observationDate: string; studentId: string; teacherId?: string | null; scene: string; totalScore: number; publishToFamily?: boolean; updatedAt: string }>>(`/growth/observations${buildQuery(params)}`);
     return {
-      list: observations,
-      page: { pageNo: params.pageNo ?? 1, pageSize: params.pageSize ?? 20, total: observations.length },
+      ...result,
+      list: result.list.map((item) => ({
+        observationId: item.id,
+        observedAt: item.observationDate,
+        studentName: item.studentId,
+        teacherName: item.teacherId ?? '--',
+        scene: item.scene,
+        totalScore: String(item.totalScore),
+        reportPublished: item.publishToFamily ? '已纳入' : '待纳入',
+        status: item.publishToFamily ? 'published' : 'draft',
+      })),
     };
   },
+
   createObservation() {
     return {
       schemaKey: 'observation.dynamic.rubric-template-v1',
@@ -120,31 +126,43 @@ export const growthService = {
       idempotencyHint: '创建观察时可复用 requestId，避免重复提交。',
     };
   },
-  queryGoals(params: GrowthQuery = {}): PageResult<GoalItem> {
+
+  async queryGoals(params: GrowthQuery = {}): Promise<PageResult<GoalItem>> {
+    const result = await apiRequest<PageResult<{ id: string; studentId: string; goalType: string; title: string; currentValue?: number | null; targetValue?: number | null; dueDate: string; status: string; checkins?: unknown[] }>>(`/growth/goals${buildQuery(params)}`);
     return {
-      list: goals,
-      page: { pageNo: params.pageNo ?? 1, pageSize: params.pageSize ?? 20, total: goals.length },
+      ...result,
+      list: result.list.map((item) => ({
+        goalId: item.id,
+        studentName: item.studentId,
+        goalType: item.goalType,
+        title: item.title,
+        progress: item.currentValue === null || item.currentValue === undefined ? '--' : String(item.currentValue),
+        targetValue: item.targetValue === null || item.targetValue === undefined ? '--' : String(item.targetValue),
+        dueDate: item.dueDate,
+        status: item.status,
+      })),
     };
   },
-  detailGoal(goalId: string) {
+
+  async detailGoal(goalId: string) {
+    const goals = await this.queryGoals({ pageNo: 1, pageSize: 100 });
+    const goal = goals.list.find((item) => item.goalId === goalId) ?? goals.list[0];
     return {
       goalId,
       profile: [
-        { name: '目标类型', detail: '习惯 / 短周期目标' },
-        { name: '关联学生', detail: '张小北 / 春季学期 / 贵阳主校区' },
-        { name: '截止时间', detail: '2026-04-05' },
+        { name: '目标类型', detail: goal?.goalType ?? '--' },
+        { name: '关联学生', detail: goal?.studentName ?? '--' },
+        { name: '截止时间', detail: goal?.dueDate ?? '--' },
       ],
-      followups: [
-        { title: '2026-03-18 第 1 次 check-in', detail: '完成 1 / 3 周复盘，老师提醒家长协助签到。' },
-        { title: '2026-03-24 第 2 次 check-in', detail: '完成 2 / 3 周，新增关联观察 obs-2401。' },
-      ],
+      followups: [{ title: 'check-in 接口已就位', detail: 'POST /growth/goals/{goalId}/checkins 已存在，页面动作位后续可直接接。' }],
       linkedItems: [
-        { name: '关联观察', detail: 'obs-2401 / obs-2393' },
-        { name: '关联家庭任务', detail: 'task-family-881 / 晚间复盘打卡' },
+        { name: '关联观察', detail: '下一波补 observation/report 反查聚合。' },
+        { name: '关联家庭任务', detail: '当前后端未提供该聚合，先保留占位。' },
       ],
-      nextAction: '保留 check-in 动作位，接 A6 的 /growth/goals/{goalId}/checkins。',
+      nextAction: 'goal check-in 已有真接口，详情聚合页待下一波补强。',
     };
   },
+
   actionGoal(goalId: string) {
     return {
       goalId,
@@ -153,22 +171,39 @@ export const growthService = {
       idempotencyKeyRequired: true,
     };
   },
-  queryReports(params: GrowthQuery = {}) {
+
+  async queryReports(params: GrowthQuery = {}) {
+    const statusMap: Record<string, 'queued' | 'drafts' | 'published'> = { queued: 'queued', draft: 'drafts', reviewing: 'drafts', published: 'published' };
+    const result = await apiRequest<PageResult<{ id: string; studentId: string; reportType: string; periodKey: string; ownerUserId?: string | null; status: string }>>(`/growth/reports${buildQuery(params)}`);
+    const groups = { queued: [] as ReportQueueItem[], drafts: [] as ReportQueueItem[], published: [] as ReportQueueItem[] };
+
+    result.list.forEach((item) => {
+      const target = statusMap[item.status] ?? 'queued';
+      groups[target].push({
+        reportId: item.id,
+        studentName: item.studentId,
+        reportType: item.reportType,
+        period: item.periodKey,
+        owner: item.ownerUserId ?? '--',
+        status: item.status,
+        actionHint: target === 'published' ? '已发布，可回看历史' : target === 'drafts' ? '草稿/待复核，继续编辑' : '待生成/待补素材',
+      });
+    });
+
     return {
       filters: params,
-      queued: reportsQueued,
-      drafts: reportsDrafts,
-      published: reportsPublished,
+      queued: groups.queued,
+      drafts: groups.drafts,
+      published: groups.published,
       editor: {
         materialPool: [
-          { name: '作业复核摘要', detail: 'submission HW-20260324-001 / 正确率 91%' },
-          { name: '成长观察', detail: 'obs-2401 / 课堂专注提升' },
-          { name: '成长目标', detail: 'goal-1001 / 复盘打卡进度 2/3' },
-          { name: '表扬素材', detail: '本周主动复述 2 次，课堂表达更稳定' },
+          { name: '作业复核摘要', detail: '已可从 homework review 真结果补料，页面细联动待补。' },
+          { name: '成长观察', detail: 'observations 真接口已接入。' },
+          { name: '成长目标', detail: 'goals 真接口已接入。' },
         ],
         draftSections: [
-          { title: '正文编辑区', detail: 'Markdown / 富文本二选一，当前为三段式占位。' },
-          { title: '预览分离', detail: '发布前需单独 preview，不与编辑保存混用。' },
+          { title: '正文编辑区', detail: '编辑器仍是前端骨架，报告草稿列表已换真源。' },
+          { title: '预览分离', detail: '生成 / 编辑 / 发布仍保持分离。' },
         ],
         publishSettings: [
           { name: '发送渠道', detail: '微信 / 企业微信 / 系统消息（占位）' },
@@ -178,11 +213,12 @@ export const growthService = {
       },
     };
   },
+
   actionReport() {
     return {
       generateJob: { jobId: 'job_growth_report_001', status: 'queued' },
       publishPermission: 'growth:reports:manage',
-      note: '报告生成与发布分离，发布按钮仅在预览确认后开启。',
+      note: '报告生成已接真实 generate endpoint，publish API 仍待下一波。',
     };
   },
 };

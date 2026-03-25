@@ -3,10 +3,11 @@ import { PermissionGuard } from '@/components/business/permission-guard';
 import { DataTable, FilterBar, MetricGrid, PageHeader, StateBlock } from '@/components/business/page-blocks';
 import { homeworkPermissions } from '@/features/homework/constants';
 import { queryKeys } from '@/features/shared/query-keys';
-import { mockCurrentUser } from '@/lib/navigation';
+import { getCurrentUser } from '@/lib/current-user';
 import { homeworkService } from '@/services/homework-service';
 
-export default function HomeworkSubmissionsPage() {
+export default async function HomeworkSubmissionsPage() {
+  const currentUser = await getCurrentUser();
   const filters = {
     pageNo: 1,
     pageSize: 20,
@@ -20,10 +21,10 @@ export default function HomeworkSubmissionsPage() {
     sortBy: 'submittedAt',
     sortOrder: 'desc' as const,
   };
-  const result = homeworkService.query(filters);
+  const result = await homeworkService.query(filters);
 
   return (
-    <PermissionGuard allowed={mockCurrentUser.permissions.includes(homeworkPermissions.submissionsView)}>
+    <PermissionGuard allowed={currentUser.permissions.includes(homeworkPermissions.submissionsView)}>
       <div className="stack">
         <PageHeader
           title="作业提交队列骨架"

@@ -2,11 +2,12 @@ import { DataTable, FilterBar, MetricGrid, PageHeader, StateBlock, SummaryPanel,
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { communicationPermissions } from '@/features/communication/constants';
 import { queryKeys } from '@/features/shared/query-keys';
-import { mockCurrentUser } from '@/lib/navigation';
+import { getCurrentUser } from '@/lib/current-user';
 import { communicationService } from '@/services/communication-service';
 
-export default function CommunicationRecordsPage() {
-  const allowed = hasPermission(mockCurrentUser.permissions, communicationPermissions.recordsView);
+export default async function CommunicationRecordsPage() {
+  const currentUser = await getCurrentUser();
+  const allowed = hasPermission(currentUser.permissions, communicationPermissions.recordsView);
   const filters = { pageNo: 1, pageSize: 20, campusId: 'campus-guiyang', keyword: '张家', channel: 'all', direction: 'all', dateFrom: '2026-03-20', dateTo: '2026-03-25', sortBy: 'occurredAt', sortOrder: 'desc' as const };
   const result = communicationService.queryRecords(filters);
   const detail = communicationService.detailRecord(result.list[0]?.subject ?? '续费意向确认');

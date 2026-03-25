@@ -2,13 +2,14 @@ import { FilterBar, MetricGrid, PageHeader, StateBlock, SummaryPanel } from '@/c
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { analyticsChartExportHint, analyticsPermissions } from '@/features/analytics/constants';
 import { queryKeys } from '@/features/shared/query-keys';
-import { mockCurrentUser } from '@/lib/navigation';
+import { getCurrentUser } from '@/lib/current-user';
 import { analyticsService } from '@/services/analytics-service';
 
-export default function AnalyticsTeachingPage() {
-  const allowed = hasPermission(mockCurrentUser.permissions, analyticsPermissions.teachingView);
+export default async function AnalyticsTeachingPage() {
+  const currentUser = await getCurrentUser();
+  const allowed = hasPermission(currentUser.permissions, analyticsPermissions.teachingView);
   const filters = { pageNo: 1, pageSize: 20, campusId: 'campus-guiyang', termId: '2026-spring', dateFrom: '2026-03-01', dateTo: '2026-03-24', sortBy: 'reviewBacklog', sortOrder: 'desc' as const };
-  const result = analyticsService.queryTeaching(filters);
+  const result = await analyticsService.queryTeaching(filters);
 
   return (
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="Analytics Teaching" permissionCode={analyticsPermissions.teachingView} />}>

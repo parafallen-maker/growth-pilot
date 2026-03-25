@@ -2,13 +2,14 @@ import { DataTable, FilterBar, MetricGrid, PageHeader, StateBlock } from '@/comp
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { billingPermissions } from '@/features/billing/constants';
 import { queryKeys } from '@/features/shared/query-keys';
-import { mockCurrentUser } from '@/lib/navigation';
+import { getCurrentUser } from '@/lib/current-user';
 import { billingService } from '@/services/billing-service';
 
-export default function BillingProductsPage() {
-  const allowed = hasPermission(mockCurrentUser.permissions, billingPermissions.productsView);
+export default async function BillingProductsPage() {
+  const currentUser = await getCurrentUser();
+  const allowed = hasPermission(currentUser.permissions, billingPermissions.productsView);
   const filters = { pageNo: 1, pageSize: 20, status: 'active', sortBy: 'updatedAt', sortOrder: 'desc' as const };
-  const result = billingService.queryProducts(filters);
+  const result = await billingService.queryProducts(filters);
 
   return (
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="收费产品" permissionCode={billingPermissions.productsView} />}>

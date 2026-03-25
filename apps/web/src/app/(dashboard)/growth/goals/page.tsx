@@ -3,12 +3,13 @@ import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/compone
 import { queryKeys } from '@/features/shared/query-keys';
 import { growthPermissions } from '@/features/growth/constants';
 import { growthService } from '@/services/growth-service';
-import { mockCurrentUser } from '@/lib/navigation';
+import { getCurrentUser } from '@/lib/current-user';
 
-export default function GrowthGoalsPage() {
-  const allowed = hasPermission(mockCurrentUser.permissions, growthPermissions.goalsView);
-  const result = growthService.queryGoals({ pageNo: 1, pageSize: 20, status: 'active', sortBy: 'dueDate', sortOrder: 'asc' });
-  const detail = growthService.detailGoal(result.list[0]?.goalId ?? 'goal-1001');
+export default async function GrowthGoalsPage() {
+  const currentUser = await getCurrentUser();
+  const allowed = hasPermission(currentUser.permissions, growthPermissions.goalsView);
+  const result = await growthService.queryGoals({ pageNo: 1, pageSize: 20, status: 'active', sortBy: 'dueDate', sortOrder: 'asc' });
+  const detail = await growthService.detailGoal(result.list[0]?.goalId ?? 'goal-1001');
   const action = growthService.actionGoal(result.list[0]?.goalId ?? 'goal-1001');
 
   return (

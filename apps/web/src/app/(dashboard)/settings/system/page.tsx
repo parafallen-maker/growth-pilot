@@ -1,14 +1,15 @@
 import { PermissionGuard } from '@/components/business/permission-guard';
 import { PageHeader, SummaryPanel, TabStrip, TimelinePanel } from '@/components/business/page-blocks';
-import { mockCurrentUser } from '@/lib/navigation';
+import { getCurrentUser } from '@/lib/current-user';
 import { queryKeys } from '@/features/shared/query-keys';
 import { settingsService } from '@/services/settings-service';
 
-export default function SettingsSystemPage() {
+export default async function SettingsSystemPage() {
+  const currentUser = await getCurrentUser();
   const detail = settingsService.detail();
 
   return (
-    <PermissionGuard allowed={mockCurrentUser.permissions.includes('settings:view')}>
+    <PermissionGuard allowed={currentUser.permissions.includes('settings:view')}>
       <div className="stack">
         <PageHeader
           title="系统设置页面骨架"

@@ -2,13 +2,14 @@ import { DataTable, FilterBar, PageHeader, SummaryPanel, TabStrip } from '@/comp
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { billingPermissions, billingTabs } from '@/features/billing/constants';
 import { queryKeys } from '@/features/shared/query-keys';
-import { mockCurrentUser } from '@/lib/navigation';
+import { getCurrentUser } from '@/lib/current-user';
 import { billingService } from '@/services/billing-service';
 
-export default function BillingInvoicesPage() {
-  const allowed = hasPermission(mockCurrentUser.permissions, billingPermissions.invoicesView);
+export default async function BillingInvoicesPage() {
+  const currentUser = await getCurrentUser();
+  const allowed = hasPermission(currentUser.permissions, billingPermissions.invoicesView);
   const filters = { pageNo: 1, pageSize: 20, status: 'all', tab: 'invoices' as const, sortBy: 'dueDate', sortOrder: 'asc' as const };
-  const result = billingService.queryInvoices(filters);
+  const result = await billingService.queryInvoices(filters);
   const action = billingService.actionInvoice(result.invoices.list[0]?.invoiceNo ?? 'INV-202603-201');
 
   return (

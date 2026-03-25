@@ -3,12 +3,13 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { navSections, mockCurrentUser } from '@/lib/navigation';
 import { pruneNavSections } from '@/components/business/permission-guard';
+import { navSections } from '@/lib/navigation';
+import type { CurrentUser } from '@/lib/current-user';
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, currentUser }: { children: ReactNode; currentUser: CurrentUser }) {
   const pathname = usePathname();
-  const sections = pruneNavSections(navSections, mockCurrentUser.permissions);
+  const sections = pruneNavSections(navSections, currentUser.permissions);
 
   return (
     <div className="dashboard-shell shell">
@@ -18,9 +19,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="muted">Wave 1 Frontend Shell</div>
         </div>
         <div className="panel" style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.08)', color: 'white' }}>
-          <div>{mockCurrentUser.name}</div>
-          <div className="muted">{mockCurrentUser.role}</div>
-          <div className="muted">{mockCurrentUser.campusName}</div>
+          <div>{currentUser.name}</div>
+          <div className="muted">{currentUser.role}</div>
+          <div className="muted">{currentUser.campusName}</div>
         </div>
         <nav>
           {sections.map((section) => (

@@ -3,12 +3,13 @@ import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/compone
 import { queryKeys } from '@/features/shared/query-keys';
 import { growthPermissions } from '@/features/growth/constants';
 import { growthService } from '@/services/growth-service';
-import { mockCurrentUser } from '@/lib/navigation';
+import { getCurrentUser } from '@/lib/current-user';
 
-export default function GrowthRubricsPage() {
-  const allowed = hasPermission(mockCurrentUser.permissions, growthPermissions.rubricsView);
-  const result = growthService.queryRubrics({ pageNo: 1, pageSize: 20, sortBy: 'updatedAt', sortOrder: 'desc' });
-  const detail = growthService.detailRubric(result.list[0]?.rubricId ?? 'rubric-weekly-core');
+export default async function GrowthRubricsPage() {
+  const currentUser = await getCurrentUser();
+  const allowed = hasPermission(currentUser.permissions, growthPermissions.rubricsView);
+  const result = await growthService.queryRubrics({ pageNo: 1, pageSize: 20, sortBy: 'updatedAt', sortOrder: 'desc' });
+  const detail = await growthService.detailRubric(result.list[0]?.rubricId ?? 'rubric-weekly-core');
 
   return (
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="Rubric 模板" permissionCode={growthPermissions.rubricsView} />}>

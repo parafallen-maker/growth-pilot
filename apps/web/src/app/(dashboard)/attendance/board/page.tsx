@@ -2,11 +2,12 @@ import { MetricGrid, FilterBar, PageHeader, StateBlock, SummaryPanel, TimelinePa
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { attendancePermissions } from '@/features/attendance/constants';
 import { queryKeys } from '@/features/shared/query-keys';
-import { mockCurrentUser } from '@/lib/navigation';
+import { getCurrentUser } from '@/lib/current-user';
 import { attendanceService } from '@/services/attendance-service';
 
-export default function AttendanceBoardPage() {
-  const allowed = hasPermission(mockCurrentUser.permissions, attendancePermissions.boardView);
+export default async function AttendanceBoardPage() {
+  const currentUser = await getCurrentUser();
+  const allowed = hasPermission(currentUser.permissions, attendancePermissions.boardView);
   const filters = {
     pageNo: 1,
     pageSize: 20,

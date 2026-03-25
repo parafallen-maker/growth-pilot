@@ -2,13 +2,14 @@ import { FilterBar, MetricGrid, PageHeader, StateBlock, SummaryPanel } from '@/c
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { analyticsChartExportHint, analyticsPermissions } from '@/features/analytics/constants';
 import { queryKeys } from '@/features/shared/query-keys';
-import { mockCurrentUser } from '@/lib/navigation';
+import { getCurrentUser } from '@/lib/current-user';
 import { analyticsService } from '@/services/analytics-service';
 
-export default function AnalyticsBillingPage() {
-  const allowed = hasPermission(mockCurrentUser.permissions, analyticsPermissions.billingView);
+export default async function AnalyticsBillingPage() {
+  const currentUser = await getCurrentUser();
+  const allowed = hasPermission(currentUser.permissions, analyticsPermissions.billingView);
   const filters = { pageNo: 1, pageSize: 20, campusId: 'campus-guiyang', termId: '2026-spring', dateFrom: '2026-03-01', dateTo: '2026-03-24', sortBy: 'receivableCents', sortOrder: 'desc' as const };
-  const result = analyticsService.queryBilling(filters);
+  const result = await analyticsService.queryBilling(filters);
 
   return (
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="Analytics Billing" permissionCode={analyticsPermissions.billingView} />}>

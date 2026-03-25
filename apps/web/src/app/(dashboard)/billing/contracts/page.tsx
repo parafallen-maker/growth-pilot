@@ -2,14 +2,15 @@ import { DataTable, FilterBar, PageHeader, SummaryPanel } from '@/components/bus
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { billingPermissions } from '@/features/billing/constants';
 import { queryKeys } from '@/features/shared/query-keys';
-import { mockCurrentUser } from '@/lib/navigation';
+import { getCurrentUser } from '@/lib/current-user';
 import { billingService } from '@/services/billing-service';
 
-export default function BillingContractsPage() {
-  const allowed = hasPermission(mockCurrentUser.permissions, billingPermissions.contractsView);
+export default async function BillingContractsPage() {
+  const currentUser = await getCurrentUser();
+  const allowed = hasPermission(currentUser.permissions, billingPermissions.contractsView);
   const filters = { pageNo: 1, pageSize: 20, status: 'active', campusId: 'campus-guiyang', termId: '2026-spring', sortBy: 'expiryDate', sortOrder: 'asc' as const };
-  const result = billingService.queryContracts(filters);
-  const detail = billingService.detailContract(result.list[0]?.contractNo ?? 'CT-202603-001');
+  const result = await billingService.queryContracts(filters);
+  const detail = await billingService.detailContract(result.list[0]?.contractId ?? 'contract-001');
 
   return (
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="合同列表" permissionCode={billingPermissions.contractsView} />}>

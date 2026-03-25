@@ -2,15 +2,16 @@ import { PermissionGuard } from '@/components/business/permission-guard';
 import { DataTable, FilterBar, PageHeader, StateBlock } from '@/components/business/page-blocks';
 import { homeworkPermissions } from '@/features/homework/constants';
 import { queryKeys } from '@/features/shared/query-keys';
-import { mockCurrentUser } from '@/lib/navigation';
+import { getCurrentUser } from '@/lib/current-user';
 import { homeworkService } from '@/services/homework-service';
 
-export default function HomeworkErrorTaxonomiesPage() {
+export default async function HomeworkErrorTaxonomiesPage() {
+  const currentUser = await getCurrentUser();
   const filters = { pageNo: 1, pageSize: 20, keyword: '', status: 'enabled', sortBy: 'sort', sortOrder: 'asc' as const };
-  const result = homeworkService.taxonomyQuery(filters);
+  const result = await homeworkService.taxonomyQuery(filters);
 
   return (
-    <PermissionGuard allowed={mockCurrentUser.permissions.includes(homeworkPermissions.errorTaxonomiesView)}>
+    <PermissionGuard allowed={currentUser.permissions.includes(homeworkPermissions.errorTaxonomiesView)}>
       <div className="stack">
         <PageHeader
           title="错因词典维护页骨架"
