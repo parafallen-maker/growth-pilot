@@ -12,8 +12,8 @@ interface CommunicationState {
 export class CommunicationRepository {
   private readonly store: PersistentJsonStore<CommunicationState>;
 
-  constructor(filePath = '.data/communication.json') {
-    this.store = new PersistentJsonStore(filePath, () => ({
+  constructor() {
+    this.store = new PersistentJsonStore('.data/communication.json', () => ({
       records: [
         {
           id: 'comm-record-001',

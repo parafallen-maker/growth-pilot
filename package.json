@@ -16,6 +16,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "migration:dry-run": "node scripts/migration/run-staging-import.mjs --dry-run",
+    "qa:ssr": "node scripts/qa/run-ssr-smoke.mjs",
     "ci:check": "npm run lint && npm run typecheck && npm run test",
     "smoke:api": "cd apps/api && node -e \"require('./dist/main')\" || echo 'dist not built, run npm run build first'",
     "dev:all": "npm run dev:web & npm run dev:api",

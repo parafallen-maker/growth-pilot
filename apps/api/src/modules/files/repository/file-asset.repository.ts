@@ -168,8 +168,8 @@ class DbFileAssetRepository implements FileAssetRepositoryPort {
 export class FileAssetRepository {
   private readonly adapter: FileAssetRepositoryPort;
 
-  constructor(filePath?: string) {
-    this.adapter = isDbPersistenceEnabled() && !filePath ? new DbFileAssetRepository() : new FileFileAssetRepository(filePath);
+  constructor() {
+    this.adapter = isDbPersistenceEnabled() ? new DbFileAssetRepository() : new FileFileAssetRepository();
   }
 
   list() {

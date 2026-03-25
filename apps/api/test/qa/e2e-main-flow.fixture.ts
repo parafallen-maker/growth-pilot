@@ -65,7 +65,8 @@ export function createQaFixture() {
   const reportDraftJob = new ReportDraftJob(growthRepository, reportMaterialAssembler, jobsService);
   const growthService = new GrowthService(growthRepository, reportDraftJob);
 
-  const masterDataStore = new MasterDataStore(resolve(dataDir, 'master-data.json'));
+  process.env.GROWTHPILOT_MASTER_DATA_PATH = resolve(dataDir, 'master-data.json');
+  const masterDataStore = new MasterDataStore();
   masterDataStore.reset();
   const familiesRepository = new FamiliesRepository(masterDataStore);
   const studentsRepository = new StudentsRepository(masterDataStore);

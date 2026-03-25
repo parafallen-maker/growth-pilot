@@ -20,8 +20,8 @@ interface AttendanceState {
 export class AttendanceRepository {
   private readonly store: PersistentJsonStore<AttendanceState>;
 
-  constructor(filePath = '.data/attendance.json') {
-    this.store = new PersistentJsonStore<AttendanceState>(filePath, () => ({
+  constructor() {
+    this.store = new PersistentJsonStore<AttendanceState>('.data/attendance.json', () => ({
     devices: [
       {
         id: 'device-001',

@@ -7,9 +7,13 @@ import { CurrentUserProfile, Permission, Role, UserRecord } from '../users.types
 export class UsersService {
   constructor(private readonly usersRepository: UsersRepository) {}
 
-  async listUsers(keyword?: string) {
+  async listUsers(keyword?: string, pageNo = 1, pageSize = 20) {
     const users = (await this.usersRepository.list(keyword)).map((user) => this.toContractUser(user));
-    return buildPagedResult(users);
+    const start = Math.max(pageNo - 1, 0) * pageSize;
+    return {
+      list: users.slice(start, start + pageSize),
+      page: { pageNo, pageSize, total: users.length },
+    };
   }
 
   async getCurrentUserProfile(userId: string): Promise<CurrentUserProfile> {

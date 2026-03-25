@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { createHmac, randomUUID } from 'node:crypto';
 import { DefaultAuthSessionRepository } from '../repository/auth-session.repository';
-import { AuthSessionRepository, SessionRecord } from '../auth.types';
+import { SessionRecord } from '../auth.types';
 import { UsersService } from '../../users/service/users.service';
 import { CurrentUserProfile } from '../../users/users.types';
 
@@ -15,7 +15,7 @@ export class AuthService {
 
   constructor(
     private readonly usersService: UsersService,
-    private readonly authSessionRepository: AuthSessionRepository = new DefaultAuthSessionRepository(),
+    private readonly authSessionRepository: DefaultAuthSessionRepository = new DefaultAuthSessionRepository(),
   ) {}
 
   async login(username: string, password: string) {

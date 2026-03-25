@@ -349,9 +349,10 @@
 
 #### API 合约验证
 
-- [ ] `QA-06` 对照 OpenAPI 逐条验证所有接口：请求格式、响应格式、状态码、错误码
-- [ ] `QA-07` auth 接口安全验证：过期 token、无效 token、权限不足
-- [ ] `QA-08` 分页接口统一验证：pageNo/pageSize/total 格式一致
+- [/] `QA-06` 对照 OpenAPI 逐条验证所有接口：请求格式、响应格式、状态码、错误码
+  - 已新增 contract smoke，覆盖 auth / settings / users / students / families / homework / growth / jobs 的代表性读链路与 envelope 结构；仍未做到“所有接口逐条”全覆盖。
+- [x] `QA-07` auth 接口安全验证：过期 token、无效 token、权限不足
+- [x] `QA-08` 分页接口统一验证：pageNo/pageSize/total 格式一致
 
 #### 数据迁移验证
 
@@ -361,7 +362,8 @@
 
 #### 页面验证
 
-- [ ] `QA-12` 所有 31 个页面 SSR 渲染成功（无 500 错误）
+- [/] `QA-12` 所有 31 个页面 SSR 渲染成功（无 500 错误）
+  - 已新增 31 页 SSR smoke 脚本与路由收集逻辑；实际执行被 API Nest DI 启动失败阻塞（已定位并修补部分 repository/provider 问题，仍有 StudentsModule 依赖链待补齐）。
 - [ ] `QA-13` 权限验证：teacher 角色不能访问 billing 页面
 - [ ] `QA-14` 响应式检查：主要页面在 1280/1440/1920 宽度下无溢出
 

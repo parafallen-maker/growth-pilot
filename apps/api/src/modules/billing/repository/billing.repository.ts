@@ -42,8 +42,8 @@ interface BillingState {
 export class BillingRepository {
   private readonly store: PersistentJsonStore<BillingState>;
 
-  constructor(filePath = '.data/billing.json') {
-    this.store = new PersistentJsonStore<BillingState>(filePath, () => ({
+  constructor() {
+    this.store = new PersistentJsonStore<BillingState>('.data/billing.json', () => ({
     products: [
       {
         id: 'product-001',

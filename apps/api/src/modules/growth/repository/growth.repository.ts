@@ -449,8 +449,8 @@ class DbGrowthRepository implements GrowthRepositoryPort {
 export class GrowthRepository {
   private readonly adapter: GrowthRepositoryPort;
 
-  constructor(filePath?: string) {
-    this.adapter = isDbPersistenceEnabled() && !filePath ? new DbGrowthRepository() : new FileGrowthRepository(filePath);
+  constructor() {
+    this.adapter = isDbPersistenceEnabled() ? new DbGrowthRepository() : new FileGrowthRepository();
   }
 
   listRubrics() { return this.adapter.listRubrics(); }

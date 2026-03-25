@@ -154,8 +154,8 @@ export class MasterDataStore {
   private static readonly cache = new Map<string, MasterDataState>();
   private readonly filePath: string;
 
-  constructor(filePath?: string) {
-    this.filePath = resolve(filePath ?? process.env.GROWTHPILOT_MASTER_DATA_PATH ?? '.runtime/master-data.json');
+  constructor() {
+    this.filePath = resolve(process.env.GROWTHPILOT_MASTER_DATA_PATH ?? '.runtime/master-data.json');
     this.ensureLoaded();
   }
 

@@ -13,8 +13,18 @@ export class UsersController {
 
   @Get()
   @RequirePermission('users:view')
-  async listUsers(@Query('keyword') keyword?: string) {
-    return buildApiResponse(await this.usersService.listUsers(keyword));
+  async listUsers(
+    @Query('keyword') keyword?: string,
+    @Query('pageNo') pageNo?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    return buildApiResponse(
+      await this.usersService.listUsers(
+        keyword,
+        pageNo ? Number(pageNo) : 1,
+        pageSize ? Number(pageSize) : 20,
+      ),
+    );
   }
 
   @Post(':userId/roles')
