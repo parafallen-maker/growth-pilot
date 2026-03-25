@@ -707,7 +707,8 @@
   - 在 staging 环境执行全量迁移
   - 输出 `migration-report.json`（成功数/失败数/跳过数/reject 列表）
   - 人工校验 reject 数据
-  - 已补 staging/UAT 执行步骤、命令模板与 evidence 清单：`docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md`
+  - 已补 staging/UAT 执行 runbook、日志模板、rollback checkpoint 与 evidence 目录约定：`docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md`
+  - 已新增 `docs/growthpilot/templates/migration_execution_log_template.md`，并让 `npm run ops:release:init` 自动脚手架 `migration-execution-log.md`
   - 尚未在真实 staging/UAT 库执行全量导入，因此不能记完成。
 
 - [/] `QA-24` **迁移数据校验**：
@@ -715,7 +716,8 @@
   - 关键字段抽样（每表抽 10 条核对）
   - 外键完整性检查（学生→家庭→监护人链路）
   - 金额一致性检查（合同金额 = Σ 账单金额）
-  - 已补 SQL 校验模板、抽样口径与金额一致性检查流程：`docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md`
+  - 已补 SQL 校验 runbook、抽样口径、幂等/金额校验流程：`docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md`
+  - 已新增 `docs/growthpilot/templates/migration_validation_checklist.md`、`docs/growthpilot/templates/migration_validation_queries.sql`，并让 `npm run ops:release:init` 自动脚手架校验清单与 SQL 模板
   - 尚未对真实 staging/UAT 导入批次执行校验。
 
 #### 用户验收测试（UAT）
@@ -730,7 +732,8 @@
   - 部署 staging/UAT 环境
   - 导入迁移后的真实数据
   - 创建 UAT 测试账号
-  - 已补 UAT 环境搭建检查项、账号/数据/日志要求：`docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md`
+  - 已补 UAT 环境搭建检查项、账号/数据/日志要求，以及基于当前仓库 seed / API 的账号准备流程：`docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md`
+  - 已新增 `docs/growthpilot/templates/uat_environment_checklist.md`，并让 `npm run ops:release:init` 自动脚手架 `uat-environment-checklist.md`
   - 未在真实环境完成部署、导数与账号创建，保持进行中。
 
 - [/] `QA-27` **UAT 执行**（需用户参与）：
@@ -823,14 +826,18 @@
   # 3. 执行 seed
   npm run db:seed
   ```
-  - 已在 `docs/growthpilot/39_Wave5_正式上线操作手册.md` 固化执行前置条件、命令模板与证据要求；未触达真实生产库。
+  - 已在 `docs/growthpilot/39_Wave5_正式上线操作手册.md` 固化执行前置条件、`DEPLOY_ENV_FILE=.env.prod` 用法、备份/恢复命令、验证步骤与 rollback checkpoint
+  - 已新增 `docs/growthpilot/templates/prod_db_init_checklist.md`，并让 `npm run ops:release:init` 自动脚手架 `prod-db-init-checklist.md`
+  - 未触达真实生产库，保持进行中。
 
 - [/] `INF-37` **生产数据迁移**：
   - 执行全量 Excel 数据导入
   - 启用 `--report-only` 先做 dry-run
   - 确认后执行正式导入
   - 保存迁移报告
-  - 已补正式环境命令模板和 `--confirm-prod` 守门逻辑；未执行真实生产迁移。
+  - 已补正式环境命令模板、source hash/备份/校验/rollback 证据链，以及 `--confirm-prod` 守门逻辑：`docs/growthpilot/39_Wave5_正式上线操作手册.md`
+  - 已将 `migration-execution-log.md` / `migration-validation-checklist.md` / `sql/migration-validation.sql` 纳入 release workspace 脚手架
+  - 当前仓库内正式迁移脚本仍只写 `qa_staging.*`，尚未执行真实生产迁移，因此保持进行中。
 
 - [/] `INF-38` **首次部署**：
   ```bash
