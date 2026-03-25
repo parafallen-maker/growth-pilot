@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiAuthGuard } from '../../../common/auth.guard';
 import { ok } from '../../../common/api-response';
 import { CommunicationQueryDto } from '../dto/communication-query.dto';
 import { CreateCommunicationRecordDto } from '../dto/create-communication-record.dto';
@@ -11,6 +12,7 @@ import { UpdateMessageTemplateDto } from '../dto/update-message-template.dto';
 import { CommunicationService } from '../service/communication.service';
 
 @Controller('communication')
+@UseGuards(ApiAuthGuard)
 export class CommunicationController {
   constructor(private readonly communicationService: CommunicationService) {}
 

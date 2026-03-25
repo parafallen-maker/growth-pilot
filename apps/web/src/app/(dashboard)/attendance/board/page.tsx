@@ -17,14 +17,14 @@ export default async function AttendanceBoardPage() {
     sortBy: 'happenedAt',
     sortOrder: 'desc' as const,
   };
-  const result = attendanceService.queryBoard(filters);
+  const result = await attendanceService.queryBoard(filters);
 
   return (
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="出勤看板" permissionCode={attendancePermissions.boardView} />}>
       <div className="stack">
         <PageHeader
-          title="出勤看板骨架"
-          description={`P17 已铺签到 KPI、未签到名单、异常状态块、事件流与动作位。query key: ${JSON.stringify(queryKeys.attendanceBoard(filters))}`}
+          title="出勤看板"
+          description={`P17 已从本地看板切到 attendance events 真接口。query key: ${JSON.stringify(queryKeys.attendanceBoard(filters))}`}
           actions={<><button className="btn primary">手动补签到</button><button className="btn">修正事件备注</button><button className="btn">导出今日异常</button></>}
         />
 
@@ -53,14 +53,14 @@ export default async function AttendanceBoardPage() {
           <div className="page-header">
             <div>
               <h3>动作与异常闭环</h3>
-              <p>给前台和校区管理员留出补签到、备注修正、异常去重说明位。</p>
+              <p>能接真事件流的先接，缺 roster 和异常工作流的地方就明说。</p>
             </div>
-            <span className="badge">service.action placeholder</span>
+            <span className="badge">real events / partial board</span>
           </div>
           <SummaryPanel
             title="联调说明"
             items={[
-              { name: '事件写入', detail: 'POST /attendance/events，后端需完成三元组去重。' },
+              { name: '事件写入', detail: 'POST /attendance/events 真接口已存在，含幂等去重。' },
               { name: '异常修正', detail: result.actionNotice },
               { name: '页面状态', detail: 'loading / empty / error / permissionDenied 已放齐。' },
             ]}

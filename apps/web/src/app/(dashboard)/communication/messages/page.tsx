@@ -21,22 +21,22 @@ export default async function CommunicationMessagesPage() {
   const currentUser = await getCurrentUser();
   const allowed = hasPermission(currentUser.permissions, communicationPermissions.messagesView);
   const filters = { pageNo: 1, pageSize: 20, campusId: 'campus-guiyang', channel: 'all', dateFrom: '2026-03-20', dateTo: '2026-03-25', sortBy: 'scheduledAt', sortOrder: 'desc' as const };
-  const result = communicationService.queryMessages(filters);
+  const result = await communicationService.queryMessages(filters);
   const action = communicationService.actionMessage();
 
   return (
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="消息中心" permissionCode={communicationPermissions.messagesView} />}>
       <div className="stack">
         <PageHeader
-          title="消息中心骨架"
-          description={`P25 已铺模板 / 草稿 / 待发 / 已发 / 失败回执五段状态区块、动作位与页面状态。query key: ${JSON.stringify(queryKeys.communicationMessages(filters))}`}
+          title="消息中心"
+          description={`P25 已从本地五段假区块切到 communication templates / message_tasks 真接口。query key: ${JSON.stringify(queryKeys.communicationMessages(filters))}`}
           actions={<><button className="btn primary">创建消息</button><button className="btn">立即发送</button><button className="btn">重试失败</button><button className="btn">查看回执</button></>}
         />
         <MetricGrid items={[
-          { label: '模板数量', value: String(result.templates.list.length), hint: '周报 / 账单 / 任务通知' },
-          { label: '草稿待补', value: String(result.drafts.list.length), hint: '缺素材或待审批' },
-          { label: '待发送', value: String(result.queued.list.length), hint: '定时发送任务池' },
-          { label: '失败 / 回执', value: `${result.failed.list.length} / ${result.sent.list.filter((item) => item.status === 'read').length}`, hint: '失败重试 + 已读回执' },
+          { label: '模板数量', value: String(result.templates.page.total), hint: 'templates 真接口' },
+          { label: '草稿待补', value: String(result.drafts.page.total), hint: 'draft tasks' },
+          { label: '待发送', value: String(result.queued.page.total), hint: 'pending tasks' },
+          { label: '失败 / 回执', value: `${result.failed.page.total} / ${result.sent.list.filter((item) => item.status === 'read').length}`, hint: 'failed + read 状态来自真接口' },
         ]} />
         <FilterBar fields={[
           { label: '家庭筛选', value: '全部家庭', kind: 'select' },

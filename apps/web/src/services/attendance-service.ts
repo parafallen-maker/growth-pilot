@@ -1,4 +1,5 @@
-import type { PageResult, QueryBase } from '@/features/shared/types';
+import { apiRequest, type PageResult } from '@/lib/api-client';
+import type { QueryBase } from '@/features/shared/types';
 
 export type AttendanceBoardQuery = QueryBase & {
   date?: string;
@@ -8,6 +9,7 @@ export type AttendanceBoardQuery = QueryBase & {
 export type AttendanceDeviceQuery = QueryBase & {
   tab?: 'devices' | 'current-bindings' | 'binding-history';
   deviceType?: string;
+  status?: string;
 };
 
 export type HomeworkTimeQuery = QueryBase & {
@@ -28,6 +30,7 @@ type AttendanceEventItem = {
 };
 
 type DeviceItem = {
+  deviceId: string;
   deviceSn: string;
   deviceType: string;
   campusName: string;
@@ -55,102 +58,230 @@ type HomeworkTimeItem = {
   exceptionFlag: string;
 };
 
-const attendanceEvents: AttendanceEventItem[] = [
-  { eventId: 'EVT-20260324-001', studentName: '张小北', eventType: 'sign-in', happenedAt: '2026-03-24 08:02', campusName: '贵阳主校区', status: '正常', note: '设备自动签到' },
-  { eventId: 'EVT-20260324-014', studentName: '林一诺', eventType: 'late', happenedAt: '2026-03-24 08:37', campusName: '南明校区', status: '异常', note: '迟到 22 分钟，待前台备注' },
-  { eventId: 'EVT-20260324-022', studentName: '赵安安', eventType: 'manual-fix', happenedAt: '2026-03-24 09:05', campusName: '观山湖校区', status: '补录', note: '家长临时送达，前台补签到' },
-];
+const studentNameMap: Record<string, string> = {
+  'student-001': '张小北',
+  'student-002': '林一诺',
+  'student-003': '赵安安',
+  'student-004': '陈启元',
+};
 
-const devices: DeviceItem[] = [
-  { deviceSn: 'SN-ATT-001', deviceType: '手环', campusName: '贵阳主校区', currentStudentName: '张小北', status: 'online', actionHint: '可解绑 / 更换学生' },
-  { deviceSn: 'SN-ATT-019', deviceType: '卡片', campusName: '南明校区', currentStudentName: '林一诺', status: 'offline', actionHint: '检查电量 / 重新绑定' },
-  { deviceSn: 'SN-ATT-025', deviceType: '手环', campusName: '观山湖校区', currentStudentName: '--', status: 'idle', actionHint: '可直接绑定学生' },
-];
+const campusNameMap: Record<string, string> = {
+  'campus-001': '贵阳主校区',
+  'campus-002': '南明校区',
+  'campus-003': '观山湖校区',
+  'campus-guiyang': '贵阳主校区',
+};
 
-const currentBindings: BindingItem[] = [
-  { bindingId: 'BIND-9001', deviceSn: 'SN-ATT-001', studentName: '张小北', startedAt: '2026-02-10 09:00', endedAt: '--', status: '当前绑定' },
-  { bindingId: 'BIND-9002', deviceSn: 'SN-ATT-019', studentName: '林一诺', startedAt: '2026-03-01 10:15', endedAt: '--', status: '当前绑定' },
-];
+const deviceTypeMap: Record<string, string> = {
+  beacon: '手环',
+  card: '卡片',
+};
 
-const bindingHistory: BindingItem[] = [
-  { bindingId: 'BIND-8810', deviceSn: 'SN-ATT-008', studentName: '赵安安', startedAt: '2025-12-10 08:30', endedAt: '2026-01-20 18:00', status: '已解绑' },
-  { bindingId: 'BIND-8842', deviceSn: 'SN-ATT-014', studentName: '陈启元', startedAt: '2026-01-05 09:10', endedAt: '2026-02-28 17:40', status: '已换绑' },
-];
+const eventTypeMap: Record<string, string> = {
+  checkin: '签到',
+  checkout: '签退',
+  late: '迟到',
+  'manual-fix': '手动修正',
+};
 
-const homeworkTimeRows: HomeworkTimeItem[] = [
-  { recordId: 'HT-001', studentName: '张小北', date: '2026-03-24', subject: '数学', totalMinutes: '85', sessionCount: '2', exceptionFlag: '正常' },
-  { recordId: 'HT-002', studentName: '林一诺', date: '2026-03-24', subject: '英语', totalMinutes: '55', sessionCount: '1', exceptionFlag: '偏低' },
-  { recordId: 'HT-003', studentName: '赵安安', date: '2026-03-23', subject: '语文', totalMinutes: '102', sessionCount: '3', exceptionFlag: '正常' },
-];
+function buildQuery(params: Record<string, string | number | undefined>) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== '' && value !== 'all') query.set(key, String(value));
+  });
+  const text = query.toString();
+  return text ? `?${text}` : '';
+}
+
+function formatAt(value?: string | null) {
+  return value ? value.replace('T', ' ').slice(0, 16) : '--';
+}
+
+function formatDate(value?: string | null) {
+  return value ? value.slice(0, 10) : '--';
+}
+
+function toStudentName(studentId?: string | null) {
+  return studentId ? studentNameMap[studentId] ?? studentId : '--';
+}
+
+function toCampusName(campusId?: string | null) {
+  return campusId ? campusNameMap[campusId] ?? campusId : '--';
+}
+
+function toDeviceTypeName(deviceType?: string | null) {
+  return deviceType ? deviceTypeMap[deviceType] ?? deviceType : '--';
+}
+
+function toEventTypeName(eventType?: string | null) {
+  return eventType ? eventTypeMap[eventType] ?? eventType : '--';
+}
+
+function toEventStatus(item: { eventType: string; remark?: string | null }) {
+  if (item.eventType === 'late') return '异常';
+  if (item.remark?.includes('补')) return '补录';
+  return '正常';
+}
+
+function toExceptionFlag(totalMinutes: number) {
+  if (totalMinutes < 60) return '偏低';
+  if (totalMinutes > 120) return '偏高';
+  return '正常';
+}
 
 export const attendanceService = {
-  queryBoard(params: AttendanceBoardQuery = {}) {
+  async queryBoard(params: AttendanceBoardQuery = {}) {
+    const result = await apiRequest<PageResult<{
+      id: string;
+      studentId: string;
+      campusId?: string | null;
+      eventType: string;
+      eventTime: string;
+      remark?: string | null;
+    }>>(`/attendance/events${buildQuery({ ...params, dateFrom: params.date, dateTo: params.date })}`);
+
+    const latestEvents: AttendanceEventItem[] = result.list.map((item) => ({
+      eventId: item.id,
+      studentName: toStudentName(item.studentId),
+      eventType: toEventTypeName(item.eventType),
+      happenedAt: formatAt(item.eventTime),
+      campusName: toCampusName(item.campusId),
+      status: toEventStatus(item),
+      note: item.remark ?? '设备自动写入',
+    }));
+
+    const abnormalEvents = latestEvents.filter((item) => item.status !== '正常');
+    const normalCheckins = latestEvents.filter((item) => item.eventType === '签到').length;
+
     return {
       filters: params,
       metrics: [
-        { label: '今日已签到', value: '182', hint: '较昨日 +12' },
-        { label: '未签到', value: '17', hint: '按校区/日期可钻取' },
-        { label: '异常签到', value: '6', hint: '迟到/重复/手动修正' },
-        { label: '最近 1h 事件', value: '29', hint: '事件流滚动占位' },
+        { label: '今日事件', value: String(result.page.total), hint: 'attendance/events 真接口' },
+        { label: '签到数', value: String(normalCheckins), hint: '按当天 checkin 事件统计' },
+        { label: '异常事件', value: String(abnormalEvents.length), hint: '迟到 / 补录 / 其他异常' },
+        { label: '最近 1h 事件', value: String(latestEvents.slice(0, 5).length), hint: '当前先按最新事件窗口展示' },
       ],
-      absentStudents: [
-        { name: '周奕辰', detail: '贵阳主校区 · 数学班 · 待联系家长' },
-        { name: '何沐言', detail: '南明校区 · 英语班 · 预计迟到' },
-        { name: '许嘉禾', detail: '观山湖校区 · 尚无设备事件' },
-      ],
-      abnormalRecords: [
-        { name: '迟到告警', detail: '林一诺 · 08:37 入场 · 超时 22 分钟' },
-        { name: '重复刷卡', detail: '陈启元 · 08:05 / 08:06 连续触发' },
-        { name: '人工补录', detail: '赵安安 · 前台补签到待备注闭环' },
-      ],
-      eventTimeline: attendanceEvents.map((item) => ({ title: `${item.happenedAt} · ${item.studentName} · ${item.eventType}`, detail: `${item.campusName} · ${item.status} · ${item.note}` })),
-      latestEvents: attendanceEvents,
-      actionNotice: '保留 POST /attendance/events 手动补签到、备注修正与去重说明位。',
+      absentStudents: result.page.total
+        ? []
+        : [{ name: '暂无当日事件', detail: '后端未提供 roster/应到名单接口，缺真正未签到名单口径。' }],
+      abnormalRecords: abnormalEvents.length
+        ? abnormalEvents.map((item) => ({ name: item.eventType, detail: `${item.studentName} · ${item.happenedAt} · ${item.note}` }))
+        : [{ name: '暂无异常', detail: '当前筛选条件下未命中异常事件。' }],
+      eventTimeline: latestEvents.map((item) => ({ title: `${item.happenedAt} · ${item.studentName} · ${item.eventType}`, detail: `${item.campusName} · ${item.status} · ${item.note}` })),
+      latestEvents,
+      actionNotice: 'POST /attendance/events 真接口已在；未签到名单与异常修正原因库因缺 roster / workflow API 暂保留说明位。',
     };
   },
-  queryDevices(params: AttendanceDeviceQuery = {}): PageResult<DeviceItem> {
+
+  async queryDevices(params: AttendanceDeviceQuery = {}): Promise<PageResult<DeviceItem>> {
+    const devices = await apiRequest<PageResult<{ id: string; serialNo: string; deviceType: string; campusId?: string | null; status: string }>>(`/attendance/devices${buildQuery(params)}`);
+    const bindings = await apiRequest<PageResult<{ deviceId: string; studentId: string; status: string }>>(`/attendance/devices/bindings${buildQuery({ pageNo: 1, pageSize: 200, status: 'active' })}`);
+    const activeBindingByDevice = new Map(bindings.list.map((item) => [item.deviceId, item]));
+
     return {
-      list: devices,
-      page: { pageNo: params.pageNo ?? 1, pageSize: params.pageSize ?? 20, total: devices.length },
+      ...devices,
+      list: devices.list.map((item) => ({
+        deviceId: item.id,
+        deviceSn: item.serialNo,
+        deviceType: toDeviceTypeName(item.deviceType),
+        campusName: toCampusName(item.campusId),
+        currentStudentName: toStudentName(activeBindingByDevice.get(item.id)?.studentId),
+        status: item.status,
+        actionHint: item.status === 'bound' ? '可解绑 / 更换学生' : '可直接绑定学生',
+      })),
     };
   },
-  queryCurrentBindings(params: AttendanceDeviceQuery = {}): PageResult<BindingItem> {
+
+  async queryCurrentBindings(params: AttendanceDeviceQuery = {}): Promise<PageResult<BindingItem>> {
+    const bindings = await apiRequest<PageResult<{ id: string; deviceId: string; studentId: string; boundAt: string; unboundAt?: string | null; status: string }>>(`/attendance/devices/bindings${buildQuery({ ...params, status: 'active' })}`);
+    const devices = await apiRequest<PageResult<{ id: string; serialNo: string }>>('/attendance/devices?pageNo=1&pageSize=200');
+    const deviceSerialById = new Map(devices.list.map((item) => [item.id, item.serialNo]));
+
     return {
-      list: currentBindings,
-      page: { pageNo: params.pageNo ?? 1, pageSize: params.pageSize ?? 20, total: currentBindings.length },
+      ...bindings,
+      list: bindings.list.map((item) => ({
+        bindingId: item.id,
+        deviceSn: deviceSerialById.get(item.deviceId) ?? item.deviceId,
+        studentName: toStudentName(item.studentId),
+        startedAt: formatAt(item.boundAt),
+        endedAt: '--',
+        status: '当前绑定',
+      })),
     };
   },
-  queryBindingHistory(params: AttendanceDeviceQuery = {}): PageResult<BindingItem> {
+
+  async queryBindingHistory(params: AttendanceDeviceQuery = {}): Promise<PageResult<BindingItem>> {
+    const bindings = await apiRequest<PageResult<{ id: string; deviceId: string; studentId: string; boundAt: string; unboundAt?: string | null; status: string }>>(`/attendance/devices/bindings${buildQuery({ ...params, status: 'inactive' })}`);
+    const devices = await apiRequest<PageResult<{ id: string; serialNo: string }>>('/attendance/devices?pageNo=1&pageSize=200');
+    const deviceSerialById = new Map(devices.list.map((item) => [item.id, item.serialNo]));
+
     return {
-      list: bindingHistory,
-      page: { pageNo: params.pageNo ?? 1, pageSize: params.pageSize ?? 20, total: bindingHistory.length },
+      ...bindings,
+      list: bindings.list.map((item) => ({
+        bindingId: item.id,
+        deviceSn: deviceSerialById.get(item.deviceId) ?? item.deviceId,
+        studentName: toStudentName(item.studentId),
+        startedAt: formatAt(item.boundAt),
+        endedAt: formatAt(item.unboundAt),
+        status: '已解绑',
+      })),
     };
   },
+
   actionBinding() {
     return {
       bindPermission: 'attendance:devices:manage',
       unbindPermission: 'attendance:devices:manage',
-      note: '绑定/解绑动作统一走 service.action，后续接 POST /attendance/devices/bindings。',
+      note: '设备/绑定列表已换真接口；批量绑定、批量换绑工作流仍待后端补批处理接口。',
     };
   },
-  queryHomeworkTime(params: HomeworkTimeQuery = {}): PageResult<HomeworkTimeItem> {
+
+  async queryHomeworkTime(params: HomeworkTimeQuery = {}): Promise<PageResult<HomeworkTimeItem>> {
+    const result = await apiRequest<PageResult<{ id: string; studentId: string; statDate: string; subject: string; totalMinutes: number; sessionCount: number }>>(`/attendance/homework-time/daily-stats${buildQuery(params)}`);
     return {
-      list: homeworkTimeRows,
-      page: { pageNo: params.pageNo ?? 1, pageSize: params.pageSize ?? 20, total: homeworkTimeRows.length },
+      ...result,
+      list: result.list.map((item) => ({
+        recordId: item.id,
+        studentName: toStudentName(item.studentId),
+        date: item.statDate,
+        subject: item.subject,
+        totalMinutes: String(item.totalMinutes),
+        sessionCount: String(item.sessionCount),
+        exceptionFlag: toExceptionFlag(item.totalMinutes),
+      })),
     };
   },
-  detailHomeworkTime() {
+
+  detailHomeworkTime(result: PageResult<HomeworkTimeItem>) {
+    const totalMinutes = result.list.reduce((sum, item) => sum + Number(item.totalMinutes), 0);
+    const totalSessions = result.list.reduce((sum, item) => sum + Number(item.sessionCount), 0);
+    const averageMinutes = result.list.length ? Math.round(totalMinutes / result.list.length) : 0;
+    const subjectBreakdown = Array.from(result.list.reduce((map, item) => map.set(item.subject, (map.get(item.subject) ?? 0) + Number(item.totalMinutes)), new Map<string, number>()).entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([subject, minutes]) => ({ name: subject, detail: `${minutes} 分钟` }));
+    const topStudents = [...result.list]
+      .sort((a, b) => Number(b.totalMinutes) - Number(a.totalMinutes))
+      .slice(0, 3)
+      .map((item) => ({ name: item.studentName, detail: `${item.totalMinutes} 分钟 / ${item.sessionCount} 次` }));
+    const exceptions = result.list
+      .filter((item) => item.exceptionFlag !== '正常')
+      .map((item) => ({ name: `${item.exceptionFlag}提醒`, detail: `${item.studentName} · ${item.subject} · ${item.totalMinutes} 分钟` }));
+
     return {
+      metrics: [
+        { label: '总分钟', value: String(totalMinutes), hint: 'attendance/homework-time/daily-stats 真接口' },
+        { label: '人均投入', value: `${averageMinutes}min`, hint: '按当前筛选记录均值' },
+        { label: '异常学生', value: String(exceptions.length), hint: '偏低 / 偏高规则先按分钟阈值' },
+        { label: '有效会话', value: String(totalSessions), hint: '来自 dailyStats.sessionCount 聚合' },
+      ],
       stats: [
-        { name: '日统计', detail: '今日总时长 11.8h / 人均 71 分钟' },
-        { name: '趋势图', detail: '支持按日/周切换，暂无真实 ECharts 数据源时用占位卡' },
-        { name: '学科分布', detail: '数学 41% / 英语 28% / 语文 19%' },
-        { name: '学生排行', detail: '张小北 85min / 赵安安 102min / 陈启元 76min' },
+        { name: '日统计', detail: `当前筛选总计 ${totalMinutes} 分钟 / ${totalSessions} 次会话` },
+        { name: '趋势图', detail: '后端暂未提供时间序列专用接口，先用 daily stats 汇总占位。' },
+        { name: '学科分布', detail: subjectBreakdown.length ? subjectBreakdown.map((item) => `${item.name} ${item.detail}`).join(' / ') : '暂无数据' },
+        { name: '学生排行', detail: topStudents.length ? topStudents.map((item) => `${item.name} ${item.detail}`).join(' / ') : '暂无数据' },
       ],
-      exceptions: [
-        { name: '偏低提醒', detail: '林一诺 · 英语作业仅 55 分钟' },
-        { name: '断点会话', detail: '陈启元 · 3 次短会话待识别是否碎片化' },
-      ],
+      exceptions: exceptions.length ? exceptions : [{ name: '暂无异常', detail: '当前筛选条件下未命中偏低/偏高记录。' }],
     };
   },
 };

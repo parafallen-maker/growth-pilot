@@ -1,4 +1,7 @@
-import { Body, Controller, Get, Headers, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiAuthGuard } from '../../../common/auth.guard';
+import { PermissionGuard } from '../../../common/permission.guard';
+import { RequirePermission } from '../../../common/permission.decorator';
 import { ok } from '../../../common/api-response';
 import { AttendanceEventQueryDto } from '../dto/attendance-event-query.dto';
 import { CreateAttendanceEventDto } from '../dto/create-attendance-event.dto';
@@ -11,10 +14,12 @@ import { UpdateDeviceBindingDto } from '../dto/update-device-binding.dto';
 import { AttendanceService } from '../service/attendance.service';
 
 @Controller('attendance')
+@UseGuards(ApiAuthGuard, PermissionGuard)
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   @Get('devices')
+  @RequirePermission('attendance:devices:view')
   listDevices(@Query() query: DeviceQueryDto) {
     return ok(this.attendanceService.listDevices(query));
   }
