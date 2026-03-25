@@ -6,6 +6,7 @@ type RedisClientLike = {
   expire(key: string, seconds: number): Promise<number>;
   get(key: string): Promise<string | null>;
   incr(key: string): Promise<number>;
+  on?(event: string, listener: (...args: unknown[]) => void): unknown;
   ping?(): Promise<'PONG' | string>;
   quit(): Promise<'OK' | void>;
   set(key: string, value: string, mode: 'EX', ttlSeconds: number): Promise<'OK' | null>;
@@ -54,6 +55,7 @@ export class RedisKvService implements OnModuleDestroy {
         lazyConnect: false,
         maxRetriesPerRequest: 1,
       });
+      client.on?.('error', () => undefined);
       await client.ping?.();
       return client;
     } catch {

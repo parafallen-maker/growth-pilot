@@ -229,15 +229,18 @@
 - [/] `BE-23` 接入 Redis（session cache / rate limit）
   - 已接入 `RedisKvService`、auth session cache、login/refresh rate limit，并在 refresh rotation / logout 时同步驱逐缓存；未配置 `REDIS_URL` 或未安装 `ioredis` 时自动回退内存实现。
   - 2026-03-25：补上 Redis client probe，避免 `REDIS_URL` 已配置但 Redis 不可达时把坏连接注入 auth 链路；新增 `apps/api/test/be23-be25.test.ts`，用 injected Redis-compatible runtime 验证 session cache / rate limit 的 Redis 路径与失联 fallback。
-  - 当前仍保持 `[/]`：本 sandbox 无 Docker socket 权限，且当前已安装 `node_modules` / `package-lock` 中不含 `ioredis`，未能在本地完成真实 Redis 连通性验收。
+  - 2026-03-26：Redis client probe 现在会预先挂载 `error` listener，避免真实探活失败时抛出未处理的 `ioredis` error 噪音；`apps/api/test/be23-be25.live.ts` 也已改为逐项顺序执行并分别报告 BE-23/24/25 结果。
+  - 2026-03-26 实测：`cd apps/api && node --import tsx --test test/be23-be25.test.ts` 通过（4/4）；随后执行 `node -e "const net=require('node:net'); ..."` 直连探测 `127.0.0.1:6379` / `127.0.0.1:9000`，两者均返回 `connect EPERM ... - Local (0.0.0.0:0)`。在此基础上执行 `cd apps/api && REDIS_URL=redis://127.0.0.1:6379 S3_ENDPOINT=http://127.0.0.1:9000 S3_ACCESS_KEY=minioadmin S3_SECRET_KEY=minioadmin S3_BUCKET=growthpilot-dev npm run validate:live:be23-be25`，BE-23 仍会因 `RedisKvService` 探活失败而报 `Expected RedisKvService to connect to a real Redis instance`；因此当前保持 `[/]`。
 - [/] `BE-24` 接入 BullMQ worker（homework AI analyze job / growth report draft job）
   - 已新增 `BullmqJobBroker`、queue constants/types、独立 `worker.ts` / `WorkerModule`，homework analysis 与 growth report draft 在 `JOB_QUEUE_DRIVER=bullmq` 时走队列，默认保留 inline fallback。
   - 2026-03-25：补上 broker env parsing（`JOB_QUEUE_WORKER_CONCURRENCY` / `REMOVE_ON_*`）、可注入 runtime loader，以及 growth report inline fallback 的拒绝保护；新增 `apps/api/test/be23-be25.test.ts`，用 fake BullMQ runtime 注册真实 worker callback，跑通 homework analysis / growth report draft 的 queue -> worker -> job success 链路。
-  - 当前仍保持 `[/]`：本 sandbox 无 Docker socket 权限，且当前已安装 `node_modules` / `package-lock` 中不含 `bullmq` / `ioredis`，未能在本地完成真实 Redis-backed BullMQ worker 消费验收。
+  - 2026-03-25 追加：新增 `apps/api/test/be23-be25.live.ts`，在真实 `ioredis` / `bullmq` 可安装时会注册实际 worker、入队 `homework_analysis` 与 `growth_report_generate`，并轮询 job 状态直到 `success`，用于替代当前 fake runtime 验证。
+  - 2026-03-26 实测：同一条 live 命令下，BE-24 在启动 BullMQ worker 前先复用 Redis 真连通 probe，因此当前会快速失败于 `Expected RedisKvService to connect to a real Redis instance`，避免 Redis 不可达时由 BullMQ 持续重试刷屏；根因仍是本 session 对 `127.0.0.1:6379` 的直连探测返回 `connect EPERM 127.0.0.1:6379 - Local (0.0.0.0:0)`，当前继续保持 `[/]`。
 - [/] `BE-25` files adapter 接入 MinIO/S3 SDK
   - 已新增 `S3ObjectStorageAdapter`，支持 `OBJECT_STORAGE_DRIVER=s3`、MinIO path-style 配置、signed/public URL 解析，并让 files service/controller 全链路支持异步 URL 生成。
   - 2026-03-25：补上可注入 SDK loader，新增 `apps/api/test/be23-be25.test.ts` 验证 `putObject` command 构造、MinIO path-style client config、signed URL 生成，以及 files service 的 file asset 持久化链路。
-  - 当前仍保持 `[/]`：本 sandbox 无 Docker socket 权限，且当前已安装 `node_modules` / `package-lock` 中不含 `@aws-sdk/client-s3` / `@aws-sdk/s3-request-presigner`，未能在本地完成真实 MinIO/S3 对象写入验收。
+  - 2026-03-25 追加：`docker-compose.yml` 新增 `minio-create-bucket` init service，避免本地 MinIO 首次启动时缺少 `growthpilot-dev` bucket 导致 live upload 直接失败；`apps/api/test/be23-be25.live.ts` 也会在 SDK 可用时先执行 bucket existence probe / create，再跑真实 `uploadMultipartFile` 与 `HeadObject` 验证。
+  - 2026-03-26 实测：同一条 live 命令下，BE-25 已触发真实 MinIO/S3 SDK 连接与 bucket/object probe，但连接 `http://127.0.0.1:9000` 时仍返回 `connect EPERM 127.0.0.1:9000 - Local (0.0.0.0:0)`；因此真实对象写入仍未在本 session 中完成，当前保持 `[/]`。
 
 **验收（Phase 1+2 最低要求）**：
 - `docker compose up -d` 后数据库可连接
