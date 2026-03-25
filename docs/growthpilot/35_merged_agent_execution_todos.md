@@ -459,11 +459,12 @@
   - 生产环境强制 HTTPS-only cookie
   - 2026-03-25：启动前强制校验 `JWT_SECRET` 非默认值且长度 ≥ 32；auth 控制器新增 `HttpOnly` cookie 下发与清理，生产环境自动强制 `secure`。
 
-- [/] `BE-35` **密码安全**：
+- [x] `BE-35` **密码安全**：
   - 用户密码使用 `bcrypt`（cost factor ≥ 12）存储
   - 禁止明文密码存储和传输
   - 2026-03-25：已彻底去掉明文密码存储与比对，改为 Node.js `scrypt` 哈希（seed/file/db default users 与 create user 全部改为 hash）；本轮补充了 `PasswordService` 与 file 持久化定向测试，确认默认用户与新建用户只落库 hash、接口返回不暴露密码字段。
-  - 2026-03-25：当前仓库 lockfile / 已安装依赖均不含 `bcrypt`，且本 sandbox 无法联网补装新包，因此仍未满足 checklist 指定的 `bcrypt(cost>=12)` 字面要求，状态保持 `[/]`。
+  - 2026-03-26：已将共享 `PasswordService` 从 `scrypt` 切到 `bcrypt`，统一使用 cost factor `12`；seed/file/db 默认用户、新建用户与凭证校验全部复用同一 bcrypt 路径，接口响应继续不暴露密码字段。
+  - 2026-03-26：已补齐 `apps/api` 的 `bcrypt` 依赖声明并更新断言；本轮实测通过 `npm run test --workspace @growthpilot/api`（39/39）与 `npm run typecheck --workspace @growthpilot/api`，覆盖密码哈希、seed/default users、凭证校验与响应脱敏链路。
 
 - [x] `BE-36` **敏感数据脱敏**：
   - API 响应中隐藏密码、token 等敏感字段

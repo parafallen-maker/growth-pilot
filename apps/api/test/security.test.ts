@@ -9,17 +9,17 @@ function resetUsersPersistence() {
   rmSync('.data/users.json', { force: true });
 }
 
-test('password service hashes with scrypt and rejects invalid hash payloads', () => {
+test('password service hashes with bcrypt and rejects invalid hash payloads', () => {
   const passwordService = new PasswordService();
   const password = 'Admin123!Secure';
   const hash = passwordService.hash(password);
 
   assert.notEqual(hash, password);
-  assert.match(hash, /^scrypt\$\d+\$\d+\$\d+\$[A-Za-z0-9_-]+\$[A-Za-z0-9_-]+$/);
+  assert.match(hash, /^\$2[aby]\$12\$/);
   assert.equal(passwordService.verify(password, hash), true);
   assert.equal(passwordService.verify('wrong-password', hash), false);
   assert.equal(passwordService.verify(password, 'admin123'), false);
-  assert.equal(passwordService.verify(password, 'bcrypt$12$not-a-real-hash'), false);
+  assert.equal(passwordService.verify(password, '$2b$12$not-a-real-hash'), false);
 });
 
 test('seeded and newly created users persist only password hashes', async () => {
@@ -53,8 +53,8 @@ test('seeded and newly created users persist only password hashes', async () => 
 
   assert.ok(persistedAdmin);
   assert.ok(persistedTeacher);
-  assert.match(persistedAdmin.passwordHash, /^scrypt\$/);
-  assert.match(persistedTeacher.passwordHash, /^scrypt\$/);
+  assert.match(persistedAdmin.passwordHash, /^\$2[aby]\$12\$/);
+  assert.match(persistedTeacher.passwordHash, /^\$2[aby]\$12\$/);
   assert.notEqual(persistedAdmin.passwordHash, 'admin123');
   assert.notEqual(persistedTeacher.passwordHash, 'Teacher123!Secure');
 });

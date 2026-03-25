@@ -133,7 +133,7 @@ export async function seedDatabase(databaseUrl = process.env.DATABASE_URL) {
   }
 
   const pool = new Pool({ connectionString: databaseUrl });
-  const db = drizzle(pool);
+  const db = drizzle({ client: pool });
   const plan = buildSeedPlan();
 
   try {
