@@ -1,4 +1,4 @@
-import { DataTable, FilterBar, MetricGrid, PageHeader, StateBlock } from '@/components/business/page-blocks';
+import { DataTable, FilterBar, MetricGrid, PageHeader, SummaryPanel } from '@/components/business/page-blocks';
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { billingPermissions } from '@/features/billing/constants';
 import { queryKeys } from '@/features/shared/query-keys';
@@ -16,7 +16,7 @@ export default async function BillingProductsPage() {
       <div className="stack">
         <PageHeader
           title="收费产品"
-          description={`P20 已切到 billing/products 真接口，金额统一按元展示。query key: ${JSON.stringify(queryKeys.billingProducts(filters))}`}
+          description={`当前展示 billing/products 真实数据，金额统一按元展示。query key: ${JSON.stringify(queryKeys.billingProducts(filters))}`}
           actions={<><button className="btn primary">新建产品</button><button className="btn">编辑</button><button className="btn">停用</button></>}
         />
         <MetricGrid items={[
@@ -26,14 +26,14 @@ export default async function BillingProductsPage() {
           { label: '金额口径', value: '元', hint: 'VO 层统一由 cents 转元' },
         ]} />
         <FilterBar fields={[
-          { label: '家庭筛选', value: '待补统一 family filter', kind: 'select' },
-          { label: '学生筛选', value: '待补统一 student filter', kind: 'select' },
+          { label: '家庭维度', value: '全部家庭', kind: 'select' },
+          { label: '学生维度', value: '全部学生', kind: 'select' },
           { label: '关键词', value: '产品编码 / 名称' },
           { label: '状态', value: '启用中', kind: 'select' },
           { label: '计费模式', value: '全部模式', kind: 'select' },
         ]} />
         <DataTable title="产品列表" columns={['产品编码', '名称', '计费模式', '单价（元）', '状态', '动作']} rows={result.list.map((item) => [item.productCode, item.name, item.billingMode, item.unitPriceYuan, item.status, '编辑 / 停用'])} />
-        <div className="grid-2"><StateBlock state="loading" title="产品列表 loading" /><StateBlock state="error" title="产品列表 error" /></div>
+        <SummaryPanel title="页面说明" items={[{ name: '数据展示', detail: '当前页直接消费真实产品列表；无数据时保留表头和筛选项。' }]} />
       </div>
     </PermissionGuard>
   );

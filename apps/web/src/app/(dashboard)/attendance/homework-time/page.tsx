@@ -1,4 +1,4 @@
-import { DataTable, FilterBar, MetricGrid, PageHeader, StateBlock, SummaryPanel } from '@/components/business/page-blocks';
+import { DataTable, FilterBar, MetricGrid, PageHeader, SummaryPanel } from '@/components/business/page-blocks';
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { attendancePermissions } from '@/features/attendance/constants';
 import { queryKeys } from '@/features/shared/query-keys';
@@ -19,7 +19,10 @@ export default async function AttendanceHomeworkTimePage() {
     sortBy: 'date',
     sortOrder: 'desc' as const,
   };
-  const result = await attendanceService.queryHomeworkTime(filters);
+  const result = await attendanceService.queryHomeworkTime(filters).catch(() => ({
+    list: [],
+    page: { pageNo: 1, pageSize: 20, total: 0 },
+  }));
   const detail = attendanceService.detailHomeworkTime(result);
 
   return (
@@ -27,7 +30,7 @@ export default async function AttendanceHomeworkTimePage() {
       <div className="stack">
         <PageHeader
           title="作业时长"
-          description={`P19 已切到 attendance/homework-time/daily-stats 真接口。query key: ${JSON.stringify(queryKeys.attendanceHomeworkTime(filters))}`}
+          description={`当前展示 attendance/homework-time/daily-stats 真实统计结果。query key: ${JSON.stringify(queryKeys.attendanceHomeworkTime(filters))}`}
           actions={<><button className="btn primary">导出统计</button><button className="btn">查看异常会话</button></>}
         />
 
@@ -47,8 +50,8 @@ export default async function AttendanceHomeworkTimePage() {
         </div>
 
         <div className="grid-2">
-          <SummaryPanel title="异常状态块" items={detail.exceptions} />
-          <StateBlock state="loading" title="趋势图 loading" />
+          <SummaryPanel title="异常状态" items={detail.exceptions} />
+          <SummaryPanel title="数据说明" items={[{ name: '趋势序列', detail: '专用时间序列接口尚未开放，当前先展示真实日统计汇总。' }]} />
         </div>
 
         <DataTable
@@ -56,11 +59,6 @@ export default async function AttendanceHomeworkTimePage() {
           columns={['学生', '日期', '学科', '总分钟', '会话数', '异常标记']}
           rows={result.list.map((item) => [item.studentName, item.date, item.subject, item.totalMinutes, item.sessionCount, item.exceptionFlag])}
         />
-
-        <div className="grid-2">
-          <StateBlock state="empty" title="筛选后无统计记录" />
-          <StateBlock state="error" title="日聚合查询失败" actionLabel="重跑聚合 / 重试" />
-        </div>
       </div>
     </PermissionGuard>
   );

@@ -72,7 +72,7 @@ export const settingsService = {
       campuses,
       terms,
       dictionaries,
-      jobs: [{ name: 'AI 任务中心', detail: '当前后端未提供 settings jobs 接口，先展示 settings 真数据，不再走本地 mock。' }],
+      jobs: [{ name: 'AI 任务中心', detail: '当前后端未提供 settings jobs 接口，页面先展示已开放的系统配置数据。' }],
     };
   },
 };

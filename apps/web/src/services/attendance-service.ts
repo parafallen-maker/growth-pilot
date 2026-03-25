@@ -1,5 +1,6 @@
-import { apiRequest, type PageResult } from '@/lib/api-client';
+import type { PageResult } from '@/lib/api-client';
 import type { QueryBase } from '@/features/shared/types';
+import { serverApiRequest } from '@/lib/server-api';
 
 export type AttendanceBoardQuery = QueryBase & {
   date?: string;
@@ -58,20 +59,6 @@ type HomeworkTimeItem = {
   exceptionFlag: string;
 };
 
-const studentNameMap: Record<string, string> = {
-  'student-001': '张小北',
-  'student-002': '林一诺',
-  'student-003': '赵安安',
-  'student-004': '陈启元',
-};
-
-const campusNameMap: Record<string, string> = {
-  'campus-001': '贵阳主校区',
-  'campus-002': '南明校区',
-  'campus-003': '观山湖校区',
-  'campus-guiyang': '贵阳主校区',
-};
-
 const deviceTypeMap: Record<string, string> = {
   beacon: '手环',
   card: '卡片',
@@ -97,16 +84,12 @@ function formatAt(value?: string | null) {
   return value ? value.replace('T', ' ').slice(0, 16) : '--';
 }
 
-function formatDate(value?: string | null) {
-  return value ? value.slice(0, 10) : '--';
+function toStudentName(studentId: string | null | undefined, studentNameById: Map<string, string>) {
+  return studentId ? studentNameById.get(studentId) ?? studentId : '--';
 }
 
-function toStudentName(studentId?: string | null) {
-  return studentId ? studentNameMap[studentId] ?? studentId : '--';
-}
-
-function toCampusName(campusId?: string | null) {
-  return campusId ? campusNameMap[campusId] ?? campusId : '--';
+function toCampusName(campusId: string | null | undefined, campusNameById: Map<string, string>) {
+  return campusId ? campusNameById.get(campusId) ?? campusId : '--';
 }
 
 function toDeviceTypeName(deviceType?: string | null) {
@@ -129,23 +112,37 @@ function toExceptionFlag(totalMinutes: number) {
   return '正常';
 }
 
+async function fetchStudentNameById() {
+  const result = await serverApiRequest<PageResult<{ id: string; name: string }>>('/students?pageNo=1&pageSize=200');
+  return new Map(result.list.map((item) => [item.id, item.name]));
+}
+
+async function fetchCampusNameById() {
+  const result = await serverApiRequest<PageResult<{ id: string; name: string }>>('/settings/campuses?pageNo=1&pageSize=200');
+  return new Map(result.list.map((item) => [item.id, item.name]));
+}
+
 export const attendanceService = {
   async queryBoard(params: AttendanceBoardQuery = {}) {
-    const result = await apiRequest<PageResult<{
-      id: string;
-      studentId: string;
-      campusId?: string | null;
-      eventType: string;
-      eventTime: string;
-      remark?: string | null;
-    }>>(`/attendance/events${buildQuery({ ...params, dateFrom: params.date, dateTo: params.date })}`);
+    const [result, studentNameById, campusNameById] = await Promise.all([
+      serverApiRequest<PageResult<{
+        id: string;
+        studentId: string;
+        campusId?: string | null;
+        eventType: string;
+        eventTime: string;
+        remark?: string | null;
+      }>>(`/attendance/events${buildQuery({ ...params, dateFrom: params.date, dateTo: params.date })}`),
+      fetchStudentNameById(),
+      fetchCampusNameById(),
+    ]);
 
     const latestEvents: AttendanceEventItem[] = result.list.map((item) => ({
       eventId: item.id,
-      studentName: toStudentName(item.studentId),
+      studentName: toStudentName(item.studentId, studentNameById),
       eventType: toEventTypeName(item.eventType),
       happenedAt: formatAt(item.eventTime),
-      campusName: toCampusName(item.campusId),
+      campusName: toCampusName(item.campusId, campusNameById),
       status: toEventStatus(item),
       note: item.remark ?? '设备自动写入',
     }));
@@ -174,8 +171,12 @@ export const attendanceService = {
   },
 
   async queryDevices(params: AttendanceDeviceQuery = {}): Promise<PageResult<DeviceItem>> {
-    const devices = await apiRequest<PageResult<{ id: string; serialNo: string; deviceType: string; campusId?: string | null; status: string }>>(`/attendance/devices${buildQuery(params)}`);
-    const bindings = await apiRequest<PageResult<{ deviceId: string; studentId: string; status: string }>>(`/attendance/devices/bindings${buildQuery({ pageNo: 1, pageSize: 200, status: 'active' })}`);
+    const [devices, bindings, studentNameById, campusNameById] = await Promise.all([
+      serverApiRequest<PageResult<{ id: string; serialNo: string; deviceType: string; campusId?: string | null; status: string }>>(`/attendance/devices${buildQuery(params)}`),
+      serverApiRequest<PageResult<{ deviceId: string; studentId: string; status: string }>>(`/attendance/devices/bindings${buildQuery({ pageNo: 1, pageSize: 200, status: 'active' })}`),
+      fetchStudentNameById(),
+      fetchCampusNameById(),
+    ]);
     const activeBindingByDevice = new Map(bindings.list.map((item) => [item.deviceId, item]));
 
     return {
@@ -184,8 +185,8 @@ export const attendanceService = {
         deviceId: item.id,
         deviceSn: item.serialNo,
         deviceType: toDeviceTypeName(item.deviceType),
-        campusName: toCampusName(item.campusId),
-        currentStudentName: toStudentName(activeBindingByDevice.get(item.id)?.studentId),
+        campusName: toCampusName(item.campusId, campusNameById),
+        currentStudentName: toStudentName(activeBindingByDevice.get(item.id)?.studentId, studentNameById),
         status: item.status,
         actionHint: item.status === 'bound' ? '可解绑 / 更换学生' : '可直接绑定学生',
       })),
@@ -193,8 +194,11 @@ export const attendanceService = {
   },
 
   async queryCurrentBindings(params: AttendanceDeviceQuery = {}): Promise<PageResult<BindingItem>> {
-    const bindings = await apiRequest<PageResult<{ id: string; deviceId: string; studentId: string; boundAt: string; unboundAt?: string | null; status: string }>>(`/attendance/devices/bindings${buildQuery({ ...params, status: 'active' })}`);
-    const devices = await apiRequest<PageResult<{ id: string; serialNo: string }>>('/attendance/devices?pageNo=1&pageSize=200');
+    const [bindings, devices, studentNameById] = await Promise.all([
+      serverApiRequest<PageResult<{ id: string; deviceId: string; studentId: string; boundAt: string; unboundAt?: string | null; status: string }>>(`/attendance/devices/bindings${buildQuery({ ...params, status: 'active' })}`),
+      serverApiRequest<PageResult<{ id: string; serialNo: string }>>('/attendance/devices?pageNo=1&pageSize=200'),
+      fetchStudentNameById(),
+    ]);
     const deviceSerialById = new Map(devices.list.map((item) => [item.id, item.serialNo]));
 
     return {
@@ -202,7 +206,7 @@ export const attendanceService = {
       list: bindings.list.map((item) => ({
         bindingId: item.id,
         deviceSn: deviceSerialById.get(item.deviceId) ?? item.deviceId,
-        studentName: toStudentName(item.studentId),
+        studentName: toStudentName(item.studentId, studentNameById),
         startedAt: formatAt(item.boundAt),
         endedAt: '--',
         status: '当前绑定',
@@ -211,8 +215,11 @@ export const attendanceService = {
   },
 
   async queryBindingHistory(params: AttendanceDeviceQuery = {}): Promise<PageResult<BindingItem>> {
-    const bindings = await apiRequest<PageResult<{ id: string; deviceId: string; studentId: string; boundAt: string; unboundAt?: string | null; status: string }>>(`/attendance/devices/bindings${buildQuery({ ...params, status: 'inactive' })}`);
-    const devices = await apiRequest<PageResult<{ id: string; serialNo: string }>>('/attendance/devices?pageNo=1&pageSize=200');
+    const [bindings, devices, studentNameById] = await Promise.all([
+      serverApiRequest<PageResult<{ id: string; deviceId: string; studentId: string; boundAt: string; unboundAt?: string | null; status: string }>>(`/attendance/devices/bindings${buildQuery({ ...params, status: 'inactive' })}`),
+      serverApiRequest<PageResult<{ id: string; serialNo: string }>>('/attendance/devices?pageNo=1&pageSize=200'),
+      fetchStudentNameById(),
+    ]);
     const deviceSerialById = new Map(devices.list.map((item) => [item.id, item.serialNo]));
 
     return {
@@ -220,7 +227,7 @@ export const attendanceService = {
       list: bindings.list.map((item) => ({
         bindingId: item.id,
         deviceSn: deviceSerialById.get(item.deviceId) ?? item.deviceId,
-        studentName: toStudentName(item.studentId),
+        studentName: toStudentName(item.studentId, studentNameById),
         startedAt: formatAt(item.boundAt),
         endedAt: formatAt(item.unboundAt),
         status: '已解绑',
@@ -237,12 +244,15 @@ export const attendanceService = {
   },
 
   async queryHomeworkTime(params: HomeworkTimeQuery = {}): Promise<PageResult<HomeworkTimeItem>> {
-    const result = await apiRequest<PageResult<{ id: string; studentId: string; statDate: string; subject: string; totalMinutes: number; sessionCount: number }>>(`/attendance/homework-time/daily-stats${buildQuery(params)}`);
+    const [result, studentNameById] = await Promise.all([
+      serverApiRequest<PageResult<{ id: string; studentId: string; statDate: string; subject: string; totalMinutes: number; sessionCount: number }>>(`/attendance/homework-time/daily-stats${buildQuery(params)}`),
+      fetchStudentNameById(),
+    ]);
     return {
       ...result,
       list: result.list.map((item) => ({
         recordId: item.id,
-        studentName: toStudentName(item.studentId),
+        studentName: toStudentName(item.studentId, studentNameById),
         date: item.statDate,
         subject: item.subject,
         totalMinutes: String(item.totalMinutes),

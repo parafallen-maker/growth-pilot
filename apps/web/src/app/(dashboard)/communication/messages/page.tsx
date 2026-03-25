@@ -1,4 +1,4 @@
-import { DataTable, FilterBar, MetricGrid, PageHeader, StateBlock, SummaryPanel, TabStrip } from '@/components/business/page-blocks';
+import { DataTable, FilterBar, MetricGrid, PageHeader, SummaryPanel, TabStrip } from '@/components/business/page-blocks';
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { communicationPermissions, messageStatusTabs } from '@/features/communication/constants';
 import { queryKeys } from '@/features/shared/query-keys';
@@ -29,12 +29,12 @@ export default async function CommunicationMessagesPage() {
       <div className="stack">
         <PageHeader
           title="消息中心"
-          description={`P25 已从本地五段假区块切到 communication templates / message_tasks 真接口。query key: ${JSON.stringify(queryKeys.communicationMessages(filters))}`}
+          description={`当前展示 communication/templates 与 message_tasks 真实数据。query key: ${JSON.stringify(queryKeys.communicationMessages(filters))}`}
           actions={<><button className="btn primary">创建消息</button><button className="btn">立即发送</button><button className="btn">重试失败</button><button className="btn">查看回执</button></>}
         />
         <MetricGrid items={[
           { label: '模板数量', value: String(result.templates.page.total), hint: 'templates 真接口' },
-          { label: '草稿待补', value: String(result.drafts.page.total), hint: 'draft tasks' },
+          { label: '草稿箱', value: String(result.drafts.page.total), hint: 'draft tasks' },
           { label: '待发送', value: String(result.queued.page.total), hint: 'pending tasks' },
           { label: '失败 / 回执', value: `${result.failed.page.total} / ${result.sent.list.filter((item) => item.status === 'read').length}`, hint: 'failed + read 状态来自真接口' },
         ]} />
@@ -60,7 +60,6 @@ export default async function CommunicationMessagesPage() {
           <MessageStatusTable title="失败区块" columns={['类型', '家庭', '学生', '渠道', '失败时间', '状态', '动作']} rows={result.failed.list.map((item) => [item.messageType, item.familyName, item.studentName, item.channel, item.scheduledAt, item.status, item.actions])} />
         </div>
         <SummaryPanel title="状态设计 / 动作位" items={[...result.statusPanels, { name: '统一动作集', detail: action.actions.join(' / ') }, { name: '页面约束', detail: action.note }]} />
-        <div className="grid-2"><StateBlock state="loading" title="消息中心 loading" /><StateBlock state="error" title="消息中心 error" /></div>
       </div>
     </PermissionGuard>
   );

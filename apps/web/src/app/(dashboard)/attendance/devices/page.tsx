@@ -1,4 +1,4 @@
-import { DataTable, FilterBar, PageHeader, StateBlock, SummaryPanel, TabStrip } from '@/components/business/page-blocks';
+import { DataTable, FilterBar, PageHeader, SummaryPanel, TabStrip } from '@/components/business/page-blocks';
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { attendancePermissions } from '@/features/attendance/constants';
 import { queryKeys } from '@/features/shared/query-keys';
@@ -18,9 +18,18 @@ export default async function AttendanceDevicesPage() {
     sortBy: 'deviceSn',
     sortOrder: 'asc' as const,
   };
-  const devices = await attendanceService.queryDevices(deviceFilters);
-  const currentBindings = await attendanceService.queryCurrentBindings({ pageNo: 1, pageSize: 20, tab: 'current-bindings' });
-  const bindingHistory = await attendanceService.queryBindingHistory({ pageNo: 1, pageSize: 20, tab: 'binding-history' });
+  const devices = await attendanceService.queryDevices(deviceFilters).catch(() => ({
+    list: [],
+    page: { pageNo: 1, pageSize: 20, total: 0 },
+  }));
+  const currentBindings = await attendanceService.queryCurrentBindings({ pageNo: 1, pageSize: 20, tab: 'current-bindings' }).catch(() => ({
+    list: [],
+    page: { pageNo: 1, pageSize: 20, total: 0 },
+  }));
+  const bindingHistory = await attendanceService.queryBindingHistory({ pageNo: 1, pageSize: 20, tab: 'binding-history' }).catch(() => ({
+    list: [],
+    page: { pageNo: 1, pageSize: 20, total: 0 },
+  }));
   const action = attendanceService.actionBinding();
 
   return (
@@ -28,7 +37,7 @@ export default async function AttendanceDevicesPage() {
       <div className="stack">
         <PageHeader
           title="设备与绑定"
-          description={`P18 已从本地假数据切到 attendance devices / bindings 真接口。query key: ${JSON.stringify(queryKeys.attendanceDevices(deviceFilters))}`}
+          description={`当前展示 attendance/devices 与 bindings 真实数据。query key: ${JSON.stringify(queryKeys.attendanceDevices(deviceFilters))}`}
           actions={<><button className="btn primary">新增设备</button><button className="btn">绑定学生</button><button className="btn">解绑设备</button></>}
         />
 
@@ -69,7 +78,12 @@ export default async function AttendanceDevicesPage() {
               { name: 'service 分层', detail: action.note },
             ]}
           />
-          <StateBlock state="empty" title="无可绑定设备" />
+          <SummaryPanel
+            title="页面说明"
+            items={[
+              { name: '降级策略', detail: '当设备或绑定接口暂时不可用时，页面保留空表格与说明，不直接 SSR 失败。' },
+            ]}
+          />
         </div>
       </div>
     </PermissionGuard>

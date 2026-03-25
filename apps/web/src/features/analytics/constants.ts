@@ -4,4 +4,4 @@ export const analyticsPermissions = {
   billingView: 'analytics:billing:view',
 } as const;
 
-export const analyticsChartExportHint = '图表支持导出图片/截图，当前为占位骨架。';
+export const analyticsChartExportHint = '图表支持导出图片或截图，当前以摘要卡方式呈现聚合结果。';

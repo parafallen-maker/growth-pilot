@@ -308,11 +308,11 @@
 - [/] `FE-14` Billing products/contracts/invoices/renewals 各页面接真
   - 已接 `billing/products`、`billing/contracts`、`billing/contracts/{id}`、`billing/invoices`、`billing/renewals` 真接口；payments/refunds/adjustments 列表仍受后端接口缺口限制，页面明确显示缺口而不伪造数据。
 - [/] `FE-15` Attendance board/devices/homework-time 各页面接真
-  - 已接 `attendance/events`、`attendance/devices`、`attendance/devices/bindings`、`attendance/homework-time/daily-stats` 真接口；未签到名单 roster、异常修正 workflow、专用趋势序列仍待后端补齐。
+  - 已接 `attendance/events`、`attendance/devices`、`attendance/devices/bindings`、`attendance/homework-time/daily-stats` 真接口；本轮移除了前端硬编码 student/campus 映射，并为 `/attendance/*` 页面补了 SSR 降级，未签到名单 roster、异常修正 workflow、专用趋势序列仍待后端补齐。
 - [/] `FE-16` Communication records/messages 各页面接真
-  - 已接 `communication/records`、`communication/records/{id}`、`communication/templates`、`communication/message-tasks` 真接口；meeting/task 反查聚合与真实渠道发送 adapter 仍待后端。
+  - 已接 `communication/records`、`communication/records/{id}`、`communication/templates`、`communication/message-tasks` 真接口；本轮移除了 family/student 硬编码名称映射，改为通过现有 families/students 真接口补全展示名；meeting/task 反查聚合与真实渠道发送 adapter 仍待后端。
 - [/] `FE-17` Analytics overview/teaching/billing 各页面接真图表
-  - 已接 `analytics/overview`、`analytics/teaching`、`analytics/billing` 真聚合数据；当前以前端解读卡替代正式图表组件，真实图形化图表与导出仍可继续增强。
+  - 已接 `analytics/overview`、`analytics/teaching`、`analytics/billing` 真聚合数据；本轮去掉了页面内常驻 loading/empty/error 演示块并保留 SSR 友好降级；当前以前端解读卡替代正式图表组件，真实图形化图表与导出仍可继续增强。
 
 #### Phase 3：表单交互（P1）
 
@@ -331,10 +331,12 @@
 
 #### Phase 4：清理
 
-- [/] `FE-24` 删除所有页面中"骨架/占位/后续接接口/P01/P10"等描述文案
-  - 已清理 students import、homework error taxonomies、dashboard 等页面的明显占位措辞；仓库内仍有少量“待补/Pxx”说明未完全扫净。
-- [ ] `FE-25` 删除所有 mock service 文件（如可安全移除）
-- [ ] `FE-26` packages/ui 导出实际共用组件（PageHeader/DataTable/FilterBar 等）
+- [x] `FE-24` 删除所有页面中"骨架/占位/后续接接口/P01/P10"等描述文案
+  - 已清理 analytics / attendance / billing / communication / growth / settings 等 shipped 页面中的任务编号、占位说明与常驻状态演示块；保留的缺口文案仅用于诚实说明未开放的后端能力。
+- [x] `FE-25` 删除所有 mock service 文件（如可安全移除）
+  - 已删除遗留 `dashboard-service` 薄包装；attendance / communication 中剩余“mock-ish”硬编码展示名已改为走现有 students / families / settings 真接口，其他 service 文件保留为真实 API adapter。
+- [x] `FE-26` packages/ui 导出实际共用组件（PageHeader/DataTable/FilterBar 等）
+  - 已在 `packages/ui` 导出 `PageHeader`、`MetricGrid`、`FilterBar`、`DataTable`、`TabStrip`、`SummaryPanel`、`TimelinePanel`，并让 web 侧开始复用。
 
 **验收（Phase 1 最低要求）**：
 - 登录 → Dashboard → 学生列表 → 学生 360 可完整操作

@@ -19,6 +19,15 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@growthpilot/config/*": [
+        "../../packages/config/src/*"
+      ],
+      "@growthpilot/schema/*": [
+        "../../packages/schema/src/*"
+      ],
+      "@growthpilot/ui/*": [
+        "../../packages/ui/src/*"
       ]
     },
     "noEmit": true

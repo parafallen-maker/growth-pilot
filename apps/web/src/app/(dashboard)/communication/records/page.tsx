@@ -1,4 +1,4 @@
-import { DataTable, FilterBar, MetricGrid, PageHeader, StateBlock, SummaryPanel, TimelinePanel } from '@/components/business/page-blocks';
+import { DataTable, FilterBar, MetricGrid, PageHeader, SummaryPanel, TimelinePanel } from '@/components/business/page-blocks';
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { communicationPermissions } from '@/features/communication/constants';
 import { queryKeys } from '@/features/shared/query-keys';
@@ -17,14 +17,14 @@ export default async function CommunicationRecordsPage() {
       <div className="stack">
         <PageHeader
           title="沟通记录"
-          description={`P24 已从本地假数据切到 communication records 真接口。query key: ${JSON.stringify(queryKeys.communicationRecords(filters))}`}
+          description={`当前展示 communication/records 真实台账。query key: ${JSON.stringify(queryKeys.communicationRecords(filters))}`}
           actions={<><button className="btn primary">新建沟通</button><button className="btn">关联会谈</button><button className="btn">创建家庭任务</button></>}
         />
         <MetricGrid items={[
           { label: '当前记录数', value: String(result.page.total), hint: 'communication/records 持久化台账' },
           { label: '当前筛选首条主题', value: result.list[0]?.subject ?? '--', hint: '来自真接口首条记录' },
           { label: '高频渠道', value: result.list[0]?.channel ?? '--', hint: '后续可补真实聚合统计' },
-          { label: '明确留坑', value: 'meeting/task 聚合未接', hint: '详情页先展示 nextAction，不伪造反查闭环' },
+          { label: '后端缺口', value: 'meeting / 家庭任务聚合未开放', hint: '详情页先展示 nextAction，不伪造反查闭环' },
         ]} />
         <FilterBar fields={[
           { label: '家庭筛选', value: '全部家庭', kind: 'select' },
@@ -42,7 +42,6 @@ export default async function CommunicationRecordsPage() {
             <SummaryPanel title="关联动作位" items={detail.linkedActions} />
           </div>
         </div>
-        <div className="grid-2"><StateBlock state="loading" title="沟通记录 loading" /><StateBlock state="empty" title="沟通记录 empty" /></div>
       </div>
     </PermissionGuard>
   );

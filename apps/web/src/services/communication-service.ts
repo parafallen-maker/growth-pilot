@@ -1,5 +1,6 @@
-import { apiRequest, type PageResult } from '@/lib/api-client';
+import type { PageResult } from '@/lib/api-client';
 import type { QueryBase } from '@/features/shared/types';
+import { serverApiRequest } from '@/lib/server-api';
 
 export type CommunicationFilters = QueryBase & {
   familyId?: string;
@@ -44,20 +45,6 @@ type MessageTaskItem = {
   actions: string;
 };
 
-const familyNameMap: Record<string, string> = {
-  'family-001': '张家',
-  'family-002': '林家',
-  'family-003': '赵家',
-  'family-004': '陈家',
-};
-
-const studentNameMap: Record<string, string> = {
-  'student-001': '张小北',
-  'student-002': '林一诺',
-  'student-003': '赵安安',
-  'student-004': '陈启元',
-};
-
 const channelLabelMap: Record<string, string> = {
   wechat: '微信',
   wecom: '企业微信',
@@ -99,12 +86,12 @@ function formatAt(value?: string | null) {
   return value ? value.replace('T', ' ').slice(0, 16) : '--';
 }
 
-function toFamilyName(familyId?: string | null) {
-  return familyId ? familyNameMap[familyId] ?? familyId : '--';
+function toFamilyName(familyId: string | null | undefined, familyNameById: Map<string, string>) {
+  return familyId ? familyNameById.get(familyId) ?? familyId : '--';
 }
 
-function toStudentName(studentId?: string | null) {
-  return studentId ? studentNameMap[studentId] ?? studentId : '--';
+function toStudentName(studentId: string | null | undefined, studentNameById: Map<string, string>) {
+  return studentId ? studentNameById.get(studentId) ?? studentId : '--';
 }
 
 function toChannelName(channel?: string | null) {
@@ -126,26 +113,40 @@ function toTemplateOwner(channel?: string | null) {
   return '系统';
 }
 
+async function fetchFamilyNameById() {
+  const result = await serverApiRequest<PageResult<{ id: string; familyName?: string | null; primaryContactName?: string | null; familyCode: string }>>('/families?pageNo=1&pageSize=200');
+  return new Map(result.list.map((item) => [item.id, item.familyName ?? item.primaryContactName ?? item.familyCode]));
+}
+
+async function fetchStudentNameById() {
+  const result = await serverApiRequest<PageResult<{ id: string; name: string }>>('/students?pageNo=1&pageSize=200');
+  return new Map(result.list.map((item) => [item.id, item.name]));
+}
+
 export const communicationService = {
   async queryRecords(params: CommunicationFilters = {}): Promise<PageResult<CommunicationRecordItem>> {
-    const result = await apiRequest<PageResult<{
-      id: string;
-      familyId?: string | null;
-      studentId?: string | null;
-      channel: string;
-      direction: string;
-      topic: string;
-      summary?: string | null;
-      updatedAt: string;
-    }>>(`/communication/records${buildQuery(params)}`);
+    const [result, familyNameById, studentNameById] = await Promise.all([
+      serverApiRequest<PageResult<{
+        id: string;
+        familyId?: string | null;
+        studentId?: string | null;
+        channel: string;
+        direction: string;
+        topic: string;
+        summary?: string | null;
+        updatedAt: string;
+      }>>(`/communication/records${buildQuery(params)}`),
+      fetchFamilyNameById(),
+      fetchStudentNameById(),
+    ]);
 
     return {
       ...result,
       list: result.list.map((item) => ({
         recordId: item.id,
         occurredAt: formatAt(item.updatedAt),
-        familyName: toFamilyName(item.familyId),
-        studentName: toStudentName(item.studentId),
+        familyName: toFamilyName(item.familyId, familyNameById),
+        studentName: toStudentName(item.studentId, studentNameById),
         channel: toChannelName(item.channel),
         direction: toDirectionName(item.direction),
         subject: item.topic,
@@ -156,41 +157,48 @@ export const communicationService = {
   },
 
   async detailRecord(recordId: string) {
-    const detail = await apiRequest<{
-      id: string;
-      familyId?: string | null;
-      studentId?: string | null;
-      channel: string;
-      direction: string;
-      topic: string;
-      summary?: string | null;
-      nextAction?: string | null;
-      createdAt: string;
-      updatedAt: string;
-    }>(`/communication/records/${recordId}`);
+    const [detail, familyNameById, studentNameById] = await Promise.all([
+      serverApiRequest<{
+        id: string;
+        familyId?: string | null;
+        studentId?: string | null;
+        channel: string;
+        direction: string;
+        topic: string;
+        summary?: string | null;
+        nextAction?: string | null;
+        createdAt: string;
+        updatedAt: string;
+      }>(`/communication/records/${recordId}`),
+      fetchFamilyNameById(),
+      fetchStudentNameById(),
+    ]);
 
     return {
       subject: detail.topic,
       timeline: [
         { title: '记录创建', detail: `${formatAt(detail.createdAt)} · ${toChannelName(detail.channel)} · ${toDirectionName(detail.direction)}` },
         { title: '沟通摘要', detail: detail.summary ?? '暂无摘要' },
-        { title: '后续动作', detail: detail.nextAction ?? '后端尚未提供 meeting/homework 反查聚合，先显示记录内 nextAction。' },
+        { title: '后续动作', detail: detail.nextAction ?? 'meeting / 家庭任务反查聚合尚未开放，当前先展示记录里的 nextAction。' },
       ],
       linkedActions: [
-        { name: '关联家庭', detail: toFamilyName(detail.familyId) },
-        { name: '关联学生', detail: toStudentName(detail.studentId) },
+        { name: '关联家庭', detail: toFamilyName(detail.familyId, familyNameById) },
+        { name: '关联学生', detail: toStudentName(detail.studentId, studentNameById) },
         { name: '联动消息中心', detail: 'message_tasks 真接口已接入，可继续扩成沟通 -> 消息草稿闭环。' },
       ],
     };
   },
 
   async queryMessages(params: CommunicationFilters = {}) {
-    const [templates, drafts, queued, sent, failed] = await Promise.all([
-      apiRequest<PageResult<{ id: string; code: string; name: string; channel: string; updatedAt: string }>>(`/communication/templates${buildQuery({ pageNo: 1, pageSize: 20, channel: params.channel })}`),
-      apiRequest<PageResult<{ id: string; templateId?: string | null; familyId?: string | null; studentId?: string | null; channel: string; subject?: string | null; scheduledAt?: string | null; status: string }>>(`/communication/message-tasks${buildQuery({ ...params, status: 'draft' })}`),
-      apiRequest<PageResult<{ id: string; templateId?: string | null; familyId?: string | null; studentId?: string | null; channel: string; subject?: string | null; scheduledAt?: string | null; status: string }>>(`/communication/message-tasks${buildQuery({ ...params, status: 'pending' })}`),
-      apiRequest<PageResult<{ id: string; templateId?: string | null; familyId?: string | null; studentId?: string | null; channel: string; subject?: string | null; scheduledAt?: string | null; sentAt?: string | null; readAt?: string | null; status: string }>>(`/communication/message-tasks${buildQuery({ ...params, status: 'sent' })}`),
-      apiRequest<PageResult<{ id: string; templateId?: string | null; familyId?: string | null; studentId?: string | null; channel: string; subject?: string | null; scheduledAt?: string | null; failureReason?: string | null; status: string }>>(`/communication/message-tasks${buildQuery({ ...params, status: 'failed' })}`),
+    const [templates, drafts, queued, sent, failed, sentAndRead, familyNameById, studentNameById] = await Promise.all([
+      serverApiRequest<PageResult<{ id: string; code: string; name: string; channel: string; updatedAt: string }>>(`/communication/templates${buildQuery({ pageNo: 1, pageSize: 20, channel: params.channel })}`),
+      serverApiRequest<PageResult<{ id: string; templateId?: string | null; familyId?: string | null; studentId?: string | null; channel: string; subject?: string | null; scheduledAt?: string | null; status: string }>>(`/communication/message-tasks${buildQuery({ ...params, status: 'draft' })}`),
+      serverApiRequest<PageResult<{ id: string; templateId?: string | null; familyId?: string | null; studentId?: string | null; channel: string; subject?: string | null; scheduledAt?: string | null; status: string }>>(`/communication/message-tasks${buildQuery({ ...params, status: 'pending' })}`),
+      serverApiRequest<PageResult<{ id: string; templateId?: string | null; familyId?: string | null; studentId?: string | null; channel: string; subject?: string | null; scheduledAt?: string | null; sentAt?: string | null; readAt?: string | null; status: string }>>(`/communication/message-tasks${buildQuery({ ...params, status: 'sent' })}`),
+      serverApiRequest<PageResult<{ id: string; templateId?: string | null; familyId?: string | null; studentId?: string | null; channel: string; subject?: string | null; scheduledAt?: string | null; failureReason?: string | null; status: string }>>(`/communication/message-tasks${buildQuery({ ...params, status: 'failed' })}`),
+      serverApiRequest<PageResult<{ id: string; templateId?: string | null; familyId?: string | null; studentId?: string | null; channel: string; subject?: string | null; scheduledAt?: string | null; sentAt?: string | null; readAt?: string | null; status: string }>>(`/communication/message-tasks${buildQuery({ ...params, status: 'read' })}`),
+      fetchFamilyNameById(),
+      fetchStudentNameById(),
     ]);
 
     const templateNameById = new Map(templates.list.map((item) => [item.id, item.name]));
@@ -198,15 +206,13 @@ export const communicationService = {
     const mapTask = (item: { id: string; templateId?: string | null; familyId?: string | null; studentId?: string | null; channel: string; subject?: string | null; scheduledAt?: string | null; sentAt?: string | null; readAt?: string | null; status: string }) => ({
       messageId: item.id,
       messageType: toMessageType(item.templateId ? templateNameById.get(item.templateId) ?? item.templateId : undefined, item.subject),
-      familyName: toFamilyName(item.familyId),
-      studentName: toStudentName(item.studentId),
+      familyName: toFamilyName(item.familyId, familyNameById),
+      studentName: toStudentName(item.studentId, studentNameById),
       channel: toChannelName(item.channel),
       scheduledAt: formatAt(item.readAt ?? item.sentAt ?? item.scheduledAt),
       status: item.status,
       actions: statusActionMap[item.status] ?? '查看详情',
     });
-
-    const sentAndRead = await apiRequest<PageResult<{ id: string; templateId?: string | null; familyId?: string | null; studentId?: string | null; channel: string; subject?: string | null; scheduledAt?: string | null; sentAt?: string | null; readAt?: string | null; status: string }>>(`/communication/message-tasks${buildQuery({ ...params, status: 'read' })}`);
 
     return {
       filters: params,
@@ -229,7 +235,7 @@ export const communicationService = {
       statusPanels: [
         { name: '模板区', detail: 'communication/templates 真接口' },
         { name: '任务状态链路', detail: 'draft -> pending -> sent / failed，read 单独跟踪' },
-        { name: '明确留坑', detail: '真渠道发送 adapter 仍未接，当前仅消费 message_tasks 持久化结果。' },
+        { name: '后端缺口', detail: '真实渠道发送 adapter 仍未接，当前仅消费 message_tasks 持久化结果。' },
       ],
     };
   },
