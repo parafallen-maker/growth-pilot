@@ -24,6 +24,8 @@ import { JobsService } from '../../src/modules/jobs/service/jobs.service';
 import { MasterDataStore } from '../../src/modules/master-data/master-data.store';
 import { StudentsRepository } from '../../src/modules/students/repository/students.repository';
 import { StudentsService } from '../../src/modules/students/students.service';
+import { TeachersRepository } from '../../src/modules/teachers/repository/teachers.repository';
+import { TeachersService } from '../../src/modules/teachers/teachers.service';
 import { UsersRepository } from '../../src/modules/users/repository/users.repository';
 import { UsersService } from '../../src/modules/users/service/users.service';
 
@@ -72,8 +74,10 @@ export function createQaFixture() {
   masterDataStore.reset();
   const familiesRepository = new FamiliesRepository(masterDataStore);
   const studentsRepository = new StudentsRepository(masterDataStore);
+  const teachersRepository = new TeachersRepository(masterDataStore);
   const familiesService = new FamiliesService(familiesRepository);
-  const studentsService = new StudentsService(studentsRepository, familiesRepository);
+  const studentsService = new StudentsService(studentsRepository, familiesRepository, homeworkRepository, growthRepository, new AttendanceRepository(), new BillingRepository(), jobsService);
+  const teachersService = new TeachersService(teachersRepository);
   const attendanceService = new AttendanceService(new AttendanceRepository());
   const billingService = new BillingService(new BillingRepository());
 
@@ -89,6 +93,7 @@ export function createQaFixture() {
     growthRepository,
     studentsService,
     familiesService,
+    teachersService,
     attendanceService,
     billingService,
   };

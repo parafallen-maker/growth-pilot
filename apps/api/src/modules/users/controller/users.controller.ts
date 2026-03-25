@@ -4,6 +4,7 @@ import { PermissionGuard } from '../../../common/permission.guard';
 import { RequirePermission } from '../../../common/permission.decorator';
 import { buildApiResponse } from '../../../shared/api-response';
 import { AssignRolesDto } from '../dto/assign-roles.dto';
+import { CreateUserDto } from '../dto/create-user.dto';
 import { UsersService } from '../service/users.service';
 
 @Controller('users')
@@ -31,5 +32,11 @@ export class UsersController {
   @RequirePermission('users:view')
   async assignRoles(@Param('userId') userId: string, @Body() body: AssignRolesDto) {
     return buildApiResponse(await this.usersService.assignRoles(userId, body.roleIds ?? []));
+  }
+
+  @Post()
+  @RequirePermission('users.role.bind')
+  async createUser(@Body() body: CreateUserDto) {
+    return buildApiResponse(await this.usersService.createUser(body));
   }
 }

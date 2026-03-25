@@ -4,6 +4,7 @@ import { PermissionGuard } from '../../common/permission.guard';
 import { RequirePermission } from '../../common/permission.decorator';
 import { ok } from '../../common/api-response';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
+import { CreateStudentImportDto } from './dto/create-student-import.dto';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { StudentQueryDto } from './dto/student-query.dto';
 import { StudentsService } from './students.service';
@@ -39,5 +40,11 @@ export class StudentsController {
   @Post(':studentId/enrollments')
   async createEnrollment(@Param('studentId') studentId: string, @Body() payload: CreateEnrollmentDto) {
     return ok(await this.studentsService.createEnrollment(studentId, payload));
+  }
+
+  @Post('import')
+  @RequirePermission('students:view')
+  async import(@Body() payload: CreateStudentImportDto) {
+    return ok(await this.studentsService.importStudents(payload));
   }
 }

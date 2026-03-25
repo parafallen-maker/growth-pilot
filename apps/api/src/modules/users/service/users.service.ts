@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { buildPagedResult } from '../../../shared/api-response';
+import { CreateUserDto } from '../dto/create-user.dto';
 import { UsersRepository } from '../repository/users.repository';
 import { CurrentUserProfile, Permission, Role, UserRecord } from '../users.types';
 
@@ -56,6 +57,31 @@ export class UsersService {
     }
 
     return { success: true };
+  }
+
+  async createUser(payload: CreateUserDto) {
+    const roles = await this.usersRepository.listRoles();
+    const roleCodes = new Set(roles.map((role) => role.code));
+    const requestedRoleIds = payload.roleIds ?? [];
+    const invalidRoleIds = requestedRoleIds.filter((roleId) => !roleCodes.has(roleId));
+    if (invalidRoleIds.length) {
+      throw new ConflictException({
+        code: 'DATA_409',
+        message: `invalid role ids: ${invalidRoleIds.join(', ')}`,
+      });
+    }
+
+    const created = await this.usersRepository.create({
+      username: payload.username,
+      password: payload.password,
+      displayName: payload.displayName,
+      mobile: payload.mobile,
+      email: payload.email,
+      roles: requestedRoleIds,
+      campusIds: payload.campusIds ?? [],
+      status: payload.status ?? 'active',
+    });
+    return this.toContractUser(created);
   }
 
   async validateCredentials(username: string, password: string): Promise<UserRecord | undefined> {

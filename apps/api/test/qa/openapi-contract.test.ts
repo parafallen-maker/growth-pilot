@@ -15,6 +15,7 @@ import { StudentsController } from '../../src/modules/students/students.controll
 import { FamiliesController } from '../../src/modules/families/families.controller';
 import { HomeworkController } from '../../src/modules/homework/controller/homework.controller';
 import { GrowthController } from '../../src/modules/growth/controller/growth.controller';
+import { TeachersController } from '../../src/modules/teachers/teachers.controller';
 import { AuthController } from '../../src/modules/auth/controller/auth.controller';
 import { createQaFixture } from './e2e-main-flow.fixture';
 
@@ -42,6 +43,7 @@ test('QA-06 OpenAPI contract smoke covers auth, settings, users, students, famil
   const jobsController = new JobsController(new JobsService(new JobsRepository()));
   const studentsController = new StudentsController(fixture.studentsService);
   const familiesController = new FamiliesController(fixture.familiesService);
+  const teachersController = new TeachersController(fixture.teachersService);
   const homeworkController = new HomeworkController(fixture.homeworkService);
   const growthController = new GrowthController(fixture.growthService);
 
@@ -65,12 +67,25 @@ test('QA-06 OpenAPI contract smoke covers auth, settings, users, students, famil
   assert.ok(Array.isArray(users.list));
   assert.equal(users.page.pageNo, 1);
   assert.equal(users.page.pageSize, 20);
+  const createdUser = assertEnvelope(await usersController.createUser({
+    username: 'qa.user',
+    password: 'qa123456',
+    displayName: 'QA User',
+    roleIds: ['teacher'],
+    campusIds: ['campus-guanshanhu'],
+  }));
+  assert.equal(createdUser.username, 'qa.user');
 
   assert.match(openApiText, /\/students:/);
   const students = assertEnvelope(await studentsController.list({ pageNo: 1, pageSize: 20 }));
   const studentId = students.list[0]?.id;
   assert.ok(studentId);
   assert.equal(students.page.pageNo, 1);
+  const importJob = assertEnvelope(await studentsController.import({
+    fileName: 'qa-students.csv',
+    content: 'studentNo,name,gradeLabel\nS910,合同测试学生,一年级',
+  }));
+  assert.equal(importJob.status, 'success');
 
   assert.match(openApiText, /\/students\/\{studentId\}:/);
   assert.equal(assertEnvelope(await studentsController.detail(studentId!)).id, studentId);
@@ -80,7 +95,23 @@ test('QA-06 OpenAPI contract smoke covers auth, settings, users, students, famil
   const families = assertEnvelope(await familiesController.list({ pageNo: 1, pageSize: 20 }));
   const familyId = families.list[0]?.id;
   assert.ok(familyId);
+  const task = assertEnvelope(await familiesController.createTask(familyId!, {
+    title: '同步家庭任务',
+    studentId: studentId!,
+    assigneeGuardianId: 'guardian-001',
+  }, { id: 'user-admin-001' }));
+  assert.equal(task.familyId, familyId);
   assert.equal(assertEnvelope(await familiesController.detail(familyId!)).family.id, familyId);
+
+  assert.match(openApiText, /\/teachers\/\{teacherId\}\/development-records:/);
+  const teachers = assertEnvelope(await teachersController.list({ pageNo: 1, pageSize: 20 }));
+  const teacherId = teachers.list[0]?.id;
+  assert.ok(teacherId);
+  const developmentRecord = assertEnvelope(await teachersController.createDevelopmentRecord(teacherId!, {
+    recordType: 'coaching',
+    title: 'QA 教研记录',
+  }, { id: 'user-admin-001' }));
+  assert.equal(developmentRecord.teacherId, teacherId);
 
   assert.match(openApiText, /\/homework\/submissions:/);
   const submissions = assertEnvelope(await homeworkController.listSubmissions({ pageNo: 1, pageSize: 20 }));
@@ -90,9 +121,10 @@ test('QA-06 OpenAPI contract smoke covers auth, settings, users, students, famil
 
   assert.match(openApiText, /\/growth\/rubrics:/);
   const rubrics = assertEnvelope(await growthController.listRubrics({ pageNo: 1, pageSize: 20 }));
-  const rubricId = rubrics.list[0]?.id;
-  assert.ok(rubricId);
-  assert.equal(assertEnvelope(await growthController.getRubric(rubricId!)).id, rubricId);
+  const templateId = rubrics.list[0]?.id;
+  assert.ok(templateId);
+  assert.match(openApiText, /\/growth\/rubrics\/\{templateId\}:/);
+  assert.equal(assertEnvelope(await growthController.getRubric(templateId!)).id, templateId);
 
   const reports = assertEnvelope(await growthController.listReports({ pageNo: 1, pageSize: 20 }));
   assert.ok(Array.isArray(reports.list));
