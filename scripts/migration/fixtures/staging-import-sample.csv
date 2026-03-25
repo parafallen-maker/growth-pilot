@@ -1,0 +1,4 @@
+targetDomain,sourceSheet,sourcePk,studentNo,studentName,gradeLabel,primaryTeacherName,familyPhone,familyStructureRaw,enrollDateRaw,subjectRaw,homeworkDateRaw,accuracyRaw,errorTaxonomyRaw,teacherName,contractNo,invoiceNo,totalAmountCents,discountAmountCents,payableAmountCents,invoiceItemsAmountCents,paymentsAmountCents,refundsAmountCents
+students,2026上半学年学生信息表,student-row-101,S-101,赵六,一年级,胡忠芸,138-0000-0101,是,46083,,,,,,,,,,,,
+homework,2026上半学年每日作业完成质量表,hw-row-101,S-101,赵六,,,13800000101,,,数学,46104,92%,无,胡忠芸,,,,,,,
+billing,历史账单表,invoice-row-101,,,,,,,,,,,,,C-101,I-101,128000,8000,120000,128000,120000,0

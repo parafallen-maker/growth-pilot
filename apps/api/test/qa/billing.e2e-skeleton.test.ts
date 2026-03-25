@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createQaFixture } from './e2e-main-flow.fixture';
 
-test('E2E-05 收费闭环：product -> contract -> invoice -> payment -> refund skeleton', async (t) => {
+test('E2E-05 收费闭环：product -> contract -> invoice -> payment -> refund executable', async (t) => {
   const { billingService } = createQaFixture();
 
   await t.test('smoke: create product/contract/invoice/payment/refund and refresh invoice status', () => {
@@ -71,7 +71,107 @@ test('E2E-05 收费闭环：product -> contract -> invoice -> payment -> refund 
     assert.equal(invoiceList.list[0]?.invoiceNo, 'QA-IV-20260325-001');
   });
 
-  await t.test('case-billing-pages-ui', { todo: '接 /billing/products|contracts|invoices|renewals 页面动作链路' }, () => {});
-  await t.test('case-cents-vs-yuan', { todo: '补前端显示元、接口传输 cents 与 rounding 边界断言' }, () => {});
-  await t.test('case-payment-refund-guardrails', { todo: '补超额支付、超额退款、幂等键重复提交与对账回归' }, () => {});
+  await t.test('case-idempotency-key-replays-payment-without-duplicating', () => {
+    const product = billingService.createProduct({
+      code: 'QA-PRODUCT-002',
+      name: 'QA 托管套餐 2',
+      category: 'care',
+      billingMode: 'term',
+      priceCents: 88000,
+      unit: 'term',
+    });
+    const contract = billingService.createContract({
+      contractNo: 'QA-CT-20260325-002',
+      familyId: 'family-001',
+      studentId: 'student-001',
+      signDate: '2026-03-25',
+      startDate: '2026-03-25',
+      endDate: '2026-06-30',
+      items: [{ productId: product.id, itemName: product.name, unitPriceCents: 88000, quantity: 1 }],
+    });
+    const invoice = billingService.createInvoice({
+      invoiceNo: 'QA-IV-20260325-002',
+      contractId: contract.id,
+      familyId: 'family-001',
+      studentId: 'student-001',
+      billingPeriod: '2026-S1',
+      issueDate: '2026-03-25',
+      dueDate: '2026-03-28',
+      amountCents: 88000,
+      status: 'issued',
+    });
+
+    const firstPayment = billingService.createPayment(invoice.id, {
+      paymentNo: 'QA-PAY-002',
+      paidAmountCents: 88000,
+      paymentTime: '2026-03-25T11:00:00+08:00',
+      channel: 'cash',
+      status: 'success',
+    }, 'qa-payment-key-002');
+    const replayPayment = billingService.createPayment(invoice.id, {
+      paymentNo: 'QA-PAY-002-DUP',
+      paidAmountCents: 88000,
+      paymentTime: '2026-03-25T11:01:00+08:00',
+      channel: 'cash',
+      status: 'success',
+    }, 'qa-payment-key-002');
+
+    assert.equal(firstPayment.paymentId, replayPayment.paymentId);
+    assert.equal(replayPayment.replayed, true);
+    assert.equal(billingService.getPayment(firstPayment.paymentId).invoice.status, 'paid');
+  });
+
+  await t.test('case-payment-refund-guardrails', () => {
+    const product = billingService.createProduct({
+      code: 'QA-PRODUCT-003',
+      name: 'QA 托管套餐 3',
+      category: 'care',
+      billingMode: 'term',
+      priceCents: 100000,
+      unit: 'term',
+    });
+    const contract = billingService.createContract({
+      contractNo: 'QA-CT-20260325-003',
+      familyId: 'family-001',
+      studentId: 'student-001',
+      signDate: '2026-03-25',
+      startDate: '2026-03-25',
+      endDate: '2026-06-30',
+      items: [{ productId: product.id, itemName: product.name, unitPriceCents: 100000, quantity: 1 }],
+    });
+    const invoice = billingService.createInvoice({
+      invoiceNo: 'QA-IV-20260325-003',
+      contractId: contract.id,
+      familyId: 'family-001',
+      studentId: 'student-001',
+      billingPeriod: '2026-S1',
+      issueDate: '2026-03-25',
+      dueDate: '2026-03-28',
+      amountCents: 100000,
+      status: 'issued',
+    });
+
+    assert.throws(() => billingService.createPayment(invoice.id, {
+      paymentNo: 'QA-PAY-003',
+      paidAmountCents: 100001,
+      paymentTime: '2026-03-25T12:00:00+08:00',
+      channel: 'cash',
+      status: 'success',
+    }), /payment exceeds invoice receivable/i);
+
+    const payment = billingService.createPayment(invoice.id, {
+      paymentNo: 'QA-PAY-003-OK',
+      paidAmountCents: 100000,
+      paymentTime: '2026-03-25T12:05:00+08:00',
+      channel: 'cash',
+      status: 'success',
+    });
+
+    assert.throws(() => billingService.createRefund(payment.paymentId, {
+      refundNo: 'QA-REFUND-003',
+      refundAmountCents: 100001,
+      refundTime: '2026-03-26T12:00:00+08:00',
+      status: 'success',
+    }), /refund exceeds payment amount/i);
+  });
 });

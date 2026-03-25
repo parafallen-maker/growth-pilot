@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { basename, extname, resolve } from 'node:path';
 
 const dictionaryMaps = {
   subject: new Map([
@@ -30,10 +32,9 @@ const dictionaryMaps = {
 const args = parseArgs(process.argv.slice(2));
 const dryRun = Boolean(args['dry-run']);
 const batchId = args.batchId ?? `BATCH-${new Date().toISOString().slice(0, 10)}`;
-const sourceSystem = args.sourceSystem ?? 'excel';
-const sourceFile = args.sourceFile ?? 'mock-history.xlsx';
-
-const sourceRows = buildMockSourceRows();
+const sourceSystem = args.sourceSystem ?? inferSourceSystem(args);
+const sourceFile = args.sourceFile ?? inferSourceFile(args);
+const sourceRows = loadSourceRows(args, { batchId, sourceSystem, sourceFile });
 const rawRows = sourceRows.map((row, index) => toRawRow(row, index + 2, batchId, sourceSystem, sourceFile));
 const normalizedRows = rawRows.map((row) => normalizeRow(row));
 const rejects = normalizedRows.flatMap((row) => row.rejects);
@@ -61,6 +62,182 @@ function parseArgs(argv) {
     index += 1;
   }
   return parsed;
+}
+
+function inferSourceSystem(parsedArgs) {
+  if (parsedArgs.json || parsedArgs.csv || parsedArgs.input) {
+    return 'file';
+  }
+  return 'excel';
+}
+
+function inferSourceFile(parsedArgs) {
+  const inputPath = parsedArgs.json ?? parsedArgs.csv ?? parsedArgs.input;
+  return inputPath ? basename(inputPath) : 'mock-history.xlsx';
+}
+
+function loadSourceRows(parsedArgs, context) {
+  const inputPath = parsedArgs.json ?? parsedArgs.csv ?? parsedArgs.input;
+  if (!inputPath) {
+    return buildMockSourceRows();
+  }
+
+  const absolutePath = resolve(process.cwd(), inputPath);
+  const content = readFileSync(absolutePath, 'utf8');
+  const format = determineFormat(absolutePath, parsedArgs.format);
+  const parsedRows = format === 'json' ? parseJsonRows(content, absolutePath) : parseCsvRows(content);
+
+  return parsedRows.map((row, index) => sanitizeSourceRow(row, {
+    index,
+    absolutePath,
+    batchId: context.batchId,
+    sourceSystem: context.sourceSystem,
+    sourceFile: context.sourceFile,
+  }));
+}
+
+function determineFormat(inputPath, explicitFormat) {
+  if (explicitFormat) {
+    return explicitFormat.toLowerCase();
+  }
+  const extension = extname(inputPath).toLowerCase();
+  if (extension === '.json') return 'json';
+  if (extension === '.csv' || extension === '.txt') return 'csv';
+  throw new Error(`unsupported input format: ${extension || 'unknown'}; use --format csv|json`);
+}
+
+function parseJsonRows(content, inputPath) {
+  const parsed = JSON.parse(content);
+  if (!Array.isArray(parsed)) {
+    throw new Error(`JSON input must be an array: ${inputPath}`);
+  }
+  return parsed;
+}
+
+function parseCsvRows(content) {
+  const rows = [];
+  let current = '';
+  let row = [];
+  let inQuotes = false;
+
+  for (let index = 0; index < content.length; index += 1) {
+    const char = content[index];
+    const next = content[index + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        current += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (char === ',' && !inQuotes) {
+      row.push(current);
+      current = '';
+      continue;
+    }
+
+    if ((char === '\n' || char === '\r') && !inQuotes) {
+      if (char === '\r' && next === '\n') {
+        index += 1;
+      }
+      row.push(current);
+      current = '';
+      if (row.some((cell) => cell.trim() !== '')) {
+        rows.push(row);
+      }
+      row = [];
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (current.length > 0 || row.length > 0) {
+    row.push(current);
+    if (row.some((cell) => cell.trim() !== '')) {
+      rows.push(row);
+    }
+  }
+
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const headers = rows[0].map((value) => value.trim());
+  return rows.slice(1).map((cells) => {
+    const record = {};
+    for (let index = 0; index < headers.length; index += 1) {
+      record[headers[index]] = normalizeScalar(cells[index] ?? '');
+    }
+    return record;
+  });
+}
+
+function normalizeScalar(value) {
+  const trimmed = String(value ?? '').trim();
+  if (trimmed === '') return null;
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) return Number(trimmed);
+  return trimmed;
+}
+
+function sanitizeSourceRow(sourceRow, context) {
+  const row = { ...sourceRow };
+  row.targetDomain = row.targetDomain ?? row.domain ?? row.entity ?? row.table ?? 'unknown';
+  row.sourceSheet = row.sourceSheet ?? row.sheet ?? basename(context.absolutePath);
+  row.sourcePk = row.sourcePk ?? row.pk ?? `${row.targetDomain}-row-${String(context.index + 1).padStart(3, '0')}`;
+
+  if (row.studentNo && !row.studentName && row.name) {
+    row.studentName = row.name;
+  }
+  if (!row.primaryTeacherName && row.teacherName) {
+    row.primaryTeacherName = row.teacherName;
+  }
+  if (!row.teacherName && row.primaryTeacherName) {
+    row.teacherName = row.primaryTeacherName;
+  }
+  if (row.familyStructureRaw == null && row.familyStructure != null) {
+    row.familyStructureRaw = row.familyStructure;
+  }
+  if (row.subjectRaw == null && row.subject != null) {
+    row.subjectRaw = row.subject;
+  }
+  if (row.errorTaxonomyRaw == null && row.errorTaxonomy != null) {
+    row.errorTaxonomyRaw = row.errorTaxonomy;
+  }
+  if (row.enrollDateRaw == null && row.enrollDate != null) {
+    row.enrollDateRaw = row.enrollDate;
+  }
+  if (row.homeworkDateRaw == null && row.homeworkDate != null) {
+    row.homeworkDateRaw = row.homeworkDate;
+  }
+  if (row.contractNo && row.invoiceNo) {
+    row.totalAmountCents = centsValue(row.totalAmountCents ?? row.totalAmount ?? row.invoiceAmountCents ?? row.invoiceAmount);
+    row.discountAmountCents = centsValue(row.discountAmountCents ?? row.discountAmount ?? 0);
+    row.payableAmountCents = centsValue(row.payableAmountCents ?? row.payableAmount);
+    row.invoiceItemsAmountCents = centsValue(row.invoiceItemsAmountCents ?? row.invoiceItemsAmount ?? row.totalAmountCents);
+    row.paymentsAmountCents = centsValue(row.paymentsAmountCents ?? row.paymentsAmount ?? 0);
+    row.refundsAmountCents = centsValue(row.refundsAmountCents ?? row.refundsAmount ?? 0);
+  }
+
+  return row;
+}
+
+function centsValue(rawValue) {
+  if (rawValue === undefined || rawValue === null || rawValue === '') {
+    return null;
+  }
+  const numeric = Number(rawValue);
+  if (!Number.isFinite(numeric)) {
+    return null;
+  }
+  if (Number.isInteger(numeric)) {
+    return numeric;
+  }
+  return Math.round(numeric * 100);
 }
 
 function buildMockSourceRows() {

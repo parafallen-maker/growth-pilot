@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createQaFixture } from './e2e-main-flow.fixture';
 
-test('E2E-01 登录与权限：管理员登录 -> me -> refresh -> logout skeleton', async (t) => {
+test('E2E-01 登录与权限：管理员登录 -> me -> refresh -> logout executable', async (t) => {
   const { authService } = createQaFixture();
 
   await t.test('smoke: auth skeleton is executable', () => {
@@ -21,8 +21,28 @@ test('E2E-01 登录与权限：管理员登录 -> me -> refresh -> logout skelet
     assert.throws(() => authService.currentUser(loginResult.accessToken));
   });
 
-  await t.test('case-admin-menu-scope', { todo: '接 apps/web AppShell 菜单裁剪与 403 页面断言' }, () => {});
-  await t.test('case-teacher-role-scope', { todo: '补教师角色登录态、按钮权限与 homework/growth 权限矩阵' }, () => {});
-  await t.test('case-finance-role-scope', { todo: '补财务角色 billing/communication 权限断言与越权校验' }, () => {});
-  await t.test('case-token-expired-redirect', { todo: '补 token 失效后的前端回登录与 toast 提示' }, () => {});
+  await t.test('case-refresh-rotation-invalidates-old-refresh-token', () => {
+    const loginResult = authService.login('admin', 'admin123');
+    const rotated = authService.refresh(loginResult.refreshToken);
+
+    assert.notEqual(rotated.refreshToken, loginResult.refreshToken);
+    assert.throws(() => authService.refresh(loginResult.refreshToken), /invalid/i);
+    assert.ok(authService.currentUser(rotated.accessToken).permissions.includes('users.read'));
+  });
+
+  await t.test('case-old-access-token-is-revoked-after-refresh', () => {
+    const loginResult = authService.login('admin', 'admin123');
+    const rotated = authService.refresh(loginResult.refreshToken);
+
+    assert.throws(() => authService.currentUser(loginResult.accessToken), /invalid/i);
+    assert.equal(authService.currentUser(rotated.accessToken).username, 'admin');
+  });
+
+  await t.test('case-invalid-credentials-and-logout-guardrails', () => {
+    assert.throws(() => authService.login('admin', 'wrong-password'), /invalid username or password/i);
+
+    const loginResult = authService.login('admin', 'admin123');
+    authService.logout(undefined, loginResult.refreshToken);
+    assert.throws(() => authService.refresh(loginResult.refreshToken), /invalid/i);
+  });
 });

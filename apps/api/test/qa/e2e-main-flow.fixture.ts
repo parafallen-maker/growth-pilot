@@ -46,7 +46,7 @@ export function createQaFixture() {
   const jobsService = new JobsService(jobsRepository);
 
   const homeworkRepository = new HomeworkRepository();
-  const homeworkEventPublisher = new HomeworkEventPublisher();
+  const homeworkEventPublisher = new HomeworkEventPublisher(homeworkRepository);
   const homeworkAnalysisQueue = new HomeworkAnalysisQueue(
     jobsService,
     homeworkRepository,
