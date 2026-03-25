@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ApiAuthGuard } from '../../common/auth.guard';
 import { PermissionGuard } from '../../common/permission.guard';
 import { AuthModule } from '../auth/auth.module';
+import { UsersRepository } from '../users/repository/users.repository';
 import { SettingsController } from './controller/settings.controller';
 import { SettingsRepository } from './repository/settings.repository';
 import { SettingsService } from './service/settings.service';
@@ -9,7 +10,7 @@ import { SettingsService } from './service/settings.service';
 @Module({
   imports: [AuthModule],
   controllers: [SettingsController],
-  providers: [ApiAuthGuard, PermissionGuard, SettingsRepository, SettingsService],
+  providers: [ApiAuthGuard, PermissionGuard, SettingsRepository, SettingsService, UsersRepository],
   exports: [SettingsService],
 })
 export class SettingsModule {}

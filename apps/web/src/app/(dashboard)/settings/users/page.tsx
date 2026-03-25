@@ -16,7 +16,7 @@ export default async function SettingsUsersPage() {
       <div className="stack">
         <PageHeader
           title="用户与角色"
-          description={`真实数据来自 GET /users；角色列表由真实用户分配聚合，权限点展示当前登录态的真实权限集。query key: ${JSON.stringify(queryKeys.users({ pageNo: 1, pageSize: 20 }))}`}
+          description={`真实数据来自 GET /users 与 GET /settings/dictionaries?dictType=access_role|access_permission；角色与权限目录不再由 /users 或当前登录态推断。query key: ${JSON.stringify(queryKeys.users({ pageNo: 1, pageSize: 20 }))}`}
           actions={<><button className="btn primary">创建用户</button><button className="btn">绑定角色</button><button className="btn danger">重置密码</button></>}
         />
         <TabStrip tabs={['用户列表', '角色列表', '权限点']} active="用户列表" />
@@ -29,7 +29,7 @@ export default async function SettingsUsersPage() {
           <SummaryPanel title="角色列表" items={accessCatalog.roles} />
           <SummaryPanel title="权限模块" items={accessCatalog.permissionModules} />
         </div>
-        <SummaryPanel title="当前登录态权限样本" items={accessCatalog.currentPermissions} />
+        <SummaryPanel title="权限点目录样本" items={accessCatalog.currentPermissions} />
       </div>
     </PermissionGuard>
   );

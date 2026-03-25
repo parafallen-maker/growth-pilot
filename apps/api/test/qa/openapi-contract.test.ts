@@ -20,7 +20,7 @@ import { JobsRepository } from '../../src/modules/jobs/repository/jobs.repositor
 import { JobsService } from '../../src/modules/jobs/service/jobs.service';
 import { SettingsController } from '../../src/modules/settings/controller/settings.controller';
 import { SettingsRepository } from '../../src/modules/settings/repository/settings.repository';
-import { SettingsService } from '../../src/modules/settings/service/settings.service';
+import { ACCESS_PERMISSION_DICT_TYPE, ACCESS_ROLE_DICT_TYPE, SettingsService } from '../../src/modules/settings/service/settings.service';
 import { StudentsController } from '../../src/modules/students/students.controller';
 import { TeachersController } from '../../src/modules/teachers/teachers.controller';
 import { UsersController } from '../../src/modules/users/controller/users.controller';
@@ -136,8 +136,9 @@ test('QA-06 contract smoke exercises representative happy paths across auth, cor
   const fixture = createQaFixture();
 
   const authController = new AuthController(fixture.authService);
-  const settingsController = new SettingsController(new SettingsService(new SettingsRepository()));
-  const usersController = new UsersController(new UsersService(new UsersRepository()));
+  const usersRepository = new UsersRepository();
+  const settingsController = new SettingsController(new SettingsService(new SettingsRepository(), usersRepository));
+  const usersController = new UsersController(new UsersService(usersRepository));
   const jobsRepository = new JobsRepository();
   const jobsService = new JobsService(jobsRepository);
   const jobsController = new JobsController(jobsService);
@@ -166,6 +167,10 @@ test('QA-06 contract smoke exercises representative happy paths across auth, cor
   assert.ok(terms.list.length >= 1);
   const dictionaries = assertEnvelope(await settingsController.listDictionaries());
   assert.ok(dictionaries.list.length >= 1);
+  const roleCatalog = assertEnvelope(await settingsController.listDictionaries({ dictType: ACCESS_ROLE_DICT_TYPE }));
+  assert.ok(roleCatalog.list.some((item) => item.code === 'admin'));
+  const permissionCatalog = assertEnvelope(await settingsController.listDictionaries({ dictType: ACCESS_PERMISSION_DICT_TYPE }));
+  assert.ok(permissionCatalog.list.some((item) => item.code === 'users.role.bind'));
 
   const users = assertEnvelope(await usersController.listUsers(undefined, '1', '20'));
   assert.ok(users.list.length >= 2);
