@@ -357,29 +357,34 @@
 #### API 合约验证
 
 - [/] `QA-06` 对照 OpenAPI 逐条验证所有接口：请求格式、响应格式、状态码、错误码
-  - 已新增 contract smoke，覆盖 auth / settings / users / students / families / homework / growth / jobs 的代表性读链路与 envelope 结构；仍未做到“所有接口逐条”全覆盖。
+  - 2026-03-25：contract smoke 已扩展到 auth / settings / users / teachers / students / families / files / homework / growth / attendance / billing / communication / analytics / jobs，覆盖代表性 happy-path 与 error semantics，并已通过 `npm run test --workspace @growthpilot/api`。
+  - 仍未做到“所有接口逐条 HTTP 级别矩阵”，因此保持 `[/]` 而不标全绿。
 - [x] `QA-07` auth 接口安全验证：过期 token、无效 token、权限不足
 - [x] `QA-08` 分页接口统一验证：pageNo/pageSize/total 格式一致
 
 #### 数据迁移验证
 
-- [ ] `QA-09` 更新 `scripts/migration/run-staging-import.mjs` 对接真实 DB
-- [ ] `QA-10` 用 `fixtures/staging-import-sample.csv` 执行首批导入
-- [ ] `QA-11` 验证导入数据：字段映射正确、幂等性、reject report 生成
+- [/] `QA-09` 更新 `scripts/migration/run-staging-import.mjs` 对接真实 DB
+  - 2026-03-25：脚本已支持 `--db-apply` + PostgreSQL staging upsert，新增 `qa_staging.import_batches / staging_raw_rows / staging_normalized_rows / staging_rejects` 路径；当前 sandbox 未提供可执行 live DB apply 的 `DATABASE_URL`，因此保持 `[/]`。
+- [x] `QA-10` 用 `fixtures/staging-import-sample.csv` 执行首批导入
+  - 2026-03-25：已执行 `fixtures/staging-import-sample.csv` dry-run，批次 `BATCH-QA-DOC` 产出 sample artifact，`3/3` rows ready-to-load。
+- [/] `QA-11` 验证导入数据：字段映射正确、幂等性、reject report 生成
+  - 2026-03-25：sample batch 已验证字段映射与 import key 稳定；mock batch 已验证 reject CSV 生成与分类统计；真实 PostgreSQL 查库级校验待预发环境补跑，因此保持 `[/]`。
 
 #### 页面验证
 
 - [/] `QA-12` 所有 31 个页面 SSR 渲染成功（无 500 错误）
-  - 2026-03-25：已修复 SSR smoke 的 API 启动阻塞（run-ssr-smoke API 路径 + Nest 模块 guard 依赖）；`/analytics/*` 页面已加 SSR fallback，当前仍卡在 `/attendance/board` 500，需继续逐页补齐 server-side fetch 降级或定位 API/页面异常根因。
-  - 已新增 31 页 SSR smoke 脚本与路由收集逻辑；实际执行被 API Nest DI 启动失败阻塞（已定位并修补部分 repository/provider 问题，仍有 StudentsModule 依赖链待补齐）。
-- [ ] `QA-13` 权限验证：teacher 角色不能访问 billing 页面
+  - 2026-03-25：`run-ssr-smoke.mjs` 已升级为 route-by-route validator，支持 `--report-file`、路由过滤、forbidden 断言；Web build 已列出 31 个业务页面。
+  - 当前 sandbox 在 runtime 阶段访问 `127.0.0.1:3101` 命中 `EPERM`，无法在本环境确认页面级 non-500 结果，因此保持 `[/]`。
+- [/] `QA-13` 权限验证：teacher 角色不能访问 billing 页面
+  - 2026-03-25：已新增 API 级 teacher vs billing 权限边界测试，并新增 `scripts/qa/run-billing-permission-smoke.mjs`；页面级 smoke 受同一 localhost `EPERM` 阻断，保持 `[/]`。
 - [ ] `QA-14` 响应式检查：主要页面在 1280/1440/1920 宽度下无溢出
 
 #### 发布准备
 
-- [ ] `QA-15` 编写预发上线清单（包含 DB migration、seed、env 配置、健康检查）
-- [ ] `QA-16` 编写回滚方案（DB rollback、代码回退、数据恢复）
-- [ ] `QA-17` 输出验收报告：通过率、已知问题、推荐发布/不发布决定
+- [x] `QA-15` 编写预发上线清单（包含 DB migration、seed、env 配置、健康检查）
+- [x] `QA-16` 编写回滚方案（DB rollback、代码回退、数据恢复）
+- [x] `QA-17` 输出验收报告：通过率、已知问题、推荐发布/不发布决定
 
 **验收**：
 - 5 条 E2E 主流程全部 PASS

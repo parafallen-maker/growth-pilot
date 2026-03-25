@@ -1,16 +1,26 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { readdirSync, statSync, rmSync } from 'node:fs';
+import { readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
+const args = parseArgs(process.argv.slice(2));
 const repoRoot = process.cwd();
-const apiPort = Number(process.env.QA_API_PORT ?? 3101);
-const webPort = Number(process.env.QA_WEB_PORT ?? 3100);
+const apiPort = Number(args['api-port'] ?? process.env.QA_API_PORT ?? 3101);
+const webPort = Number(args['web-port'] ?? process.env.QA_WEB_PORT ?? 3100);
 const apiBaseUrl = `http://127.0.0.1:${apiPort}/api/v1`;
 const webBaseUrl = `http://127.0.0.1:${webPort}`;
-
 const pageDir = path.join(repoRoot, 'apps/web/src/app');
+const reportFile = args['report-file'] ? path.resolve(repoRoot, args['report-file']) : null;
+const username = args.username ?? 'admin';
+const password = args.password ?? 'admin123';
+const failFast = Boolean(args['fail-fast']);
+const skipBuild = Boolean(args['skip-build']);
+const routeFilter = splitCsv(args.routes);
+const routePrefixFilter = splitCsv(args['route-prefixes']);
+const expectForbiddenPrefixes = splitCsv(args['expect-forbidden-prefixes']);
+const expectOkPrefixes = splitCsv(args['expect-ok-prefixes']);
+
 const dynamicRouteValues = {
   familyId: 'family-001',
   studentId: 'student-001',
@@ -20,13 +30,15 @@ const dynamicRouteValues = {
 
 resetQaFiles();
 
-await run('npm', ['run', 'build', '--workspace', '@growthpilot/api']);
-await run('npm', ['run', 'build', '--workspace', '@growthpilot/web'], {
-  env: {
-    ...process.env,
-    GROWTHPILOT_API_BASE_URL: apiBaseUrl,
-  },
-});
+if (!skipBuild) {
+  await run('npm', ['run', 'build', '--workspace', '@growthpilot/api']);
+  await run('npm', ['run', 'build', '--workspace', '@growthpilot/web'], {
+    env: {
+      ...process.env,
+      GROWTHPILOT_API_BASE_URL: apiBaseUrl,
+    },
+  });
+}
 
 const api = spawn('node', [path.join('dist', 'apps', 'api', 'src', 'main.js')], {
   cwd: path.join(repoRoot, 'apps/api'),
@@ -46,13 +58,104 @@ const web = spawn('npm', ['run', 'start', '--workspace', '@growthpilot/web', '--
 });
 
 try {
-  await waitForHttp(`${apiBaseUrl}/auth/login`, { method: 'POST', body: JSON.stringify({ username: 'admin', password: 'admin123' }), headers: { 'content-type': 'application/json' } });
+  await waitForHttp(`${apiBaseUrl}/auth/login`, {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+    headers: { 'content-type': 'application/json' },
+  });
   await waitForHttp(`${webBaseUrl}/login`);
 
-  const loginResponse = await fetch(`${apiBaseUrl}/auth/login`, {
+  const cookieHeader = await loginAndBuildCookieHeader(username, password, apiBaseUrl);
+  const collectedRoutes = collectPageRoutes(pageDir);
+  const routes = filterRoutes(collectedRoutes, routeFilter, routePrefixFilter);
+
+  if (!routeFilter.length && !routePrefixFilter.length && collectedRoutes.length !== 31) {
+    throw new Error(`expected 31 routes, got ${collectedRoutes.length}`);
+  }
+  if (!routes.length) {
+    throw new Error('no routes selected for SSR smoke');
+  }
+
+  const results = [];
+  const failures = [];
+
+  for (const route of routes) {
+    const result = await fetchRoute({ route, cookieHeader, webBaseUrl });
+    results.push(result);
+
+    const errors = evaluateExpectations(result, { expectForbiddenPrefixes, expectOkPrefixes });
+    if (errors.length > 0) {
+      failures.push({ route, errors, status: result.status, classification: result.classification });
+      if (failFast) {
+        break;
+      }
+    }
+  }
+
+  const summary = {
+    username,
+    apiBaseUrl,
+    webBaseUrl,
+    routeCount: routes.length,
+    selectedRoutes: routes,
+    totals: countBy(results, 'classification'),
+    failures,
+    results,
+  };
+
+  if (reportFile) {
+    writeFileSync(reportFile, JSON.stringify(summary, null, 2));
+  }
+
+  const summaryLine = [
+    `SSR validated ${routes.length} routes`,
+    `ok=${summary.totals.ok ?? 0}`,
+    `redirect=${summary.totals.redirect ?? 0}`,
+    `client_error=${summary.totals.client_error ?? 0}`,
+    `server_error=${summary.totals.server_error ?? 0}`,
+    `failures=${failures.length}`,
+  ].join(' | ');
+  console.log(summaryLine);
+
+  if (failures.length > 0) {
+    throw new Error(failures.map((failure) => `${failure.route} [${failure.classification} ${failure.status}] ${failure.errors.join('; ')}`).join('\n'));
+  }
+} finally {
+  stopChild(api);
+  stopChild(web);
+}
+
+function parseArgs(argv) {
+  const parsed = {};
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+    if (!token.startsWith('--')) {
+      continue;
+    }
+    const key = token.slice(2);
+    const next = argv[index + 1];
+    if (!next || next.startsWith('--')) {
+      parsed[key] = true;
+      continue;
+    }
+    parsed[key] = next;
+    index += 1;
+  }
+  return parsed;
+}
+
+function splitCsv(value) {
+  return String(value ?? '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+async function loginAndBuildCookieHeader(usernameValue, passwordValue, apiBaseUrlValue) {
+  const loginResponse = await fetch(`${apiBaseUrlValue}/auth/login`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', accept: 'application/json' },
-    body: JSON.stringify({ username: 'admin', password: 'admin123' }),
+    body: JSON.stringify({ username: usernameValue, password: passwordValue }),
   });
   const loginBody = await loginResponse.json();
   if (!loginResponse.ok) {
@@ -61,31 +164,62 @@ try {
 
   const accessToken = loginBody.data.accessToken;
   const refreshToken = loginBody.data.refreshToken;
-  const cookieHeader = `gp_access_token=${accessToken}; gp_refresh_token=${refreshToken}`;
+  return `gp_access_token=${accessToken}; gp_refresh_token=${refreshToken}`;
+}
 
-  const routes = collectPageRoutes(pageDir);
-  if (routes.length !== 31) {
-    throw new Error(`expected 31 routes, got ${routes.length}`);
+async function fetchRoute({ route, cookieHeader, webBaseUrl: baseUrl }) {
+  const startedAt = Date.now();
+  const response = await fetch(`${baseUrl}${route}`, {
+    headers: {
+      cookie: cookieHeader,
+    },
+    redirect: 'manual',
+  });
+  const body = await response.text();
+  return {
+    route,
+    status: response.status,
+    durationMs: Date.now() - startedAt,
+    classification: classifyStatus(response.status),
+    markers: {
+      forbidden: body.includes('无权限访问'),
+      login: body.includes('登录'),
+      nextError: body.includes('__NEXT_ERROR__') || body.includes('digest:'),
+    },
+    bodyPreview: body.slice(0, 400),
+  };
+}
+
+function evaluateExpectations(result, expectationConfig) {
+  const errors = [];
+  if (result.status >= 500) {
+    errors.push('unexpected 5xx response');
   }
-
-  for (const route of routes) {
-    const response = await fetch(`${webBaseUrl}${route}`, {
-      headers: {
-        cookie: cookieHeader,
-      },
-      redirect: 'manual',
-    });
-
-    if (response.status >= 500) {
-      const body = await response.text();
-      throw new Error(`SSR 500 on ${route}: ${body.slice(0, 500)}`);
-    }
+  if (matchesPrefix(result.route, expectationConfig.expectForbiddenPrefixes) && !result.markers.forbidden) {
+    errors.push('expected forbidden marker');
   }
+  if (matchesPrefix(result.route, expectationConfig.expectOkPrefixes) && result.status >= 400) {
+    errors.push('expected non-error response');
+  }
+  return errors;
+}
 
-  console.log(`SSR smoke passed for ${routes.length} pages`);
-} finally {
-  stopChild(api);
-  stopChild(web);
+function classifyStatus(status) {
+  if (status >= 500) return 'server_error';
+  if (status >= 400) return 'client_error';
+  if (status >= 300) return 'redirect';
+  return 'ok';
+}
+
+function matchesPrefix(route, prefixes) {
+  return prefixes.some((prefix) => route === prefix || route.startsWith(`${prefix}/`));
+}
+
+function filterRoutes(routes, exactRoutes, prefixes) {
+  if (!exactRoutes.length && !prefixes.length) {
+    return routes;
+  }
+  return routes.filter((route) => exactRoutes.includes(route) || matchesPrefix(route, prefixes));
 }
 
 function collectPageRoutes(root) {
@@ -93,7 +227,10 @@ function collectPageRoutes(root) {
   walk(root, (file) => {
     if (!file.endsWith(`${path.sep}page.tsx`)) return;
     const relativeDir = path.relative(root, path.dirname(file));
-    const segments = relativeDir.split(path.sep).filter(Boolean).filter((segment) => !/^\(.*\)$/.test(segment));
+    const segments = relativeDir
+      .split(path.sep)
+      .filter(Boolean)
+      .filter((segment) => !/^\(.*\)$/.test(segment));
     const route = '/' + segments.map((segment) => {
       const match = /^\[(.+)\]$/.exec(segment);
       if (!match) return segment;
@@ -138,8 +275,8 @@ function resetQaFiles() {
   }
 }
 
-async function run(command, args, options = {}) {
-  const child = spawn(command, args, {
+async function run(command, commandArgs, options = {}) {
+  const child = spawn(command, commandArgs, {
     cwd: repoRoot,
     env: process.env,
     stdio: 'inherit',
@@ -147,7 +284,7 @@ async function run(command, args, options = {}) {
   });
   const [code] = await once(child, 'exit');
   if (code !== 0) {
-    throw new Error(`${command} ${args.join(' ')} failed with exit code ${code}`);
+    throw new Error(`${command} ${commandArgs.join(' ')} failed with exit code ${code}`);
   }
 }
 
@@ -167,7 +304,15 @@ async function waitForHttp(url, init, timeoutMs = 45_000) {
     } catch (error) {
       lastError = error;
     }
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 500));
   }
   throw lastError ?? new Error(`timeout waiting for ${url}`);
+}
+
+function countBy(items, key) {
+  return items.reduce((accumulator, item) => {
+    const value = item[key];
+    accumulator[value] = (accumulator[value] ?? 0) + 1;
+    return accumulator;
+  }, {});
 }
