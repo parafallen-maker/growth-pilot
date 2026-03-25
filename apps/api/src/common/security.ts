@@ -1,6 +1,6 @@
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler, HttpException, HttpStatus, SetMetadata } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -22,6 +22,14 @@ interface RateLimitBucket {
 
 const RATE_LIMIT_METADATA_KEY = 'security:rate_limit';
 const RESPONSE_SENSITIVE_FIELDS_METADATA_KEY = 'security:response_sensitive_fields';
+const BCRYPT_COST_FACTOR = 12;
+
+interface BcryptModule {
+  compareSync(plainText: string, storedHash: string): boolean;
+  hashSync(plainText: string, rounds: number): string;
+}
+
+const bcrypt = require('bcrypt') as BcryptModule;
 
 export function requireJwtSecret() {
   const secret = process.env.JWT_SECRET ?? (process.env.NODE_ENV === 'test' ? TEST_JWT_SECRET : undefined);
@@ -164,34 +172,22 @@ export function getAuthCookieOptions() {
 
 @Injectable()
 export class PasswordService {
-  private readonly keyLength = 64;
-  private readonly cost = 16384;
-  private readonly blockSize = 8;
-  private readonly parallelization = 1;
+  private readonly rounds = BCRYPT_COST_FACTOR;
 
   hash(plainText: string) {
-    const salt = randomBytes(16);
-    const derivedKey = scryptSync(plainText, salt, this.keyLength, {
-      N: this.cost,
-      r: this.blockSize,
-      p: this.parallelization,
-    });
-    return `scrypt$${this.cost}$${this.blockSize}$${this.parallelization}$${salt.toString('base64url')}$${derivedKey.toString('base64url')}`;
+    return bcrypt.hashSync(plainText, this.rounds);
   }
 
   verify(plainText: string, storedHash: string) {
-    const [algorithm, cost, blockSize, parallelization, salt, expectedHash] = storedHash.split('$');
-    if (algorithm !== 'scrypt' || !cost || !blockSize || !parallelization || !salt || !expectedHash) {
+    if (!/^\$2[aby]\$\d{2}\$/.test(storedHash)) {
       return false;
     }
 
-    const actualHash = scryptSync(plainText, Buffer.from(salt, 'base64url'), Buffer.from(expectedHash, 'base64url').length, {
-      N: Number(cost),
-      r: Number(blockSize),
-      p: Number(parallelization),
-    }).toString('base64url');
-
-    return secureCompare(actualHash, expectedHash);
+    try {
+      return bcrypt.compareSync(plainText, storedHash);
+    } catch {
+      return false;
+    }
   }
 }
 
