@@ -40,7 +40,7 @@ test('seeded and newly created users persist only password hashes', async () => 
     campusIds: ['campus-guanshanhu'],
   });
 
-  assert.deepEqual(Object.keys(created).sort(), ['campusIds', 'displayName', 'id', 'roles', 'username']);
+  assert.deepEqual(Object.keys(created).sort(), ['campusIds', 'displayName', 'id', 'roles', 'status', 'username']);
   assert.equal(await usersService.validateCredentials('secure.teacher', 'Teacher123!Secure')?.then(Boolean), true);
   assert.equal(await usersService.validateCredentials('secure.teacher', 'wrong-password'), undefined);
 
