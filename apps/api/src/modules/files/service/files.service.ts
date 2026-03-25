@@ -5,6 +5,17 @@ import { FileAssetRepository } from '../repository/file-asset.repository';
 import { OBJECT_STORAGE_ADAPTER, ObjectStorageAdapter } from '../adapter/object-storage.adapter';
 import { UploadFileDto } from '../dto/upload-file.dto';
 
+export const MAX_FILE_UPLOAD_BYTES = 20 * 1024 * 1024;
+export const MAX_UPLOAD_REQUEST_BYTES = 50 * 1024 * 1024;
+
+const ALLOWED_FILE_MIME_TYPES = new Set([
+  'application/msword',
+  'application/pdf',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+]);
+
 @Injectable()
 export class FilesService {
   constructor(
@@ -14,7 +25,7 @@ export class FilesService {
   ) {}
 
   async uploadOne(payload: UploadFileDto) {
-    this.validatePayload(payload);
+    const body = this.validatePayload(payload);
     const objectKey = this.buildObjectKey(payload);
     const putResult = await this.objectStorageAdapter.putObject({
       bucketName: payload.bucketName ?? 'growthpilot-dev',
@@ -23,7 +34,7 @@ export class FilesService {
       mimeType: payload.mimeType,
       sizeBytes: payload.sizeBytes,
       checksum: payload.checksum,
-      body: payload.contentBase64 ? Buffer.from(payload.contentBase64, 'base64') : undefined,
+      body,
       metadata: {
         purpose: payload.purpose ?? 'general',
         sourceType: payload.sourceType ?? 'api_metadata_upload',
@@ -74,6 +85,11 @@ export class FilesService {
       throw new BadRequestException('files is required');
     }
 
+    const totalBytes = files.reduce((sum, file) => sum + (Number(file.sizeBytes) || 0), 0);
+    if (totalBytes > MAX_UPLOAD_REQUEST_BYTES) {
+      throw new BadRequestException(`batch upload size exceeds ${MAX_UPLOAD_REQUEST_BYTES} bytes`);
+    }
+
     const uploaded = await Promise.all(files.map((file) => this.uploadOne(file)));
     return {
       files: uploaded,
@@ -97,6 +113,23 @@ export class FilesService {
     if (!payload.fileName?.trim()) throw new BadRequestException('fileName is required');
     if (!payload.mimeType?.trim()) throw new BadRequestException('mimeType is required');
     if (!Number.isFinite(payload.sizeBytes) || payload.sizeBytes < 0) throw new BadRequestException('sizeBytes must be a non-negative number');
+    if (payload.sizeBytes > MAX_FILE_UPLOAD_BYTES) {
+      throw new BadRequestException(`single file size exceeds ${MAX_FILE_UPLOAD_BYTES} bytes`);
+    }
+    if (!this.isAllowedMimeType(payload.mimeType)) {
+      throw new BadRequestException(`mimeType ${payload.mimeType} is not allowed`);
+    }
+
+    if (!payload.contentBase64) {
+      return undefined;
+    }
+
+    const body = Buffer.from(payload.contentBase64, 'base64');
+    if (body.byteLength > MAX_FILE_UPLOAD_BYTES) {
+      throw new BadRequestException(`single file size exceeds ${MAX_FILE_UPLOAD_BYTES} bytes`);
+    }
+
+    return body;
   }
 
   private buildObjectKey(payload: UploadFileDto) {
@@ -124,5 +157,9 @@ export class FilesService {
 
   private toAssetDetail(fileAsset: FileAsset) {
     return { ...this.toUploadResult(fileAsset), checksum: fileAsset.checksum ?? null, uploadedBy: fileAsset.uploadedBy ?? null };
+  }
+
+  private isAllowedMimeType(mimeType: string) {
+    return mimeType.startsWith('image/') || ALLOWED_FILE_MIME_TYPES.has(mimeType);
   }
 }

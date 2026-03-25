@@ -1,3 +1,5 @@
+import { getRequestId } from '../observability/request-context';
+
 export interface ApiResponse<T> {
   code: string;
   message: string;
@@ -16,7 +18,7 @@ export interface PagedResult<T> {
   page: PageMeta;
 }
 
-export function buildApiResponse<T>(data: T, traceId = 'trace-mock-001'): ApiResponse<T> {
+export function buildApiResponse<T>(data: T, traceId = getRequestId()): ApiResponse<T> {
   return {
     code: 'OK',
     message: 'success',

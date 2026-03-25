@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiAuthGuard } from '../../../common/auth.guard';
+import { normalizePage } from '../../../common/base-list-query.dto';
 import { PermissionGuard } from '../../../common/permission.guard';
 import { RequirePermission } from '../../../common/permission.decorator';
 import { buildApiResponse } from '../../../shared/api-response';
@@ -19,11 +20,15 @@ export class UsersController {
     @Query('pageNo') pageNo?: string,
     @Query('pageSize') pageSize?: string,
   ) {
+    const page = normalizePage({
+      pageNo: pageNo ? Number(pageNo) : 1,
+      pageSize: pageSize ? Number(pageSize) : 20,
+    });
     return buildApiResponse(
       await this.usersService.listUsers(
         keyword,
-        pageNo ? Number(pageNo) : 1,
-        pageSize ? Number(pageSize) : 20,
+        page.pageNo,
+        page.pageSize,
       ),
     );
   }

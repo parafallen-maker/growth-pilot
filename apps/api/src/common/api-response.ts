@@ -1,3 +1,5 @@
+import { getRequestId } from '../observability/request-context';
+
 export interface ApiResponse<T> {
   code: string;
   message: string;
@@ -21,6 +23,6 @@ export function ok<T>(data: T): ApiResponse<T> {
     code: 'OK',
     message: 'success',
     data,
-    traceId: 'local-dev-trace',
+    traceId: getRequestId(),
   };
 }

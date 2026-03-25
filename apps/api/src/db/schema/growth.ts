@@ -1,4 +1,4 @@
-import { createId, date, integer, jsonb, jsonbDefault, numeric, pgTable, sql, text, timestamp, uniqueIndex, varchar } from './base';
+import { createId, date, index, integer, jsonb, jsonbDefault, numeric, pgTable, sql, text, timestamp, uniqueIndex, varchar } from './base';
 import { students } from './students';
 import { schoolTerms } from './settings';
 import { teachers } from './teachers';
@@ -15,7 +15,10 @@ export const rubricTemplates = pgTable('rubric_templates', {
   createdBy: varchar('created_by', { length: 36 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [
+  index('rubric_templates_campus_term_status_idx').on(table.campusId, table.termId, table.status),
+  index('rubric_templates_created_at_idx').on(table.createdAt),
+]);
 
 export const rubricDimensions = pgTable('rubric_dimensions', {
   id: createId(),
@@ -50,7 +53,11 @@ export const growthObservations = pgTable('growth_observations', {
   createdBy: varchar('created_by', { length: 36 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [
+  index('growth_observations_student_date_idx').on(table.studentId, table.observationDate),
+  index('growth_observations_template_idx').on(table.templateId),
+  index('growth_observations_teacher_idx').on(table.teacherId, table.createdAt),
+]);
 
 export const growthGoals = pgTable('growth_goals', {
   id: createId(),
@@ -72,7 +79,10 @@ export const growthGoals = pgTable('growth_goals', {
   createdBy: varchar('created_by', { length: 36 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [
+  index('growth_goals_student_status_idx').on(table.studentId, table.status),
+  index('growth_goals_term_due_date_idx').on(table.termId, table.dueDate),
+]);
 
 export const growthGoalCheckins = pgTable('growth_goal_checkins', {
   id: createId(),
@@ -83,7 +93,7 @@ export const growthGoalCheckins = pgTable('growth_goal_checkins', {
   nextAction: text('next_action'),
   recorderUserId: varchar('recorder_user_id', { length: 36 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [index('growth_goal_checkins_goal_date_idx').on(table.goalId, table.checkinDate)]);
 
 export const growthReports = pgTable('growth_reports', {
   id: createId(),
@@ -103,4 +113,8 @@ export const growthReports = pgTable('growth_reports', {
   createdBy: varchar('created_by', { length: 36 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-}, (table) => [uniqueIndex('growth_reports_student_type_period_uq').on(table.studentId, table.reportType, table.periodKey)]);
+}, (table) => [
+  uniqueIndex('growth_reports_student_type_period_uq').on(table.studentId, table.reportType, table.periodKey),
+  index('growth_reports_term_status_idx').on(table.termId, table.status),
+  index('growth_reports_job_idx').on(table.generatedByJobId),
+]);

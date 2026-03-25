@@ -1,4 +1,4 @@
-import { createId, date, integer, jsonb, jsonbDefault, numeric, pgTable, sql, text, timestamp, uniqueIndex, varchar } from './base';
+import { createId, date, index, integer, jsonb, jsonbDefault, numeric, pgTable, sql, text, timestamp, uniqueIndex, varchar } from './base';
 import { students } from './students';
 import { campuses, schoolTerms } from './settings';
 import { teachers } from './teachers';
@@ -39,7 +39,12 @@ export const homeworkSubmissions = pgTable('homework_submissions', {
   publishedAt: timestamp('published_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-}, (table) => [uniqueIndex('homework_submissions_submission_no_uq').on(table.submissionNo)]);
+}, (table) => [
+  uniqueIndex('homework_submissions_submission_no_uq').on(table.submissionNo),
+  index('homework_submissions_student_date_idx').on(table.studentId, table.homeworkDate),
+  index('homework_submissions_campus_term_status_idx').on(table.campusId, table.termId, table.reviewStatus),
+  index('homework_submissions_teacher_status_idx').on(table.teacherId, table.aiStatus),
+]);
 
 export const homeworkAiAnalyses = pgTable('homework_ai_analyses', {
   id: createId(),
@@ -61,7 +66,7 @@ export const homeworkAiAnalyses = pgTable('homework_ai_analyses', {
   outputTokens: integer('output_tokens'),
   errorMessage: text('error_message'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [index('homework_ai_analyses_submission_idx').on(table.submissionId, table.createdAt)]);
 
 export const homeworkReviews = pgTable('homework_reviews', {
   id: createId(),
@@ -111,7 +116,10 @@ export const homeworkReviewDrafts = pgTable('homework_review_drafts', {
   savedAt: timestamp('saved_at', { withTimezone: true }).defaultNow().notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-}, (table) => [uniqueIndex('homework_review_drafts_submission_id_uq').on(table.submissionId)]);
+}, (table) => [
+  uniqueIndex('homework_review_drafts_submission_id_uq').on(table.submissionId),
+  index('homework_review_drafts_reviewer_idx').on(table.reviewerTeacherId, table.savedAt),
+]);
 
 export const homeworkOutboxEvents = pgTable('homework_outbox_events', {
   id: createId(),
@@ -120,4 +128,7 @@ export const homeworkOutboxEvents = pgTable('homework_outbox_events', {
   payload: jsonbDefault<Record<string, unknown>>('payload'),
   status: varchar('status', { length: 16 }).default('pending').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [
+  index('homework_outbox_events_status_created_idx').on(table.status, table.createdAt),
+  index('homework_outbox_events_biz_idx').on(table.bizId),
+]);

@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from '../modules/auth/service/auth.service';
+import { setRequestUserId } from '../observability/request-context';
 
 @Injectable()
 export class ApiAuthGuard implements CanActivate {
@@ -15,6 +16,7 @@ export class ApiAuthGuard implements CanActivate {
 
     const user = await this.authService.currentUser(token);
     request.authUser = user;
+    setRequestUserId((user as { id?: string }).id);
     return true;
   }
 
