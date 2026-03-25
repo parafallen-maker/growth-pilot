@@ -13,7 +13,7 @@ function ReportListSection({ title, items }: { title: string; items: GrowthRepor
       <div className="page-header">
         <div>
           <h3>{title}</h3>
-          <p>三段式布局：待生成 / 草稿 / 已发布。</p>
+          <p>真实 reports 数据按状态分组展示。</p>
         </div>
         <button className="btn">批量处理</button>
       </div>
@@ -41,8 +41,8 @@ export default async function GrowthReportsPage() {
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="成长报告" permissionCode={growthPermissions.reportsView} />}>
       <div className="stack">
         <PageHeader
-          title="成长报告骨架"
-          description={`P15 三段列表 + 三栏工作台已落地。query key: ${JSON.stringify(queryKeys.growthReports({ pageNo: 1, pageSize: 20, reportType: 'weekly' }))}`}
+          title="成长报告"
+          description={`真实 reports 列表已接：${JSON.stringify(queryKeys.growthReports({ pageNo: 1, pageSize: 20, reportType: 'weekly' }))}`}
           actions={<><button className="btn primary">生成草稿</button><button className="btn">打开预览</button><button className="btn">发布设置</button></>}
         />
         <FilterBar fields={[
@@ -55,7 +55,7 @@ export default async function GrowthReportsPage() {
         ]} />
         <div className="grid-3">
           <ReportListSection title="待生成" items={result.queued} />
-          <ReportListSection title="草稿" items={result.drafts} />
+          <ReportListSection title="草稿 / 已复核" items={result.drafts} />
           <ReportListSection title="已发布" items={result.published} />
         </div>
         <div className="report-workbench-layout">
@@ -64,21 +64,21 @@ export default async function GrowthReportsPage() {
             <SummaryPanel title="素材来源" items={result.editor.materialPool} />
           </section>
           <section className="panel stack">
-            <div className="page-header"><h3>正文编辑区</h3><span className="badge">editor / preview split</span></div>
+            <div className="page-header"><h3>正文 / 详情预览</h3><span className="badge">real detail</span></div>
             {result.editor.draftSections.map((item) => (
               <article key={item.title} className="selection-card">
                 <strong>{item.title}</strong>
-                <div className="subtle" style={{ marginTop: 8 }}>{item.detail}</div>
-                <textarea className="textarea" defaultValue={`# ${item.title}\n\n这里接 Markdown 编辑器或简版富文本。`} style={{ marginTop: 12 }} />
+                <div className="subtle" style={{ marginTop: 8, whiteSpace: 'pre-wrap' }}>{item.detail}</div>
               </article>
             ))}
           </section>
           <section className="panel stack">
-            <div className="page-header"><h3>发布设置</h3><span className="badge success">jobId: {action.generateJob.jobId}</span></div>
+            <div className="page-header"><h3>发布设置</h3><span className="badge success">API ready</span></div>
             <SummaryPanel title="发布规则" items={result.editor.publishSettings} />
             <article className="selection-card">
               <strong>动作约定</strong>
               <div className="subtle" style={{ marginTop: 8 }}>{action.note}</div>
+              <div className="subtle" style={{ marginTop: 8 }}>generate: {action.generateEndpoint} / review: {action.reviewEndpoint} / publish: {action.publishEndpoint}</div>
               <div className="button-row" style={{ marginTop: 12 }}>
                 <button className="btn">保存草稿</button>
                 <button className="btn">预览报告</button>

@@ -1,5 +1,6 @@
-import { apiRequest, type PageResult } from '@/lib/api-client';
 import type { QueryBase } from '@/features/shared/types';
+import type { PageResult } from '@/lib/api-client';
+import { serverApiRequest } from '@/lib/server-api';
 
 export type RubricTemplateItem = {
   rubricId: string;
@@ -31,6 +32,7 @@ export type GoalItem = {
   targetValue: string;
   dueDate: string;
   status: string;
+  checkins: Array<{ id: string; checkinDate: string; progressValue?: number | null; progressNote?: string | null; nextAction?: string | null }>;
 };
 
 export type ReportQueueItem = {
@@ -58,7 +60,9 @@ export type GrowthQuery = QueryBase & {
 function buildQuery(params: Record<string, string | number | undefined>) {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== '' && value !== 'all') query.set(key, String(value));
+    if (value !== undefined && value !== '' && value !== 'all') {
+      query.set(key === 'publishStatus' ? 'status' : key, String(value));
+    }
   });
   const text = query.toString();
   return text ? `?${text}` : '';
@@ -68,7 +72,7 @@ const formatDateTime = (value?: string | null) => (value ? value.replace('T', ' 
 
 export const growthService = {
   async queryRubrics(params: QueryBase = {}): Promise<PageResult<RubricTemplateItem>> {
-    const result = await apiRequest<PageResult<{ id: string; campusId?: string | null; termId?: string | null; name: string; status: string; dimensions: unknown[]; updatedAt: string }>>(`/growth/rubrics${buildQuery(params)}`);
+    const result = await serverApiRequest<PageResult<{ id: string; campusId?: string | null; termId?: string | null; name: string; status: string; dimensions: unknown[]; updatedAt: string }>>(`/growth/rubrics${buildQuery(params)}`);
     return {
       ...result,
       list: result.list.map((item) => ({
@@ -84,13 +88,14 @@ export const growthService = {
   },
 
   async detailRubric(rubricId: string) {
-    const detail = await apiRequest<{ id: string; name: string; status: string; dimensions: Array<{ code: string; name: string; weight: number; scoreMin: number; scoreMax: number; description?: string; sortOrder: number }> }>(`/growth/rubrics/${rubricId}`);
+    const detail = await serverApiRequest<{ id: string; name: string; status: string; dimensions: Array<{ id: string; code: string; name: string; weight: number; scoreMin: number; scoreMax: number; description?: string; sortOrder: number }> }>(`/growth/rubrics/${rubricId}`);
     return {
       rubricId: detail.id,
       name: detail.name,
       schemaVersion: 'rubric-template-v1',
       status: detail.status,
       dimensions: detail.dimensions.map((dimension) => ({
+        id: dimension.id,
         code: dimension.code,
         name: dimension.name,
         weight: dimension.weight,
@@ -98,12 +103,12 @@ export const growthService = {
         description: dimension.description ?? '--',
         sort: dimension.sortOrder,
       })),
-      editorNotice: '真实 rubric detail 已接入，模板 CRUD 编辑器待下一波收口。',
+      editorNotice: 'rubric 列表与 detail 已切到真实接口；模板编辑保存仍待下一波接入。',
     };
   },
 
   async queryObservations(params: GrowthQuery = {}): Promise<PageResult<ObservationItem>> {
-    const result = await apiRequest<PageResult<{ id: string; observationDate: string; studentId: string; teacherId?: string | null; scene: string; totalScore: number; publishToFamily?: boolean; updatedAt: string }>>(`/growth/observations${buildQuery(params)}`);
+    const result = await serverApiRequest<PageResult<{ id: string; observationDate: string; studentId: string; teacherId?: string | null; scene: string; totalScore: number; publishToFamily?: boolean; updatedAt: string }>>(`/growth/observations${buildQuery(params)}`);
     return {
       ...result,
       list: result.list.map((item) => ({
@@ -123,12 +128,12 @@ export const growthService = {
     return {
       schemaKey: 'observation.dynamic.rubric-template-v1',
       createPermission: 'growth:observations:manage',
-      idempotencyHint: '创建观察时可复用 requestId，避免重复提交。',
+      idempotencyHint: '创建观察已存在真实 POST /growth/observations，当前页先完成列表真化。',
     };
   },
 
   async queryGoals(params: GrowthQuery = {}): Promise<PageResult<GoalItem>> {
-    const result = await apiRequest<PageResult<{ id: string; studentId: string; goalType: string; title: string; currentValue?: number | null; targetValue?: number | null; dueDate: string; status: string; checkins?: unknown[] }>>(`/growth/goals${buildQuery(params)}`);
+    const result = await serverApiRequest<PageResult<{ id: string; studentId: string; goalType: string; title: string; currentValue?: number | null; targetValue?: number | null; dueDate: string; status: string; checkins?: Array<{ id: string; checkinDate: string; progressValue?: number | null; progressNote?: string | null; nextAction?: string | null }> }>>(`/growth/goals${buildQuery(params)}`);
     return {
       ...result,
       list: result.list.map((item) => ({
@@ -140,13 +145,14 @@ export const growthService = {
         targetValue: item.targetValue === null || item.targetValue === undefined ? '--' : String(item.targetValue),
         dueDate: item.dueDate,
         status: item.status,
+        checkins: item.checkins ?? [],
       })),
     };
   },
 
   async detailGoal(goalId: string) {
     const goals = await this.queryGoals({ pageNo: 1, pageSize: 100 });
-    const goal = goals.list.find((item) => item.goalId === goalId) ?? goals.list[0];
+    const goal = goals.list.find((item) => item.goalId === goalId) ?? goals.list[0] ?? null;
     return {
       goalId,
       profile: [
@@ -154,12 +160,15 @@ export const growthService = {
         { name: '关联学生', detail: goal?.studentName ?? '--' },
         { name: '截止时间', detail: goal?.dueDate ?? '--' },
       ],
-      followups: [{ title: 'check-in 接口已就位', detail: 'POST /growth/goals/{goalId}/checkins 已存在，页面动作位后续可直接接。' }],
+      followups: (goal?.checkins ?? []).map((item) => ({
+        title: `${item.checkinDate} · ${item.progressValue ?? '--'}`,
+        detail: [item.progressNote, item.nextAction].filter(Boolean).join(' / ') || '已记录 check-in。',
+      })),
       linkedItems: [
-        { name: '关联观察', detail: '下一波补 observation/report 反查聚合。' },
-        { name: '关联家庭任务', detail: '当前后端未提供该聚合，先保留占位。' },
+        { name: '关联观察', detail: '后端暂未提供 goal -> observation 聚合关系，当前页先显示真实 goal/checkin 数据。' },
+        { name: '关联家庭任务', detail: '当前后端未提供该聚合，先明确缺口，不再伪装成本地 mock。' },
       ],
-      nextAction: 'goal check-in 已有真接口，详情聚合页待下一波补强。',
+      nextAction: 'goal 列表与 check-in 历史已来自真实接口。',
     };
   },
 
@@ -167,14 +176,15 @@ export const growthService = {
     return {
       goalId,
       action: 'check-in',
+      endpoint: `/growth/goals/${goalId}/checkins`,
       permissionCode: 'growth:goals:manage',
-      idempotencyKeyRequired: true,
+      idempotencyKeyRequired: false,
     };
   },
 
   async queryReports(params: GrowthQuery = {}) {
-    const statusMap: Record<string, 'queued' | 'drafts' | 'published'> = { queued: 'queued', draft: 'drafts', reviewing: 'drafts', published: 'published' };
-    const result = await apiRequest<PageResult<{ id: string; studentId: string; reportType: string; periodKey: string; ownerUserId?: string | null; status: string }>>(`/growth/reports${buildQuery(params)}`);
+    const statusMap: Record<string, 'queued' | 'drafts' | 'published'> = { queued: 'queued', draft: 'drafts', reviewed: 'drafts', published: 'published' };
+    const result = await serverApiRequest<PageResult<{ id: string; studentId: string; reportType: string; periodKey: string; ownerUserId?: string | null; status: string }>>(`/growth/reports${buildQuery(params)}`);
     const groups = { queued: [] as ReportQueueItem[], drafts: [] as ReportQueueItem[], published: [] as ReportQueueItem[] };
 
     result.list.forEach((item) => {
@@ -186,9 +196,14 @@ export const growthService = {
         period: item.periodKey,
         owner: item.ownerUserId ?? '--',
         status: item.status,
-        actionHint: target === 'published' ? '已发布，可回看历史' : target === 'drafts' ? '草稿/待复核，继续编辑' : '待生成/待补素材',
+        actionHint: target === 'published' ? '已发布，可回看历史' : target === 'drafts' ? '草稿/待复核，继续处理' : '待生成/待补素材',
       });
     });
+
+    const firstReportId = result.list[0]?.id;
+    const firstDetail = firstReportId
+      ? await serverApiRequest<{ report: { id: string; title?: string | null; draftMarkdown?: string | null; status: string; updatedAt?: string | null }; workflow?: Record<string, unknown> }>(`/growth/reports/${firstReportId}`)
+      : null;
 
     return {
       filters: params,
@@ -197,18 +212,18 @@ export const growthService = {
       published: groups.published,
       editor: {
         materialPool: [
-          { name: '作业复核摘要', detail: '已可从 homework review 真结果补料，页面细联动待补。' },
-          { name: '成长观察', detail: 'observations 真接口已接入。' },
-          { name: '成长目标', detail: 'goals 真接口已接入。' },
+          { name: '作业复核摘要', detail: '后端尚未提供 homework -> growth 报告聚合接口，暂保留缺口说明。' },
+          { name: '成长观察', detail: 'observations 列表已接真接口。' },
+          { name: '成长目标', detail: 'goals 列表已接真接口。' },
         ],
         draftSections: [
-          { title: '正文编辑区', detail: '编辑器仍是前端骨架，报告草稿列表已换真源。' },
-          { title: '预览分离', detail: '生成 / 编辑 / 发布仍保持分离。' },
+          { title: firstDetail?.report.title ?? '报告正文', detail: firstDetail?.report.draftMarkdown ?? '当前无报告草稿内容。' },
+          { title: '工作流状态', detail: `status=${firstDetail?.report.status ?? 'queued'} / updatedAt=${formatDateTime(firstDetail?.report.updatedAt)}` },
         ],
         publishSettings: [
-          { name: '发送渠道', detail: '微信 / 企业微信 / 系统消息（占位）' },
-          { name: '发布状态', detail: 'draft -> reviewing -> published' },
-          { name: '发布人', detail: 'growth advisor / campus admin' },
+          { name: '发送渠道', detail: 'POST /growth/reports/{id}/publish 支持 channels[]。' },
+          { name: '发布状态', detail: 'draft -> reviewed -> published' },
+          { name: '发布人', detail: 'publisherUserId 由当前登录用户注入。' },
         ],
       },
     };
@@ -216,9 +231,10 @@ export const growthService = {
 
   actionReport() {
     return {
-      generateJob: { jobId: 'job_growth_report_001', status: 'queued' },
-      publishPermission: 'growth:reports:manage',
-      note: '报告生成已接真实 generate endpoint，publish API 仍待下一波。',
+      generateEndpoint: '/growth/reports/generate',
+      reviewEndpoint: '/growth/reports/{reportId}/review',
+      publishEndpoint: '/growth/reports/{reportId}/publish',
+      note: 'reports 列表与首条 detail 已接真实接口；生成/复核/发布动作接口已存在，编辑器交互留待后续。',
     };
   },
 };

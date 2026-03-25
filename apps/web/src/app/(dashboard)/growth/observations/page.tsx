@@ -1,4 +1,4 @@
-import { FilterBar, MetricGrid, PageHeader, StateBlock } from '@/components/business/page-blocks';
+import { FilterBar, MetricGrid, PageHeader } from '@/components/business/page-blocks';
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { queryKeys } from '@/features/shared/query-keys';
 import { growthPermissions } from '@/features/growth/constants';
@@ -10,20 +10,21 @@ export default async function GrowthObservationsPage() {
   const allowed = hasPermission(currentUser.permissions, growthPermissions.observationsView);
   const result = await growthService.queryObservations({ pageNo: 1, pageSize: 20, scene: 'all', reportPublished: 'all', sortBy: 'observedAt', sortOrder: 'desc' });
   const createMeta = growthService.createObservation();
+  const publishedCount = result.list.filter((item) => item.reportPublished === '已纳入').length;
 
   return (
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="成长观察" permissionCode={growthPermissions.observationsView} />}>
       <div className="stack">
         <PageHeader
-          title="成长观察列表骨架"
-          description={`P13 已放列表、筛选、创建入口、状态块。query key: ${JSON.stringify(queryKeys.growthObservations({ pageNo: 1, pageSize: 20, scene: 'all' }))}`}
+          title="成长观察"
+          description={`真实列表接口已接：${JSON.stringify(queryKeys.growthObservations({ pageNo: 1, pageSize: 20, scene: 'all' }))}`}
           actions={<><button className="btn primary">新建观察</button><button className="btn">导出</button><button className="btn">动态 schema 预览</button></>}
         />
         <MetricGrid items={[
-          { label: '本周观察覆盖', value: '78%', hint: '目标 90%，还差 6 条' },
-          { label: '待纳入报告', value: '12', hint: '报告素材池可直接拾取' },
-          { label: '已发布观察', value: '28', hint: '已进入周报 / 月报' },
-          { label: '待补老师签名', value: '3', hint: '进入 review 前需补齐' },
+          { label: '当前页观察', value: String(result.list.length), hint: `total ${result.page.total}` },
+          { label: '已纳入报告', value: String(publishedCount), hint: 'publishToFamily=true' },
+          { label: '待纳入报告', value: String(result.list.length - publishedCount), hint: '仍可进入报告素材池' },
+          { label: '创建接口', value: 'POST ready', hint: createMeta.idempotencyHint },
         ]} />
         <FilterBar fields={[
           { label: '学生', value: '全部学生', kind: 'select' },
@@ -55,11 +56,6 @@ export default async function GrowthObservationsPage() {
             </table>
           </div>
         </section>
-        <div className="grid-3">
-          <StateBlock state="loading" title="页面状态约定 / loading" />
-          <StateBlock state="empty" title="页面状态约定 / empty" />
-          <StateBlock state="error" title="页面状态约定 / error" />
-        </div>
       </div>
     </PermissionGuard>
   );

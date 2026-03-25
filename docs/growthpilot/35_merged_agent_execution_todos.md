@@ -290,9 +290,11 @@
 
 #### Phase 2：业务页面接真（P1）
 
-- [ ] `FE-11` Homework submissions 列表接真 `GET /homework/submissions`
-- [ ] `FE-12` Homework review 工作台接真 `GET /homework/submissions/{id}` + `PUT review-draft` + `POST review`
-- [ ] `FE-13` Growth rubrics/observations/goals/reports 各页面接真
+- [x] `FE-11` Homework submissions 列表接真 `GET /homework/submissions`
+- [/] `FE-12` Homework review 工作台接真 `GET /homework/submissions/{id}` + `PUT review-draft` + `POST review`
+  - 已接真实 detail / review-draft / review submit；附件下载预览、上一条/下一条导航仍未完成。
+- [/] `FE-13` Growth rubrics/observations/goals/reports 各页面接真
+  - rubrics/observations/goals/reports 列表与关键 detail 已接真实 API；create/edit/generate/review/publish 的前端交互仍待后续完善。
 - [/] `FE-14` Billing products/contracts/invoices/renewals 各页面接真
   - 已接 `billing/products`、`billing/contracts`、`billing/contracts/{id}`、`billing/invoices`、`billing/renewals` 真接口；payments/refunds/adjustments 列表仍受后端接口缺口限制，页面明确显示缺口而不伪造数据。
 - [/] `FE-15` Attendance board/devices/homework-time 各页面接真

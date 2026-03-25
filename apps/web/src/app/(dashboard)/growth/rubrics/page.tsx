@@ -15,8 +15,8 @@ export default async function GrowthRubricsPage() {
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="Rubric 模板" permissionCode={growthPermissions.rubricsView} />}>
       <div className="stack">
         <PageHeader
-          title="Rubric 模板骨架"
-          description={`P16 双栏结构已落地。query key: ${JSON.stringify(queryKeys.growthRubrics({ pageNo: 1, pageSize: 20 }))}`}
+          title="Rubric 模板"
+          description={`真实列表 + detail 已接：${JSON.stringify(queryKeys.growthRubrics({ pageNo: 1, pageSize: 20 }))}`}
           actions={<><button className="btn primary">新建模板</button><button className="btn">复制模板</button><button className="btn">发布版本</button></>}
         />
         <div className="grid-growth-rubric">
@@ -24,9 +24,9 @@ export default async function GrowthRubricsPage() {
             <div className="page-header">
               <div>
                 <h3>模板列表</h3>
-                <p>左侧列表遵守 list/query 分层，后续直接换 A6 的接口即可。</p>
+                <p>当前直接展示真实 rubric template 数据。</p>
               </div>
-              <span className="badge">list / filter / version</span>
+              <span className="badge">{result.page.total} templates</span>
             </div>
             {result.list.map((item) => (
               <article key={item.rubricId} className="selection-card active-card">
@@ -43,7 +43,7 @@ export default async function GrowthRubricsPage() {
           <section className="panel stack">
             <div className="page-header">
               <div>
-                <h3>右侧维度编辑器</h3>
+                <h3>维度详情</h3>
                 <p>{detail.editorNotice}</p>
               </div>
               <div className="button-row">
@@ -62,13 +62,13 @@ export default async function GrowthRubricsPage() {
                   <div className="field"><label>分值范围</label><input className="input" defaultValue={dimension.scoreRange} /></div>
                   <div className="field form-span-2"><label>描述</label><textarea className="textarea" defaultValue={dimension.description} /></div>
                   <div className="field"><label>排序</label><input className="input" defaultValue={String(dimension.sort)} /></div>
-                  <div className="field"><label>状态提示</label><input className="input" defaultValue="动态 schema / 未接真实保存" /></div>
+                  <div className="field"><label>状态提示</label><input className="input" defaultValue="detail 真接口 / 保存待接" /></div>
                 </div>
               </article>
             ))}
             <SummaryPanel title="接线备注" items={[
-              { name: 'service 分层', detail: 'queryRubrics / detailRubric 已拆开，避免页面直写 fetch。' },
-              { name: '协议约定', detail: '模板编辑提交后续需由 Zod schema -> DTO -> action payload。' },
+              { name: 'service 分层', detail: 'queryRubrics / detailRubric 均走真实接口。' },
+              { name: '协议约定', detail: '模板编辑提交仍待后续接 POST /growth/rubrics。' },
               { name: '权限', detail: `查看 ${growthPermissions.rubricsView}，编辑 ${growthPermissions.rubricsManage}` },
             ]} />
           </section>

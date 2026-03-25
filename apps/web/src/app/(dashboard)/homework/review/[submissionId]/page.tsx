@@ -1,52 +1,59 @@
 import { PermissionGuard } from '@/components/business/permission-guard';
 import { PageHeader, SummaryPanel, TabStrip, TimelinePanel } from '@/components/business/page-blocks';
 import { homeworkPermissions, reviewViewModes } from '@/features/homework/constants';
-import { homeworkReviewDefaultValues, homeworkReviewFormSchema } from '@/features/homework/schema';
+import { homeworkReviewFormSchema } from '@/features/homework/schema';
 import { queryKeys } from '@/features/shared/query-keys';
 import { requireCurrentUser } from '@/lib/current-user';
 import { homeworkService } from '@/services/homework-service';
-import { homeworkReviewDraftStore } from '@/store/homework-review-store';
+import { saveHomeworkReviewDraft, submitHomeworkReview } from './actions';
 
-export default async function HomeworkReviewWorkbenchPage({ params }: { params: Promise<{ submissionId: string }> }) {
+export default async function HomeworkReviewWorkbenchPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ submissionId: string }>;
+  searchParams?: Promise<{ saved?: string; submitted?: string; error?: string }>;
+}) {
   const currentUser = await requireCurrentUser();
   const { submissionId } = await params;
+  const query = await searchParams;
   const detail = await homeworkService.detail(submissionId);
-  const draft = homeworkReviewDraftStore.getInitialDraft(submissionId);
+  const taxonomies = await homeworkService.taxonomyQuery();
+  const draft = detail.reviewDraft;
+  const selectedErrorIds = new Set(draft?.finalErrorItems?.map((item) => item.errorTaxonomyId) ?? taxonomies.list.slice(0, 2).map((item) => item.id));
+  const formDefaults = {
+    reviewResult: draft?.reviewResult ?? ((detail.review?.reviewResult as 'approved' | 'adjusted' | 'rejected' | undefined) ?? 'adjusted'),
+    finalAccuracyPct: draft?.finalAccuracyPct ?? detail.review?.finalAccuracyPct ?? 0,
+    finalErrorSummary: draft?.finalErrorSummary ?? detail.review?.finalErrorSummary ?? '',
+    finalSuggestion: draft?.finalSuggestion ?? detail.review?.finalSuggestion ?? '',
+    publishToFamily: draft?.publishToFamily ?? detail.review?.publishToFamily ?? false,
+  };
 
   return (
     <PermissionGuard allowed={currentUser.permissions.includes(homeworkPermissions.review)}>
       <div className="stack">
         <PageHeader
-          title={`作业复核工作台 / ${submissionId}`}
-          description={`P11 三栏布局已落骨架。detail key: ${JSON.stringify(queryKeys.homeworkSubmissionDetail(submissionId))} / review key: ${JSON.stringify(queryKeys.homeworkReviewDraft(submissionId))}`}
+          title={`作业复核工作台 / ${detail.submissionNo}`}
+          description={`detail key: ${JSON.stringify(queryKeys.homeworkSubmissionDetail(submissionId))} / review key: ${JSON.stringify(queryKeys.homeworkReviewDraft(submissionId))}`}
           actions={
             <>
               <button className="btn">上一条</button>
               <button className="btn">下一条</button>
-              <button className="btn">保存草稿</button>
-              <button className="btn primary">提交正式复核</button>
+              <span className="badge">status: {detail.aiJob.status}</span>
             </>
           }
         />
 
-        <section className="panel unsaved-banner">
-          <div>
-            <div className="badge warning">未保存提醒占位</div>
-            <h3 style={{ marginTop: 12 }}>切换 submission 时保留提醒，不让老师的修改白给。</h3>
-            <p>{draft.warning}</p>
-          </div>
-          <div className="button-row">
-            <button className="btn">放弃修改</button>
-            <button className="btn primary">继续编辑</button>
-          </div>
-        </section>
+        {query?.saved === '1' ? <section className="panel"><div className="badge success">草稿已保存</div></section> : null}
+        {query?.submitted === '1' ? <section className="panel"><div className="badge success">正式复核已提交</div></section> : null}
+        {query?.error ? <section className="panel"><div className="badge warning">{decodeURIComponent(query.error)}</div></section> : null}
 
         <div className="review-layout">
           <section className="panel stack">
             <div className="page-header">
               <div>
                 <h3>左栏 / 原图附件</h3>
-                <p>多页切换、缩略图、放大镜与 OCR 标记层位已预留。</p>
+                <p>当前已展示真实 submission file 关联；预览下载仍待 files 页面继续接。</p>
               </div>
               <div className="button-row">
                 <button className="btn">上一页</button>
@@ -66,7 +73,7 @@ export default async function HomeworkReviewWorkbenchPage({ params }: { params: 
             <div className="page-header">
               <div>
                 <h3>中栏 / AI 结果</h3>
-                <p>rawMarkdown + structured JSON 双视图，错因建议单独展示。</p>
+                <p>真实 detail 已接；没有分析结果时回退到 submission/review 当前状态摘要。</p>
               </div>
               <div className="button-row">
                 <span className="badge">{detail.aiJob.status}</span>
@@ -83,53 +90,67 @@ export default async function HomeworkReviewWorkbenchPage({ params }: { params: 
             <TimelinePanel title="AI 错因建议 / 家长反馈草案" items={detail.suggestions} />
           </section>
 
-          <section className="panel stack">
+          <form className="panel stack">
             <div className="page-header">
               <div>
                 <h3>右栏 / 教师复核表单</h3>
-                <p>默认值来自 DTO/VO mapper，不直接绑 raw response。</p>
+                <p>PUT review-draft + POST review 已接真实 API。</p>
               </div>
-              <div className="badge success">schema ready</div>
+              <div className="badge success">schema fields: {Object.keys(homeworkReviewFormSchema.shape).length}</div>
             </div>
 
             <div className="summary-item">
-              <strong>Zod schema</strong>
-              <div className="subtle">字段：{Object.keys(homeworkReviewFormSchema.shape).join(' / ')}</div>
+              <strong>当前学生 / 学科</strong>
+              <div className="subtle">{detail.studentName} / {detail.subject} / 教师 {detail.teacherName}</div>
             </div>
 
             <div className="form-grid">
               <div className="field">
-                <label>finalAccuracyPct</label>
-                <input className="input" defaultValue={String(homeworkReviewDefaultValues.finalAccuracyPct)} />
+                <label>reviewResult</label>
+                <select className="select" name="reviewResult" defaultValue={formDefaults.reviewResult}>
+                  <option value="approved">approved</option>
+                  <option value="adjusted">adjusted</option>
+                  <option value="rejected">rejected</option>
+                </select>
               </div>
               <div className="field">
-                <label>publishToParent</label>
-                <select className="select" defaultValue={homeworkReviewDefaultValues.publishToParent ? '是' : '否'}>
-                  <option>是</option>
-                  <option>否</option>
-                </select>
+                <label>finalAccuracyPct</label>
+                <input className="input" name="finalAccuracyPct" type="number" min="0" max="100" defaultValue={String(formDefaults.finalAccuracyPct)} />
               </div>
               <div className="field form-span-2">
                 <label>错因勾选</label>
                 <div className="chip-row">
-                  {homeworkReviewDefaultValues.errorCodes.map((code) => (
-                    <span className="tab active" key={code}>{code}</span>
+                  {taxonomies.list.map((taxonomy) => (
+                    <label className="tab" key={taxonomy.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <input type="checkbox" name="errorTaxonomyId" value={taxonomy.id} defaultChecked={selectedErrorIds.has(taxonomy.id)} />
+                      <span>{taxonomy.name}</span>
+                    </label>
                   ))}
-                  <span className="tab">+ 增加错因</span>
                 </div>
               </div>
               <div className="field form-span-2">
                 <label>错因备注</label>
-                <textarea className="textarea" defaultValue={homeworkReviewDefaultValues.errorRemark} />
+                <textarea className="textarea" name="finalErrorSummary" defaultValue={formDefaults.finalErrorSummary} />
               </div>
               <div className="field form-span-2">
                 <label>家长反馈建议</label>
-                <textarea className="textarea" defaultValue={homeworkReviewDefaultValues.parentFeedback} />
+                <textarea className="textarea" name="finalSuggestion" defaultValue={formDefaults.finalSuggestion} />
+              </div>
+              <div className="field form-span-2">
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input type="checkbox" name="publishToFamily" defaultChecked={formDefaults.publishToFamily} />
+                  <span>提交后同步发布给家庭</span>
+                </label>
               </div>
             </div>
 
+            <div className="button-row">
+              <button className="btn" formAction={saveHomeworkReviewDraft.bind(null, submissionId)}>保存草稿</button>
+              <button className="btn primary" formAction={submitHomeworkReview.bind(null, submissionId)}>提交正式复核</button>
+            </div>
+
             <SummaryPanel title="复核元信息" items={detail.reviewMeta} />
-          </section>
+          </form>
         </div>
       </div>
     </PermissionGuard>
