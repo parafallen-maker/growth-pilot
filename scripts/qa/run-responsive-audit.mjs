@@ -2,6 +2,7 @@
 import path from 'node:path';
 import { writeFileSync } from 'node:fs';
 import { buildRouteInventory, collectResponsiveMetrics } from './web-surface.mjs';
+import { collectCompiledResponsiveMetrics } from './compiled-page-runtime.mjs';
 
 const args = parseArgs(process.argv.slice(2));
 const repoRoot = process.cwd();
@@ -11,10 +12,16 @@ const assertRouteCount = args['assert-route-count'] ? Number(args['assert-route-
 
 const routeInventory = buildRouteInventory(repoRoot);
 const responsiveMetrics = collectResponsiveMetrics(repoRoot);
+const compiledRuntimeMetrics = await collectCompiledResponsiveMetrics({
+  repoRoot,
+  routes: routeInventory.routes,
+  username: args.username ?? 'admin',
+});
 const smallestViewportWidth = Math.min(...viewportWidths);
 const largeFixedWidthDeclarations = responsiveMetrics.declarations.filter((declaration) =>
   declaration.pxValues.some((value) => value > smallestViewportWidth),
 );
+const runtimeInlineWidthRisks = compiledRuntimeMetrics.inlineStyleDeclarations.filter((declaration) => declaration.px > smallestViewportWidth);
 const hasStackingBreakpoint = responsiveMetrics.mediaQueryMaxWidths.some((value) => value <= smallestViewportWidth);
 
 if (assertRouteCount !== null && routeInventory.routeCount !== assertRouteCount) {
@@ -33,9 +40,22 @@ const summary = {
     largeFixedWidthDeclarations,
     hasStackingBreakpoint,
   },
-  status: largeFixedWidthDeclarations.length === 0 && hasStackingBreakpoint ? 'static-pass' : 'needs-follow-up',
+  runtimeMetrics: {
+    runtimeMode: compiledRuntimeMetrics.runtimeMode,
+    routeExecutionFailures: compiledRuntimeMetrics.routeExecutionFailures,
+    clientBoundaryRoutes: compiledRuntimeMetrics.clientBoundaryRoutes,
+    inlineStyleDeclarationsChecked: compiledRuntimeMetrics.inlineStyleDeclarations.length,
+    runtimeInlineWidthRisks,
+  },
+  status: largeFixedWidthDeclarations.length === 0
+    && runtimeInlineWidthRisks.length === 0
+    && compiledRuntimeMetrics.routeExecutionFailures === 0
+    && hasStackingBreakpoint
+    ? 'runtime-static-pass'
+    : 'needs-follow-up',
   notes: [
     'Static audit checks CSS width declarations and breakpoint inventory only.',
+    'Compiled runtime adds in-process page execution and inline-style width inspection without binding localhost.',
     'Browser-level overflow validation still requires a localhost-capable runtime.',
   ],
 };
@@ -49,6 +69,8 @@ console.log(
     `Responsive audit checked ${summary.routeCount} routes`,
     `viewports=${viewportWidths.join('/')}`,
     `large_width_risks=${largeFixedWidthDeclarations.length}`,
+    `runtime_inline_risks=${runtimeInlineWidthRisks.length}`,
+    `runtime_failures=${compiledRuntimeMetrics.routeExecutionFailures}`,
     `breakpoints=${responsiveMetrics.mediaQueryMaxWidths.join('/')}`,
     `status=${summary.status}`,
   ].join(' | '),

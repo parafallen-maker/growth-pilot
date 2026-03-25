@@ -1,0 +1,103 @@
+{
+  "username": "teacher.zhang",
+  "runtimeMode": "compiled",
+  "routeCount": 5,
+  "selectedRoutes": [
+    "/analytics/billing",
+    "/billing/contracts",
+    "/billing/invoices",
+    "/billing/products",
+    "/billing/renewals"
+  ],
+  "totals": {
+    "forbidden": 5
+  },
+  "failures": [],
+  "results": [
+    {
+      "route": "/analytics/billing",
+      "sourcePage": "/private/tmp/w35-runtime-smoke/apps/web/src/app/(dashboard)/analytics/billing/page.tsx",
+      "durationMs": 2,
+      "status": null,
+      "classification": "forbidden",
+      "markers": {
+        "forbidden": true,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "403 Forbidden无权限访问当前账号缺少 Analytics Billing 所需权限：analytics:billing:view返回工作台",
+      "clientBoundaries": [
+        "client-component"
+      ],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/billing/contracts",
+      "sourcePage": "/private/tmp/w35-runtime-smoke/apps/web/src/app/(dashboard)/billing/contracts/page.tsx",
+      "durationMs": 14,
+      "status": null,
+      "classification": "forbidden",
+      "markers": {
+        "forbidden": true,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "403 Forbidden无权限访问当前账号缺少 合同列表 所需权限：billing:contracts:view返回工作台",
+      "clientBoundaries": [
+        "client-component"
+      ],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/billing/invoices",
+      "sourcePage": "/private/tmp/w35-runtime-smoke/apps/web/src/app/(dashboard)/billing/invoices/page.tsx",
+      "durationMs": 1,
+      "status": null,
+      "classification": "forbidden",
+      "markers": {
+        "forbidden": true,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "403 Forbidden无权限访问当前账号缺少 账单与支付 所需权限：billing:invoices:view返回工作台",
+      "clientBoundaries": [
+        "client-component"
+      ],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/billing/products",
+      "sourcePage": "/private/tmp/w35-runtime-smoke/apps/web/src/app/(dashboard)/billing/products/page.tsx",
+      "durationMs": 0,
+      "status": null,
+      "classification": "forbidden",
+      "markers": {
+        "forbidden": true,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "403 Forbidden无权限访问当前账号缺少 收费产品 所需权限：billing:products:view返回工作台",
+      "clientBoundaries": [
+        "client-component"
+      ],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/billing/renewals",
+      "sourcePage": "/private/tmp/w35-runtime-smoke/apps/web/src/app/(dashboard)/billing/renewals/page.tsx",
+      "durationMs": 1,
+      "status": null,
+      "classification": "forbidden",
+      "markers": {
+        "forbidden": true,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "403 Forbidden无权限访问当前账号缺少 续费跟进 所需权限：billing:renewals:view返回工作台",
+      "clientBoundaries": [
+        "client-component"
+      ],
+      "inlineStyleDeclarations": []
+    }
+  ]
+}

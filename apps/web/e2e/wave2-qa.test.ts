@@ -5,7 +5,6 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { navSections, rolePermissions } from '../src/lib/navigation.ts';
 
 const testDir = fileURLToPath(new URL('.', import.meta.url));
 const repoRoot = resolve(testDir, '..', '..', '..');
@@ -40,22 +39,17 @@ test('QA-12 route inventory lists all 31 app pages without requiring localhost r
   assert.ok(result.routes.includes('/homework/review/submission-001'));
 });
 
-test('QA-13 web permission surface keeps teacher users out of billing navigation', () => {
-  const teacherSections = navSections
-    .map((section) => ({
-      ...section,
-      items: section.items.filter((item) => rolePermissions.subject_teacher.includes(item.permission)),
-    }))
-    .filter((section) => section.items.length > 0);
-  const teacherHrefs = teacherSections.flatMap((section) => section.items.map((item) => item.href));
+test('QA-13 compiled permission smoke returns forbidden surfaces for teacher billing routes', () => {
+  const result = runJsonScript('scripts/qa/run-billing-permission-smoke.mjs', []);
 
-  assert.ok(teacherHrefs.includes('/students'));
-  assert.ok(!teacherHrefs.some((href) => href.startsWith('/billing')));
-  assert.ok(!teacherHrefs.includes('/analytics/billing'));
-  assert.ok(!rolePermissions.subject_teacher.includes('billing:contracts:view'));
+  assert.equal(result.runtimeMode, 'compiled');
+  assert.equal(result.routeCount, 5);
+  assert.equal(result.failures.length, 0);
+  assert.deepEqual(result.totals, { forbidden: 5 });
+  assert.ok(result.results.every((entry: { markers: { forbidden: boolean } }) => entry.markers.forbidden));
 });
 
-test('QA-14 static responsive audit finds no fixed-width declarations wider than 1280px', () => {
+test('QA-14 responsive audit passes static CSS and compiled runtime inline-width checks', () => {
   const result = runJsonScript('scripts/qa/run-responsive-audit.mjs', [
     '--assert-route-count',
     '31',
@@ -63,9 +57,11 @@ test('QA-14 static responsive audit finds no fixed-width declarations wider than
     '1280,1440,1920',
   ]);
 
-  assert.equal(result.status, 'static-pass');
+  assert.equal(result.status, 'runtime-static-pass');
   assert.deepEqual(result.viewportWidths, [1280, 1440, 1920]);
   assert.equal(result.routeCount, 31);
   assert.equal(result.responsiveMetrics.largeFixedWidthDeclarations.length, 0);
+  assert.equal(result.runtimeMetrics.routeExecutionFailures, 0);
+  assert.equal(result.runtimeMetrics.runtimeInlineWidthRisks.length, 0);
   assert.ok(result.responsiveMetrics.mediaQueryMaxWidths.includes(1280));
 });

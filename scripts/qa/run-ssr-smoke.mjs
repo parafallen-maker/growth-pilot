@@ -4,6 +4,7 @@ import { once } from 'node:events';
 import { rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { buildRouteInventory } from './web-surface.mjs';
+import { runCompiledRuntimeSmoke } from './compiled-page-runtime.mjs';
 
 const args = parseArgs(process.argv.slice(2));
 const repoRoot = process.cwd();
@@ -18,6 +19,7 @@ const failFast = Boolean(args['fail-fast']);
 const skipBuild = Boolean(args['skip-build']);
 const listRoutesOnly = Boolean(args['list-routes-only']);
 const assertRouteCount = args['assert-route-count'] ? Number(args['assert-route-count']) : null;
+const runtimeMode = String(args['runtime-mode'] ?? 'compiled');
 const routeFilter = splitCsv(args.routes);
 const routePrefixFilter = splitCsv(args['route-prefixes']);
 const expectForbiddenPrefixes = splitCsv(args['expect-forbidden-prefixes']);
@@ -45,6 +47,37 @@ if (listRoutesOnly) {
   }
 
   console.log(`SSR route inventory listed ${routes.length} routes (full surface: ${collectedRoutes.length})`);
+  process.exit(0);
+}
+
+if (runtimeMode === 'compiled') {
+  const summary = await runCompiledRuntimeSmoke({
+    repoRoot,
+    routes,
+    username,
+    failFast,
+    expectForbiddenPrefixes,
+    expectOkPrefixes,
+  });
+
+  if (reportFile) {
+    writeFileSync(reportFile, JSON.stringify(summary, null, 2));
+  }
+
+  const summaryLine = [
+    `Compiled runtime validated ${routes.length} routes`,
+    `ok=${summary.totals.ok ?? 0}`,
+    `redirect=${summary.totals.redirect ?? 0}`,
+    `forbidden=${summary.totals.forbidden ?? 0}`,
+    `server_error=${summary.totals.server_error ?? 0}`,
+    `failures=${summary.failures.length}`,
+  ].join(' | ');
+  console.log(summaryLine);
+
+  if (summary.failures.length > 0) {
+    throw new Error(summary.failures.map((failure) => `${failure.route} [${failure.classification}] ${failure.errors.join('; ')}`).join('\n'));
+  }
+
   process.exit(0);
 }
 
