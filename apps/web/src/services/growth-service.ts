@@ -275,7 +275,7 @@ export const growthService = {
         period: item.periodKey,
         owner: item.ownerUserId ?? '--',
         status: item.status,
-        actionHint: target === 'published' ? '已发布，可回看历史' : target === 'drafts' ? '草稿/待复核，继续处理' : '待生成/待补素材',
+        actionHint: target === 'published' ? '已发布，可回看历史' : target === 'drafts' ? '草稿 / 待复核，可继续处理' : '等待生成，需补充素材',
       });
     });
 

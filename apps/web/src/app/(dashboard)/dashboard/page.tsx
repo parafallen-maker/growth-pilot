@@ -1,13 +1,13 @@
-import { MetricGrid, PageHeader, SummaryPanel, TimelinePanel } from '@/components/business/page-blocks';
-import { dashboardService } from '@/services/dashboard-service';
+import { MetricGrid, PageHeader, SummaryPanel, TimelinePanel } from '@growthpilot/ui/page-primitives';
+import { analyticsService } from '@/services/analytics-service';
 
 export default async function DashboardPage() {
-  const data = await dashboardService.query({ campusId: 'campus-guiyang', termId: '2026-spring' });
+  const data = await analyticsService.queryOverview({ campusId: 'campus-guiyang', termId: '2026-spring' });
 
   return (
     <div className="stack">
       <PageHeader
-        title="Dashboard 总览"
+        title="工作台总览"
         description="真实数据来自 GET /analytics/overview。指标说话，比口号靠谱。"
         actions={<><button className="btn primary">切学期</button><button className="btn">导出截图</button></>}
       />

@@ -23,7 +23,7 @@ export default async function BillingInvoicesPage({
       <div className="stack">
         <PageHeader
           title="账单 / 支付 / 退款"
-          description={`P22 已切到 billing/invoices 真接口；payment/refund 列表仍受后端接口缺口限制。query key: ${JSON.stringify(queryKeys.billingInvoices(filters))}`}
+          description={`当前展示 billing/invoices 真实数据；payment/refund 列表仍受后端接口缺口限制。query key: ${JSON.stringify(queryKeys.billingInvoices(filters))}`}
           actions={<><button className="btn primary">新建账单</button><a className="btn" href="#payment-create-form">记录支付</a><button className="btn">发起退款</button><button className="btn">添加调整</button></>}
         />
         {query?.paid ? <section className="panel"><div className="badge success">支付已记录：{query.paid}</div></section> : null}
@@ -32,7 +32,7 @@ export default async function BillingInvoicesPage({
           <div className="page-header">
             <div>
               <h3>记录收款</h3>
-              <p>FE-23 已接 POST /billing/invoices/{'{id}'}/payments。当前后端只开放创建与详情，支付列表聚合仍待补齐。</p>
+              <p>表单已接入 POST /billing/invoices/{'{id}'}/payments。当前后端只开放创建与详情，支付列表聚合尚未开放。</p>
             </div>
             <span className="badge success">POST /payments</span>
           </div>
@@ -49,8 +49,8 @@ export default async function BillingInvoicesPage({
           </form>
         </section>
         <FilterBar fields={[
-          { label: '家庭筛选', value: '待补统一 family filter', kind: 'select' },
-          { label: '学生筛选', value: '待补统一 student filter', kind: 'select' },
+          { label: '家庭', value: '全部家庭', kind: 'select' },
+          { label: '学生', value: '全部学生', kind: 'select' },
           { label: '关键词', value: '账单编号 / 支付编号' },
           { label: '状态', value: '全部状态', kind: 'select' },
           { label: '截止开始', value: '2026-03-01' },

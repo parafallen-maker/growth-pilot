@@ -1,4 +1,4 @@
-import { FilterBar, MetricGrid, PageHeader, StateBlock, SummaryPanel } from '@/components/business/page-blocks';
+import { FilterBar, MetricGrid, PageHeader, SummaryPanel } from '@/components/business/page-blocks';
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { analyticsChartExportHint, analyticsPermissions } from '@/features/analytics/constants';
 import { queryKeys } from '@/features/shared/query-keys';
@@ -18,22 +18,17 @@ export default async function AnalyticsBillingPage() {
       <div className="stack">
         <PageHeader
           title="收费分析"
-          description={`P28 已切到 analytics/billing 真聚合，页面按元展示金额。query key: ${JSON.stringify(queryKeys.analyticsBilling(filters))}`}
+          description={`当前展示 analytics/billing 真实聚合结果，页面按元展示金额。query key: ${JSON.stringify(queryKeys.analyticsBilling(filters))}`}
           actions={<><button className="btn primary">导出收费分析</button><button className="btn">查看金额口径</button></>}
         />
         <MetricGrid items={result?.metrics ?? []} />
         <FilterBar fields={[{ label: '校区', value: '贵阳主校区', kind: 'select' }, { label: '学期', value: '2026 春季', kind: 'select' }, { label: '日期', value: '2026-03-01 ~ 2026-03-24' }]} />
         <div className="grid-2">
-          <SummaryPanel title="图表解读" items={result?.chartCards ?? [{ name: 'billing analytics unavailable', detail: 'SSR smoke 时若 API 聚合异常，页面降级展示而不是 500。' }]} />
-          <SummaryPanel title="排行 / 摘要" items={result?.tableCards ?? [{ name: 'fallback', detail: '待补充 analytics/billing 聚合异常的根因。' }]} />
-        </div>
-        <div className="grid-3">
-          <StateBlock state="loading" title="billing analytics loading" />
-          <StateBlock state="empty" title="billing analytics empty" />
-          <StateBlock state="error" title="billing analytics error" actionLabel="重试 billing analytics" />
+          <SummaryPanel title="图表解读" items={result?.chartCards ?? [{ name: '收费分析暂不可用', detail: '当前改为降级展示，避免页面 SSR 直接失败。' }]} />
+          <SummaryPanel title="排行 / 摘要" items={result?.tableCards ?? [{ name: '数据说明', detail: '当前未取到 billing 聚合结果，可稍后刷新重试。' }]} />
         </div>
         <div className="grid-2">
-          <SummaryPanel title="无数据策略" items={[result?.emptyState ?? { name: '降级策略', detail: '保留页面骨架与提示，避免 SSR 500。' }]} />
+          <SummaryPanel title="无数据策略" items={[result?.emptyState ?? { name: '降级策略', detail: '保留摘要说明与筛选条件，避免页面 SSR 直接失败。' }]} />
           <SummaryPanel title="实现守门" items={result?.governance ?? [{ name: 'SSR fallback', detail: 'analytics/billing fetch 失败时返回稳定页面。' }]} />
         </div>
         <SummaryPanel title="导出与验收提示" items={[{ name: '图表导出', detail: analyticsChartExportHint }, { name: '金额显示', detail: '页面展示统一为元，接口传输仍保持 cents。' }]} />

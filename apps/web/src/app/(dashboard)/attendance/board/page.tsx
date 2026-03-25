@@ -1,4 +1,4 @@
-import { MetricGrid, FilterBar, PageHeader, StateBlock, SummaryPanel, TimelinePanel } from '@/components/business/page-blocks';
+import { FilterBar, MetricGrid, PageHeader, SummaryPanel, TimelinePanel } from '@/components/business/page-blocks';
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { attendancePermissions } from '@/features/attendance/constants';
 import { queryKeys } from '@/features/shared/query-keys';
@@ -17,14 +17,22 @@ export default async function AttendanceBoardPage() {
     sortBy: 'happenedAt',
     sortOrder: 'desc' as const,
   };
-  const result = await attendanceService.queryBoard(filters);
+  const result = await attendanceService.queryBoard(filters).catch(() => ({
+    filters,
+    metrics: [],
+    absentStudents: [{ name: '当前无法获取应到名单', detail: 'roster 接口尚未开放，且本次未取到 attendance/events 返回。' }],
+    abnormalRecords: [{ name: '出勤数据暂不可用', detail: '已保留页面结构，避免 SSR 直接失败。' }],
+    eventTimeline: [],
+    latestEvents: [],
+    actionNotice: '当前未取到 attendance/events 数据，可稍后刷新重试。',
+  }));
 
   return (
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="出勤看板" permissionCode={attendancePermissions.boardView} />}>
       <div className="stack">
         <PageHeader
           title="出勤看板"
-          description={`P17 已从本地看板切到 attendance events 真接口。query key: ${JSON.stringify(queryKeys.attendanceBoard(filters))}`}
+          description={`当前展示 attendance/events 真实数据看板。query key: ${JSON.stringify(queryKeys.attendanceBoard(filters))}`}
           actions={<><button className="btn primary">手动补签到</button><button className="btn">修正事件备注</button><button className="btn">导出今日异常</button></>}
         />
 
@@ -42,13 +50,6 @@ export default async function AttendanceBoardPage() {
         </div>
 
         <TimelinePanel title="最近事件流" items={result.eventTimeline} />
-
-        <div className="grid-3">
-          <StateBlock state="loading" title="看板 loading" />
-          <StateBlock state="empty" title="今日无事件" />
-          <StateBlock state="error" title="看板读取失败" actionLabel="重试事件查询" />
-        </div>
-
         <section className="panel stack">
           <div className="page-header">
             <div>
@@ -62,7 +63,7 @@ export default async function AttendanceBoardPage() {
             items={[
               { name: '事件写入', detail: 'POST /attendance/events 真接口已存在，含幂等去重。' },
               { name: '异常修正', detail: result.actionNotice },
-              { name: '页面状态', detail: 'loading / empty / error / permissionDenied 已放齐。' },
+              { name: '页面状态', detail: '页面在服务异常时会降级展示说明，不再直接返回 SSR 500。' },
             ]}
           />
         </section>

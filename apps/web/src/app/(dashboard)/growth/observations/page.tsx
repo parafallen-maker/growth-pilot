@@ -46,7 +46,7 @@ export default async function GrowthObservationsPage({
           <div className="page-header">
             <div>
               <h3>新建成长观察</h3>
-              <p>FE-21 已接 POST /growth/observations。当前先用首个 active rubric 渲染评分字段，模板切换仍属下一步增强。</p>
+              <p>表单已接入 POST /growth/observations。当前先用首个 active rubric 渲染评分字段，模板切换仍需继续增强。</p>
             </div>
             <span className="badge success">POST /growth/observations</span>
           </div>

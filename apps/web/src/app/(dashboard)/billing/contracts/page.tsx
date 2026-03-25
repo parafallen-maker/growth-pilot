@@ -30,7 +30,7 @@ export default async function BillingContractsPage({
       <div className="stack">
         <PageHeader
           title="合同列表"
-          description={`P21 已切到 billing/contracts + billing/contracts/{id} 真接口。query key: ${JSON.stringify(queryKeys.billingContracts(filters))}`}
+          description={`当前展示 billing/contracts 与合同详情真实数据。query key: ${JSON.stringify(queryKeys.billingContracts(filters))}`}
           actions={<><a className="btn primary" href="#contract-create-form">新建合同</a><button className="btn">创建账单</button><button className="btn">创建续费任务</button></>}
         />
         {query?.created ? <section className="panel"><div className="badge success">合同已创建：{query.created}</div></section> : null}
@@ -39,7 +39,7 @@ export default async function BillingContractsPage({
           <div className="page-header">
             <div>
               <h3>新建合同</h3>
-              <p>FE-22 已接 POST /billing/contracts。首波先支持单条收费项，足够覆盖最常见签约动作。</p>
+              <p>表单已接入 POST /billing/contracts。当前先支持单条收费项，覆盖最常见的签约动作。</p>
             </div>
             <span className="badge success">POST /billing/contracts</span>
           </div>
@@ -63,8 +63,8 @@ export default async function BillingContractsPage({
           </form>
         </section>
         <FilterBar fields={[
-          { label: '家庭筛选', value: '待补统一 family filter', kind: 'select' },
-          { label: '学生筛选', value: '待补统一 student filter', kind: 'select' },
+          { label: '家庭', value: '全部家庭', kind: 'select' },
+          { label: '学生', value: '全部学生', kind: 'select' },
           { label: '关键词', value: '合同编号 / 家庭 / 学生' },
           { label: '状态', value: '全部状态', kind: 'select' },
           { label: '校区', value: '贵阳主校区', kind: 'select' },

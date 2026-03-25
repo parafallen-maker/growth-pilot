@@ -23,8 +23,8 @@ export default async function SettingsUsersPage() {
           rows={result.list.map((item) => [item.id, item.username, item.name, item.role, item.campus, item.status, item.permissionScope])}
         />
         <div className="grid-2">
-          <SummaryPanel title="角色列表" items={[{ name: '当前状态', detail: '后端已返回用户主数据；角色独立列表接口仍待补。' }]} />
-          <SummaryPanel title="权限点" items={[{ name: '当前状态', detail: '页面权限守卫已生效；权限点明细接口仍待补。' }]} />
+          <SummaryPanel title="角色列表" items={[{ name: '当前状态', detail: '后端已返回用户主数据；角色独立列表接口当前未开放。' }]} />
+          <SummaryPanel title="权限点" items={[{ name: '当前状态', detail: '页面权限守卫已生效；权限点明细接口当前未开放。' }]} />
         </div>
       </div>
     </PermissionGuard>
