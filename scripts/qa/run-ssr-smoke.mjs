@@ -141,6 +141,7 @@ try {
   }
 
   const summary = {
+    runtimeMode: 'http',
     username,
     apiBaseUrl,
     webBaseUrl,

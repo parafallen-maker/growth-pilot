@@ -1,0 +1,530 @@
+{
+  "username": "admin",
+  "runtimeMode": "compiled",
+  "routeCount": 31,
+  "selectedRoutes": [
+    "/",
+    "/analytics/billing",
+    "/analytics/overview",
+    "/analytics/teaching",
+    "/attendance/board",
+    "/attendance/devices",
+    "/attendance/homework-time",
+    "/billing/contracts",
+    "/billing/invoices",
+    "/billing/products",
+    "/billing/renewals",
+    "/communication/messages",
+    "/communication/records",
+    "/dashboard",
+    "/families",
+    "/families/family-001",
+    "/growth/goals",
+    "/growth/observations",
+    "/growth/reports",
+    "/growth/rubrics",
+    "/homework/error-taxonomies",
+    "/homework/review/submission-001",
+    "/homework/submissions",
+    "/login",
+    "/settings/system",
+    "/settings/users",
+    "/students",
+    "/students/import",
+    "/students/student-001",
+    "/teachers",
+    "/teachers/teacher-001"
+  ],
+  "totals": {
+    "redirect": 2,
+    "ok": 29
+  },
+  "failures": [],
+  "results": [
+    {
+      "route": "/",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/page.tsx",
+      "durationMs": 0,
+      "status": 307,
+      "classification": "redirect",
+      "markers": {
+        "forbidden": false,
+        "login": true,
+        "nextError": false
+      },
+      "textPreview": "/login",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/analytics/billing",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/analytics/billing/page.tsx",
+      "durationMs": 3,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "收费分析当前展示 analytics/billing 真实聚合结果，页面按元展示金额。query key: [\"analytics-billing-page\",{\"pageNo\":1,\"pageSize\":20,\"campusId\":\"campus-guiyang\",\"termId\":\"2026-spring\",\"dateFrom\":\"2026-03-01\",\"dateTo\":\"2026-03-24\",\"sortBy\":\"receivableCents\",\"sortOrder",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/analytics/overview",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/analytics/overview/page.tsx",
+      "durationMs": 1,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "校区总览当前展示 analytics/overview 真实聚合结果。query key: [\"analytics-overview-page\",{\"pageNo\":1,\"pageSize\":20,\"campusId\":\"campus-guiyang\",\"termId\":\"2026-spring\",\"dateFrom\":\"2026-03-01\",\"dateTo\":\"2026-03-24\"}]导出总览图查看口径说明在读学生数2来自 contracts active studen",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/analytics/teaching",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/analytics/teaching/page.tsx",
+      "durationMs": 0,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "教学分析当前展示 analytics/teaching 真实聚合结果。query key: [\"analytics-teaching-page\",{\"pageNo\":1,\"pageSize\":20,\"campusId\":\"campus-guiyang\",\"termId\":\"2026-spring\",\"dateFrom\":\"2026-03-01\",\"dateTo\":\"2026-03-24\",\"sortBy\":\"reviewBacklog\",\"sortOrder\":\"desc\"}",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/attendance/board",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/attendance/board/page.tsx",
+      "durationMs": 2,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "出勤看板当前展示 attendance/events 真实数据看板。query key: [\"attendance-board\",{\"pageNo\":1,\"pageSize\":20,\"campusId\":\"campus-guiyang\",\"date\":\"2026-03-25\",\"eventType\":\"all\",\"sortBy\":\"happenedAt\",\"sortOrder\":\"desc\"}]手动补签到修正事件备注导出今日异常今日事件2attendance/events 真",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/attendance/devices",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/attendance/devices/page.tsx",
+      "durationMs": 1,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "设备与绑定当前展示 attendance/devices 与 bindings 真实数据。query key: [\"attendance-devices\",{\"pageNo\":1,\"pageSize\":20,\"campusId\":\"campus-guiyang\",\"tab\":\"devices\",\"deviceType\":\"all\",\"status\":\"all\",\"sortBy\":\"deviceSn\",\"sortOrder\":\"asc\"}]新增设备绑定学生解绑设备设备列表当前绑",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/attendance/homework-time",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/attendance/homework-time/page.tsx",
+      "durationMs": 1,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "作业时长当前展示 attendance/homework-time/daily-stats 真实统计结果。query key: [\"attendance-homework-time\",{\"pageNo\":1,\"pageSize\":20,\"campusId\":\"campus-guiyang\",\"studentId\":\"all\",\"subject\":\"all\",\"dateFrom\":\"2026-03-19\",\"dateTo\":\"2026-03-25\",\"sortBy\":\"date",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/billing/contracts",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/billing/contracts/page.tsx",
+      "durationMs": 14,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "合同列表当前展示 billing/contracts 与合同详情真实数据。query key: [\"billing-contracts\",{\"pageNo\":1,\"pageSize\":20,\"status\":\"all\",\"sortBy\":\"expiryDate\",\"sortOrder\":\"asc\"}]新建合同创建账单创建续费任务新建合同表单已接入 POST /billing/contracts，当前支持最多 3 条收费项一次提交，直接匹配后端 items[] 结构。POST ",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/billing/invoices",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/billing/invoices/page.tsx",
+      "durationMs": 1,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "账单 / 支付 / 退款当前展示 billing/invoices 真实数据；payment/refund 列表仍受后端接口缺口限制。query key: [\"billing-invoices\",{\"pageNo\":1,\"pageSize\":20,\"status\":\"all\",\"tab\":\"invoices\",\"sortBy\":\"dueDate\",\"sortOrder\":\"asc\"}]新建账单记录支付发起退款添加调整新建账单当前表单直连 POST /billing/invoi",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/billing/products",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/billing/products/page.tsx",
+      "durationMs": 1,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "收费产品当前展示 billing/products 真实数据，金额统一按元展示。query key: [\"billing-products\",{\"pageNo\":1,\"pageSize\":20,\"status\":\"active\",\"sortBy\":\"updatedAt\",\"sortOrder\":\"desc\"}]新建产品编辑停用启用产品1当前页真实 active SKU当前页产品数1billing/products 当前返回记录计费模式数1按当前页去重统计金额口径元VO 层统一",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/billing/renewals",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/billing/renewals/page.tsx",
+      "durationMs": 1,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "续费跟进当前展示 billing/renewals 真实数据，包含续费池与跟进时间线。query key: [\"billing-renewals\",{\"pageNo\":1,\"pageSize\":20,\"status\":\"all\",\"sortBy\":\"contractExpiryDate\",\"sortOrder\":\"asc\"}]更新跟进状态新建续费任务更新下次跟进新建续费任务当前表单直连 POST /billing/renewals，用已有家庭、学生、负责人做真实选择。POST",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/communication/messages",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/communication/messages/page.tsx",
+      "durationMs": 2,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "消息中心当前展示 communication/templates 与 message_tasks 真实数据。query key: [\"communication-messages\",{\"pageNo\":1,\"pageSize\":20,\"channel\":\"all\",\"sortBy\":\"scheduledAt\",\"sortOrder\":\"desc\"}]创建消息创建模板更新状态查看回执模板数量1templates 真接口草稿箱1draft tasks待发送1pending tas",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/communication/records",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/communication/records/page.tsx",
+      "durationMs": 1,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "沟通记录当前展示 communication/records 真实台账。query key: [\"communication-records\",{\"pageNo\":1,\"pageSize\":20,\"keyword\":\"\",\"channel\":\"all\",\"sortBy\":\"updatedAt\",\"sortOrder\":\"desc\"}]新建沟通关联会谈创建家庭任务当前记录数1communication/records 持久化台账当前筛选首条主题学习反馈来自真接口首条记录高频渠道",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/dashboard",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/dashboard/page.tsx",
+      "durationMs": 0,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "工作台总览真实数据来自 GET /analytics/overview。指标说话，比口号靠谱。切学期导出截图在读学生数2来自 contracts active student 聚合待复核作业1来自 homework reviewStatus 聚合周报完成率75.0%当前口径仍基于 homework reviewed/published 比率本月实收¥9000.00VO 层 cents -> 元展示经营趋势应收 / 实收¥12000.00 / ¥9000.00续费待跟进1 条沟",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/families",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/families/page.tsx",
+      "durationMs": 0,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "家庭列表真实数据来自 GET /families。query key: [\"families\",{\"pageNo\":1,\"pageSize\":20,\"status\":\"active\"}]新建家庭导出打开首个家庭详情关键词校区全部校区状态正常未收余额全部待办任务全部查询重置保存筛选家庭列表（共 1 条）当前展示真实数据列表。列显隐导出家庭编码家庭名称主联系人电话关联学生数未收余额最近沟通时间状态FA-001李家李妈妈13800000000------正常",
+      "clientBoundaries": [
+        "client-component"
+      ],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/families/family-001",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/families/[familyId]/page.tsx",
+      "durationMs": 0,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "家庭详情 · 李家FA-001 / 主联系人 李妈妈 / 状态 active添加监护人新建家庭任务新建沟通记录新建会谈监护人列表李妈妈mother / 13800000000 / 主联系人关联学生李一诺undefined / undefined / undefined王子安undefined / undefined / undefined家庭摘要联系方式13800000000家庭结构未配置任务共 1 条沟通共 1 条",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/growth/goals",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/growth/goals/page.tsx",
+      "durationMs": 1,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "成长目标真实 goals 列表已接：[\"growth-goals\",{\"pageNo\":1,\"pageSize\":20,\"status\":\"active\"}]新建目标提交 Check-in同步家庭任务新建目标已接 POST /growth/goals，可直接创建目标条目。POST /growth/goals学生李一诺 / ST-001王子安 / ST-002目标类型habitacademicbehavior标题责任角色指标类型基线值当前值目标值开始日期截止日期状态active",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/growth/observations",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/growth/observations/page.tsx",
+      "durationMs": 1,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "成长观察真实列表接口已接：[\"growth-observations\",{\"pageNo\":1,\"pageSize\":20,\"scene\":\"all\"}]新建观察导出动态 schema 预览当前页观察1total 1已纳入报告1publishToFamily=true待纳入报告0仍可进入报告素材池创建接口POST ready已开放真实创建接口，可按所选 rubric 模板提交评分。新建成长观察表单已接入 POST /growth/observations，可先切换所用 rub",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/growth/reports",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/growth/reports/page.tsx",
+      "durationMs": 1,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": true,
+        "nextError": false
+      },
+      "textPreview": "成长报告真实 reports 列表已接：[\"growth-reports\",{\"pageNo\":1,\"pageSize\":20,\"reportType\":\"weekly\"}]生成草稿报告复核发布设置报告类型周报学期2026 春季周 / 月校区全部校区老师全部老师发布状态全部查询重置保存筛选生成报告草稿已接 POST /growth/reports/generate，当前支持按学生批量生成。POST /generate报告类型weeklymonthly周期键学期 ID校区 ID",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/growth/rubrics",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/growth/rubrics/page.tsx",
+      "durationMs": 1,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "Rubric 模板真实列表 + detail 已接：[\"growth-rubrics\",{\"pageNo\":1,\"pageSize\":20}]新建模板查看详情发布版本模板列表当前直接展示真实 rubric template 数据。1 templates切换模板详情数学成长观察模板 / campus-guiyang / 2026-spring / active加载详情数学成长观察模板activecampus-guiyang / 2026-spring · dim-2 · 维度 ",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/homework/error-taxonomies",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/homework/error-taxonomies/page.tsx",
+      "durationMs": 1,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "错因词典维护真实列表已接 GET /homework/error-taxonomies。query key: [\"homework-error-taxonomies\",{\"pageNo\":1,\"pageSize\":20,\"keyword\":\"\",\"status\":\"enabled\",\"sortBy\":\"sort\",\"sortOrder\":\"asc\"}]新建错因批量排序导出词典关键词分类全部分类学科范围全部学科状态启用中查询重置保存筛选错因词典当前展示真实词典数据。列显隐导出c",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/homework/review/submission-001",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/homework/review/[submissionId]/page.tsx",
+      "durationMs": 1,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "作业复核工作台 / HW-001detail key: [\"homework-submission-detail\",\"submission-001\"] / review key: [\"homework-review-draft\",\"submission-001\"]没有上一条下一条：HW-002status: completed左栏 / 附件当前可读取真实 fileId 元数据，并在同页切换上一条 / 下一条作业。下一条math-homework-001.pdfapplicat",
+      "clientBoundaries": [
+        "client-component",
+        "client-component"
+      ],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/homework/submissions",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/homework/submissions/page.tsx",
+      "durationMs": 2,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "作业提交队列真实列表接口已接：[\"homework-submissions\",{\"pageNo\":1,\"pageSize\":20,\"keyword\":\"\",\"subject\":\"all\",\"teacherId\":\"all\",\"aiStatus\":\"all\",\"reviewStatus\":\"all\",\"dateFrom\":\"2026-03-18\",\"dateTo\":\"2026-03-24\",\"sortBy\":\"submittedAt\",\"sortOrder\":\"desc\"}]上",
+      "clientBoundaries": [
+        "client-component",
+        "client-component",
+        "client-component"
+      ],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/login",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(auth)/login/page.tsx",
+      "durationMs": 0,
+      "status": 307,
+      "classification": "redirect",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "/dashboard",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/settings/system",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/settings/system/page.tsx",
+      "durationMs": 1,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": true,
+        "nextError": false
+      },
+      "textPreview": "系统设置真实数据来自 GET /settings/campuses、/settings/terms、/settings/dictionaries，AI 任务中心读取 [\"jobs\",{\"pageNo\":1,\"pageSize\":20}]。创建校区创建学期查看失败任务校区学期字典AI 任务中心校区贵阳主校区GY / 状态：active学期2026 春季2026-SPR / 2026-02-18 ~ 2026-07-01 / active字典subject数学(math)chan",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/settings/users",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/settings/users/page.tsx",
+      "durationMs": 2,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": true,
+        "nextError": false
+      },
+      "textPreview": "用户与角色真实数据来自 GET /users 与 GET /settings/dictionaries?dictType=access_role|access_permission；角色与权限目录不再由 /users 或当前登录态推断。query key: [\"users\",{\"pageNo\":1,\"pageSize\":20}]创建用户绑定角色重置密码用户列表角色列表权限点用户列表（共 3 条）当前展示真实数据列表。列显隐导出用户ID用户名姓名角色校区状态权限范围user-a",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/students",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/students/page.tsx",
+      "durationMs": 0,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "学生列表真实数据来自 GET /students + GET /students/{id}/360。query key: [\"students\",{\"pageNo\":1,\"pageSize\":20,\"termId\":\"2026-spring\"}]新建学生导入学生批量打标签导出新建学生已接 POST /students，先覆盖基础档案创建。POST /students学生编号姓名年级性别未填写男女出生日期班级学校家庭暂不绑定李家 / FA-001标签档案备注提交创建清空关键词校",
+      "clientBoundaries": [
+        "client-component",
+        "client-component",
+        "client-component",
+        "client-component",
+        "client-component",
+        "client-component"
+      ],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/students/import",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/students/import/page.tsx",
+      "durationMs": 0,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "学生导入中心当前提供模板、字段映射说明与导入任务信息；正式导入入口待后端 /students/import 落地后接入。下载模板上传文件模板与字段映射模板文件student-import-template.xlsx字段映射学号 -> studentNo；班级 -> enrollment.className导入任务列表导入任务 GP-IMP-001running / 82% / 已校验 186 行字段映射学号 -> studentNo；班级 -> enrollment.clas",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/students/student-001",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/students/[studentId]/page.tsx",
+      "durationMs": 0,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "Student 360 · 李一诺ST-001 / G4 / campus-guiyang / 状态 在读返回列表新建沟通已复核作业6待复核 1平均正确率94%2026-03-23成长观察3活跃目标 1未收金额¥1,200未结账单 1基础档案学生主档李一诺 / ST-001 / G4在读档campus-guiyang / 2026-spring / teacher-001家庭李家监护人李妈妈（mother）360 摘要最近反馈步骤完整度明显提升最近成长亮点表达完整最近改进建议",
+      "clientBoundaries": [
+        "client-component"
+      ],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/teachers",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/teachers/page.tsx",
+      "durationMs": 0,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "教师列表真实数据来自 GET /teachers。query key: [\"teachers\",{\"pageNo\":1,\"pageSize\":20,\"status\":\"active\"}]新建教师导出关键词校区全部校区状态在岗学科全部学科查询重置保存筛选教师列表（共 1 条）当前展示真实数据列表。列显隐导出工号姓名主学科校区在带学生数待复核作业观察覆盖率状态操作T-001张老师数学贵阳主校区------在岗/teachers/teacher-001打开首位教师详情",
+      "clientBoundaries": [
+        "client-component"
+      ],
+      "inlineStyleDeclarations": []
+    },
+    {
+      "route": "/teachers/teacher-001",
+      "sourcePage": "/private/tmp/w35-qa-runtime/apps/web/src/app/(dashboard)/teachers/[teacherId]/page.tsx",
+      "durationMs": 0,
+      "status": null,
+      "classification": "ok",
+      "markers": {
+        "forbidden": false,
+        "login": false,
+        "nextError": false
+      },
+      "textPreview": "教师详情 · 张老师T-001 / campus-guiyang / 数学 / 状态 active编辑档案新增发展记录新增班次基础档案学科能力班次/值班带学生列表发展记录档案摘要基础档案T-001 / 张老师联系方式未配置手机号主学科数学校区campus-guiyang发展记录 / 带学生coaching · 课堂观察复盘2026-03-10T19:00:00Z / done学科能力 · 数学G3-G6 / advanced班次 shift-001周3 18:30-20:00",
+      "clientBoundaries": [],
+      "inlineStyleDeclarations": []
+    }
+  ]
+}

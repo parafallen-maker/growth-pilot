@@ -1,0 +1,78 @@
+{
+  "checkedAt": "2026-03-25T18:18:45.009Z",
+  "artifactDir": "docs/growthpilot/artifacts/2026-03-26/runtime-wave2-localhost",
+  "runtimeBoundary": {
+    "localhostPossible": true,
+    "blockerReport": "docs/growthpilot/artifacts/2026-03-26/runtime-wave2-localhost/runtime-blockers.json",
+    "blockerStatus": "clear",
+    "blockerStatusDetails": {
+      "listenOk": true,
+      "connectPermissionOk": true,
+      "reachableTargetCount": 4,
+      "permissionBlockedTargetCount": 0,
+      "unavailableTargetCount": 4,
+      "dockerOk": true
+    },
+    "blockerReason": "connect blocked on 127.0.0.1:3000 ECONNREFUSED, 127.0.0.1:3001 ECONNREFUSED, 127.0.0.1:3100 ECONNREFUSED, 127.0.0.1:3101 ECONNREFUSED"
+  },
+  "qa12": {
+    "taskId": "QA-12",
+    "localhostAttempt": {
+      "attempted": true,
+      "ok": false,
+      "exitCode": 1,
+      "reportFile": null,
+      "reason": null,
+      "stdout": "> @growthpilot/api@0.1.0 build\n> tsc -p tsconfig.json\n\n\n> @growthpilot/web@0.1.0 build\n> next build\n\n   ▲ Next.js 15.2.4\n\n   Creating an optimized production build ...\n ✓ Compiled successfully\n   Linting and checking validity of types ...\n   Collecting page data ...\n   Generating static pages (0/7) ...\n   Generating static pages (1/7) \r\n   Generating static pages (3/7) \r\n   Generating static pages (5/7) \r\n ✓ Generating static pages (7/7)\n   Finalizing page optimization ...\n   Collecting build traces ...\n\nRoute (app)                                 Size  First Load JS\n┌ ○ /                                      148 B         101 kB\n├ ○ /_not-found                            975 B         102 kB\n├ ƒ /analytics/billing                     227 B         104 kB\n├ ƒ /analytics/overview                    227 B         104 kB\n├ ƒ /analytics/teaching                    227 B         104 kB\n├ ƒ /api/auth/session/login                148 B         101 kB\n├ ƒ /api/auth/session/logout               148 B         101 kB\n├ ƒ /api/files/[fileId]                    148 B         101 kB\n├ ƒ /attendance/board                      227 B         104 kB\n├ ƒ /attendance/devices                    227 B         104 kB\n├ ƒ /attendance/homework-time              227 B         104 kB\n├ ƒ /billing/contracts                     227 B         104 kB\n├ ƒ /billing/invoices                      227 B         104 kB\n├ ƒ /billing/products                      227 B         104 kB\n├ ƒ /billing/renewals                      227 B         104 kB\n├ ƒ /communication/messages                227 B         104 kB\n├ ƒ /communication/records                 227 B         104 kB\n├ ƒ /dashboard                             148 B         101 kB\n├ ƒ /families                              185 B         104 kB\n├ ƒ /families/[familyId]                   227 B         104 kB\n├ ƒ /growth/goals                          227 B         104 kB\n├ ƒ /growth/observations                   227 B         104 kB\n├ ƒ /growth/reports                        227 B         104 kB\n├ ƒ /growth/rubrics                        227 B         104 kB\n├ ƒ /homework/error-taxonomies             227 B         104 kB\n├ ƒ /homework/review/[submissionId]        185 B         104 kB\n├ ƒ /homework/submissions                  185 B         104 kB\n├ ƒ /login                               2.23 kB         106 kB\n├ ƒ /settings/system                       227 B         104 kB\n├ ƒ /settings/users                        227 B         104 kB\n├ ƒ /students                              185 B         104 kB\n├ ƒ /students/[studentId]                  185 B         104 kB\n├ ƒ /students/import                       227 B         104 kB\n├ ƒ /teachers                              185 B         104 kB\n└ ƒ /teachers/[teacherId]                  227 B         104 kB\n+ First Load JS shared by all             101 kB\n  ├ chunks/229-421998581cf0f378.js       45.6 kB\n  ├ chunks/8995f040-0c0a6ce66b6d6b97.js  53.2 kB\n  └ other shared chunks (total)          1.86 kB\n\n\nƒ Middleware                             32.7 kB\n\n○  (Static)   prerendered as static content\nƒ  (Dynamic)  server-rendered on demand",
+      "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\n[TypeError: fetch failed] {\n  [cause]: Error: connect ECONNREFUSED 127.0.0.1:3101\n      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1645:16) {\n    errno: -61,\n    code: 'ECONNREFUSED',\n    syscall: 'connect',\n    address: '127.0.0.1',\n    port: 3101\n  }\n}\n\nNode.js v24.14.0"
+    },
+    "strongestEvidence": {
+      "mode": "compiled",
+      "reportFile": "docs/growthpilot/artifacts/2026-03-26/runtime-wave2-localhost/compiled-ssr-smoke.json",
+      "totals": {
+        "redirect": 2,
+        "ok": 29
+      },
+      "routeCount": 31,
+      "failures": 0
+    }
+  },
+  "qa13": {
+    "taskId": "QA-13",
+    "localhostAttempt": {
+      "attempted": true,
+      "ok": false,
+      "exitCode": 1,
+      "reportFile": null,
+      "reason": null,
+      "stdout": "> @growthpilot/api@0.1.0 build\n> tsc -p tsconfig.json\n\n\n> @growthpilot/web@0.1.0 build\n> next build\n\n   ▲ Next.js 15.2.4\n\n   Creating an optimized production build ...\n ✓ Compiled successfully\n   Linting and checking validity of types ...\n   Collecting page data ...\n   Generating static pages (0/7) ...\n   Generating static pages (1/7) \r\n   Generating static pages (3/7) \r\n   Generating static pages (5/7) \r\n ✓ Generating static pages (7/7)\n   Finalizing page optimization ...\n   Collecting build traces ...\n\nRoute (app)                                 Size  First Load JS\n┌ ○ /                                      148 B         101 kB\n├ ○ /_not-found                            975 B         102 kB\n├ ƒ /analytics/billing                     227 B         104 kB\n├ ƒ /analytics/overview                    227 B         104 kB\n├ ƒ /analytics/teaching                    227 B         104 kB\n├ ƒ /api/auth/session/login                148 B         101 kB\n├ ƒ /api/auth/session/logout               148 B         101 kB\n├ ƒ /api/files/[fileId]                    148 B         101 kB\n├ ƒ /attendance/board                      227 B         104 kB\n├ ƒ /attendance/devices                    227 B         104 kB\n├ ƒ /attendance/homework-time              227 B         104 kB\n├ ƒ /billing/contracts                     227 B         104 kB\n├ ƒ /billing/invoices                      227 B         104 kB\n├ ƒ /billing/products                      227 B         104 kB\n├ ƒ /billing/renewals                      227 B         104 kB\n├ ƒ /communication/messages                227 B         104 kB\n├ ƒ /communication/records                 227 B         104 kB\n├ ƒ /dashboard                             148 B         101 kB\n├ ƒ /families                              185 B         104 kB\n├ ƒ /families/[familyId]                   227 B         104 kB\n├ ƒ /growth/goals                          227 B         104 kB\n├ ƒ /growth/observations                   227 B         104 kB\n├ ƒ /growth/reports                        227 B         104 kB\n├ ƒ /growth/rubrics                        227 B         104 kB\n├ ƒ /homework/error-taxonomies             227 B         104 kB\n├ ƒ /homework/review/[submissionId]        185 B         104 kB\n├ ƒ /homework/submissions                  185 B         104 kB\n├ ƒ /login                               2.23 kB         106 kB\n├ ƒ /settings/system                       227 B         104 kB\n├ ƒ /settings/users                        227 B         104 kB\n├ ƒ /students                              185 B         104 kB\n├ ƒ /students/[studentId]                  185 B         104 kB\n├ ƒ /students/import                       227 B         104 kB\n├ ƒ /teachers                              185 B         104 kB\n└ ƒ /teachers/[teacherId]                  227 B         104 kB\n+ First Load JS shared by all             101 kB\n  ├ chunks/229-421998581cf0f378.js       45.6 kB\n  ├ chunks/8995f040-0c0a6ce66b6d6b97.js  53.2 kB\n  └ other shared chunks (total)          1.86 kB\n\n\nƒ Middleware                             32.7 kB\n\n○  (Static)   prerendered as static content\nƒ  (Dynamic)  server-rendered on demand",
+      "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\n[TypeError: fetch failed] {\n  [cause]: Error: connect ECONNREFUSED 127.0.0.1:3101\n      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1645:16) {\n    errno: -61,\n    code: 'ECONNREFUSED',\n    syscall: 'connect',\n    address: '127.0.0.1',\n    port: 3101\n  }\n}\n\nNode.js v24.14.0"
+    },
+    "strongestEvidence": {
+      "mode": "compiled",
+      "reportFile": "docs/growthpilot/artifacts/2026-03-26/runtime-wave2-localhost/compiled-billing-permission.json",
+      "totals": {
+        "forbidden": 5
+      },
+      "routeCount": 5,
+      "failures": 0
+    }
+  },
+  "qa14": {
+    "taskId": "QA-14",
+    "localhostBrowserAttempt": {
+      "attempted": false,
+      "ok": false,
+      "reason": "No committed browser harness exists under allowed edit scope; strongest executable evidence remains compiled runtime + static responsive audit."
+    },
+    "strongestEvidence": {
+      "mode": "compiled",
+      "reportFile": "docs/growthpilot/artifacts/2026-03-26/runtime-wave2-localhost/compiled-responsive-audit.json",
+      "status": "runtime-static-pass",
+      "routeCount": 31,
+      "largeFixedWidthDeclarations": 0,
+      "runtimeInlineWidthRisks": 0,
+      "routeExecutionFailures": 0
+    }
+  }
+}
