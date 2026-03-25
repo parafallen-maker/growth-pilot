@@ -15,8 +15,63 @@ function parseChannels(formData: FormData) {
   return formData.getAll('channels').map((item) => String(item)).filter(Boolean);
 }
 
+function parseIndexedStrings(formData: FormData, prefix: string) {
+  return [1, 2, 3].map((index) => ({
+    index,
+    value: String(formData.get(`${prefix}_${index}`) ?? '').trim(),
+  }));
+}
+
 function bounce(path: string, params: Record<string, string>) {
   redirect(`${path}?${new URLSearchParams(params).toString()}`);
+}
+
+export async function createGrowthRubric(formData: FormData) {
+  try {
+    const codes = parseIndexedStrings(formData, 'dimensionCode');
+    const names = parseIndexedStrings(formData, 'dimensionName');
+    const descriptions = parseIndexedStrings(formData, 'dimensionDescription');
+    const dimensions = codes
+      .map((item) => {
+        const name = names.find((entry) => entry.index === item.index)?.value ?? '';
+        if (!item.value || !name) {
+          return null;
+        }
+
+        return {
+          code: item.value,
+          name,
+          description: descriptions.find((entry) => entry.index === item.index)?.value || undefined,
+          weight: parseNumber(formData.get(`dimensionWeight_${item.index}`)) ?? 1,
+          scoreMin: parseNumber(formData.get(`dimensionScoreMin_${item.index}`)) ?? 1,
+          scoreMax: parseNumber(formData.get(`dimensionScoreMax_${item.index}`)) ?? 5,
+          sortOrder: item.index * 10,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+    if (!dimensions.length) {
+      bounce('/growth/rubrics', { error: '至少填写 1 个 rubric 维度' });
+    }
+
+    const created = await growthService.createRubric({
+      campusId: String(formData.get('campusId') ?? '').trim() || undefined,
+      termId: String(formData.get('termId') ?? '').trim() || undefined,
+      name: String(formData.get('name') ?? '').trim(),
+      stageScope: String(formData.get('stageScope') ?? '').trim() || 'general',
+      status: String(formData.get('status') ?? '').trim() || undefined,
+      description: String(formData.get('description') ?? '').trim() || undefined,
+      dimensions,
+    });
+
+    revalidatePath('/growth/rubrics');
+    bounce('/growth/rubrics', {
+      created: created.name ?? created.id,
+      templateId: created.id,
+    });
+  } catch (error) {
+    bounce('/growth/rubrics', { error: error instanceof Error ? error.message : '创建 rubric 模板失败' });
+  }
 }
 
 export async function createGrowthGoal(formData: FormData) {

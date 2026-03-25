@@ -25,6 +25,24 @@ export type CreateObservationPayload = {
   publishToFamily?: boolean;
 };
 
+export type CreateRubricPayload = {
+  campusId?: string;
+  termId?: string;
+  name: string;
+  stageScope: string;
+  status?: string;
+  description?: string;
+  dimensions: Array<{
+    code: string;
+    name: string;
+    weight?: number;
+    scoreMin?: number;
+    scoreMax?: number;
+    description?: string;
+    sortOrder?: number;
+  }>;
+};
+
 export type CreateGoalPayload = {
   studentId: string;
   termId?: string;
@@ -165,6 +183,13 @@ export const growthService = {
     };
   },
 
+  async createRubric(payload: CreateRubricPayload) {
+    return serverApiRequest<{ id: string; name: string; status: string }>(`/growth/rubrics`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
   async queryObservations(params: GrowthQuery = {}): Promise<PageResult<ObservationItem>> {
     const result = await serverApiRequest<PageResult<{ id: string; observationDate: string; studentId: string; teacherId?: string | null; scene: string; totalScore: number; publishToFamily?: boolean; updatedAt: string }>>(`/growth/observations${buildQuery(params)}`);
     return {
@@ -193,7 +218,7 @@ export const growthService = {
     return {
       schemaKey: 'observation.dynamic.rubric-template-v1',
       createPermission: 'growth:observations:manage',
-      idempotencyHint: '已开放真实创建接口。',
+      idempotencyHint: '已开放真实创建接口，可按所选 rubric 模板提交评分。',
     };
   },
 

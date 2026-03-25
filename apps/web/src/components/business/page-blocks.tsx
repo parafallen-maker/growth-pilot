@@ -1,6 +1,7 @@
 import type { AsyncState } from '@/features/shared/types';
 import { EmptyState, ErrorState, ForbiddenState, LoadingState } from '@/components/business/page-states';
 export {
+  ChartPanel,
   DataTable,
   FilterBar,
   MetricGrid,

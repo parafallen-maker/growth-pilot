@@ -119,6 +119,55 @@ export function SummaryPanel({ title, items }: { title: string; items: { name: s
   );
 }
 
+export function ChartPanel({
+  title,
+  description,
+  items,
+}: {
+  title: string;
+  description?: string;
+  items: { label: string; value: number; detail: string; valueLabel?: string; tone?: 'brand' | 'success' | 'warning' | 'danger' }[];
+}) {
+  const maxValue = items.reduce((current, item) => Math.max(current, item.value), 0) || 1;
+
+  return (
+    <section className="panel chart-panel">
+      <div className="page-header" style={{ marginBottom: 12 }}>
+        <div>
+          <h3>{title}</h3>
+          {description ? <p>{description}</p> : null}
+        </div>
+        <span className="badge">{items.length} bars</span>
+      </div>
+      <div className="chart-list">
+        {items.length ? items.map((item) => {
+          const widthPct = Math.max(8, Math.round((item.value / maxValue) * 100));
+          return (
+            <div key={`${title}-${item.label}`} className="chart-item">
+              <div className="chart-item-head">
+                <strong>{item.label}</strong>
+                <span>{item.valueLabel ?? String(item.value)}</span>
+              </div>
+              <div className="chart-bar-track">
+                <div
+                  className={`chart-bar-fill ${item.tone ?? 'brand'}`}
+                  style={{ width: `${widthPct}%` }}
+                />
+              </div>
+              <div className="subtle">{item.detail}</div>
+            </div>
+          );
+        }) : (
+          <div className="summary-item">
+            <strong>暂无图表数据</strong>
+            <div className="subtle">当前筛选范围没有可绘制的数据。</div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function TimelinePanel({ title, items }: { title: string; items: { title: string; detail: string }[] }) {
   return (
     <section className="panel">

@@ -11,7 +11,7 @@ import { createGrowthObservation } from './actions';
 export default async function GrowthObservationsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ created?: string; error?: string }>;
+  searchParams?: Promise<{ created?: string; error?: string; templateId?: string }>;
 }) {
   const currentUser = await requireCurrentUser();
   const query = await searchParams;
@@ -24,7 +24,8 @@ export default async function GrowthObservationsPage({
     growthService.queryRubrics({ pageNo: 1, pageSize: 20, status: 'active' }),
   ]);
   const publishedCount = result.list.filter((item) => item.reportPublished === '已纳入').length;
-  const activeRubric = rubrics.list[0] ? await growthService.detailRubric(rubrics.list[0].rubricId) : null;
+  const selectedTemplateId = rubrics.list.find((item) => item.rubricId === query?.templateId)?.rubricId ?? rubrics.list[0]?.rubricId ?? '';
+  const activeRubric = selectedTemplateId ? await growthService.detailRubric(selectedTemplateId) : null;
 
   return (
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="成长观察" permissionCode={growthPermissions.observationsView} />}>
@@ -46,12 +47,26 @@ export default async function GrowthObservationsPage({
           <div className="page-header">
             <div>
               <h3>新建成长观察</h3>
-              <p>表单已接入 POST /growth/observations。当前先用首个 active rubric 渲染评分字段，模板切换仍需继续增强。</p>
+              <p>表单已接入 POST /growth/observations，可先切换所用 rubric，再按该模板的真实维度提交评分。</p>
             </div>
             <span className="badge success">POST /growth/observations</span>
           </div>
           {activeRubric ? (
-            <form className="form-grid" action={createGrowthObservation}>
+            <>
+              <form className="form-grid" method="get">
+                <div className="field form-span-2">
+                  <label>评分模板</label>
+                  <select className="select" name="templateId" defaultValue={activeRubric.rubricId}>
+                    {rubrics.list.map((rubric) => (
+                      <option key={rubric.rubricId} value={rubric.rubricId}>
+                        {rubric.name} / {rubric.scope} / {rubric.status}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="button-row form-span-2"><button className="btn" type="submit">切换模板维度</button><span className="subtle">当前模板：{activeRubric.name}</span></div>
+              </form>
+              <form className="form-grid" action={createGrowthObservation}>
               <input type="hidden" name="templateId" value={activeRubric.rubricId} />
               <div className="field"><label>学生</label><select className="select" name="studentId" required defaultValue={students.list[0]?.id ?? ''}>{students.list.map((student) => <option key={student.id} value={student.id}>{student.name} / {student.studentNo}</option>)}</select></div>
               <div className="field"><label>老师</label><select className="select" name="teacherId" defaultValue={teachers.list[0]?.id ?? ''}>{teachers.list.map((teacher) => <option key={teacher.id} value={teacher.id}>{teacher.name}</option>)}</select></div>
@@ -71,8 +86,9 @@ export default async function GrowthObservationsPage({
               <div className="field form-span-2"><label>优势亮点</label><textarea className="textarea" name="strengths" placeholder="表现稳定、表达积极、作业自驱等" /></div>
               <div className="field form-span-2"><label>改进建议</label><textarea className="textarea" name="improvementNotes" placeholder="下一阶段重点观察与辅导建议" /></div>
               <div className="field form-span-2"><label style={{ display: 'flex', alignItems: 'center', gap: 8 }}><input type="checkbox" name="publishToFamily" /><span>同步纳入家庭可见内容</span></label></div>
-              <div className="button-row form-span-2"><button className="btn primary" type="submit">创建观察</button><span className="subtle">当前模板：{activeRubric.name}</span></div>
+              <div className="button-row form-span-2"><button className="btn primary" type="submit">创建观察</button><span className="subtle">提交模板：{activeRubric.name}</span></div>
             </form>
+            </>
           ) : (
             <div className="badge warning">当前没有可用 rubric，无法创建观察。</div>
           )}

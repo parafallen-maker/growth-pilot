@@ -9,7 +9,7 @@ import { createInvoicePayment } from './actions';
 export default async function BillingInvoicesPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ paid?: string; error?: string }>;
+  searchParams?: Promise<{ paid?: string; status?: string; replayed?: string; error?: string }>;
 }) {
   const currentUser = await requireCurrentUser();
   const query = await searchParams;
@@ -26,7 +26,7 @@ export default async function BillingInvoicesPage({
           description={`当前展示 billing/invoices 真实数据；payment/refund 列表仍受后端接口缺口限制。query key: ${JSON.stringify(queryKeys.billingInvoices(filters))}`}
           actions={<><button className="btn primary">新建账单</button><a className="btn" href="#payment-create-form">记录支付</a><button className="btn">发起退款</button><button className="btn">添加调整</button></>}
         />
-        {query?.paid ? <section className="panel"><div className="badge success">支付已记录：{query.paid}</div></section> : null}
+        {query?.paid ? <section className="panel"><div className="badge success">{query.replayed === '1' ? '幂等重放成功' : '支付已记录'}：{query.paid}{query.status ? ` / status=${query.status}` : ''}</div></section> : null}
         {query?.error ? <section className="panel"><div className="badge warning">{decodeURIComponent(query.error)}</div></section> : null}
         <section className="panel stack" id="payment-create-form">
           <div className="page-header">

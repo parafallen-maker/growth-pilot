@@ -298,7 +298,7 @@
 - [/] `FE-09` **Settings 页面接真**：
   - [x] users 调用 `GET /users`
   - [x] system 调用 `GET /settings/campuses`、`GET /settings/terms`、`GET /settings/dictionaries`
-  - [/] 角色列表 / 权限点 / AI 任务中心仍缺后端独立接口，页面改为真实数据 + 明确缺口说明
+  - [/] AI 任务中心已接 `GET /jobs`；角色列表 / 权限点仍缺后端独立接口，页面改为真实数据 + 基于当前登录态保留缺口说明
 
 - [x] `FE-10` **统一四态组件**：
   - `LoadingState` — 骨架屏/spinner
@@ -310,17 +310,17 @@
 
 - [x] `FE-11` Homework submissions 列表接真 `GET /homework/submissions`
 - [/] `FE-12` Homework review 工作台接真 `GET /homework/submissions/{id}` + `PUT review-draft` + `POST review`
-  - 已接真实 detail / review-draft / review submit；上一条/下一条导航与附件 file 元数据入口已补上，但真正二进制预览/下载仍待 files 能力继续补齐。
-- [/] `FE-13` Growth rubrics/observations/goals/reports 各页面接真
-  - rubrics/observations/goals/reports 列表与关键 detail 已接真实 API；本轮新增 goals create/check-in 与 reports generate/review/publish 真实提交入口，rubric 编辑仍待后端/前端进一步完善。
+  - 已接真实 detail / review-draft / review submit；上一条/下一条导航与附件 file 元数据入口已补上，但 files 当前仅返回 `local-s3://` / `mock-s3://` 非 HTTP 地址，浏览器二进制预览/下载仍受后端 storage adapter 限制。
+- [x] `FE-13` Growth rubrics/observations/goals/reports 各页面接真
+  - rubrics/observations/goals/reports 列表与关键 detail 已接真实 API；本轮补上 rubric 模板真实创建 + 详情切换，以及 goals create/check-in、reports generate/review/publish、observations template-aware create 的真实提交入口。
 - [/] `FE-14` Billing products/contracts/invoices/renewals 各页面接真
   - 已接 `billing/products`、`billing/contracts`、`billing/contracts/{id}`、`billing/invoices`、`billing/renewals` 真接口；payments/refunds/adjustments 列表仍受后端接口缺口限制，页面明确显示缺口而不伪造数据。
 - [/] `FE-15` Attendance board/devices/homework-time 各页面接真
   - 已接 `attendance/events`、`attendance/devices`、`attendance/devices/bindings`、`attendance/homework-time/daily-stats` 真接口；本轮移除了前端硬编码 student/campus 映射，并为 `/attendance/*` 页面补了 SSR 降级，未签到名单 roster、异常修正 workflow、专用趋势序列仍待后端补齐。
 - [/] `FE-16` Communication records/messages 各页面接真
   - 已接 `communication/records`、`communication/records/{id}`、`communication/templates`、`communication/message-tasks` 真接口；本轮移除了 family/student 硬编码名称映射，改为通过现有 families/students 真接口补全展示名；meeting/task 反查聚合与真实渠道发送 adapter 仍待后端。
-- [/] `FE-17` Analytics overview/teaching/billing 各页面接真图表
-  - 已接 `analytics/overview`、`analytics/teaching`、`analytics/billing` 真聚合数据；本轮去掉了页面内常驻 loading/empty/error 演示块并保留 SSR 友好降级；当前以前端解读卡替代正式图表组件，真实图形化图表与导出仍可继续增强。
+- [x] `FE-17` Analytics overview/teaching/billing 各页面接真图表
+  - 已接 `analytics/overview`、`analytics/teaching`、`analytics/billing` 真聚合数据；本轮补了共享条形图组件并把 overview/teaching/billing 三页切到真实图表渲染，同时保留 SSR 友好降级与导出占位。
 
 #### Phase 3：表单交互（P1）
 
@@ -330,12 +330,12 @@
   - 作业队列页已串起文件 multipart 上传 + submission 创建，使用真实 fileId 落库。
 - [x] `FE-20` 复核提交 → `POST /homework/submissions/{id}/review`
   - 复核工作台正式提交已接真；另补了列表页“快速复核”表单，走同一真实接口。
-- [/] `FE-21` 成长观察创建 → `POST /growth/observations`
-  - 观察页已接真实创建表单；当前先基于首个 active rubric 渲染评分字段，模板切换仍待前端动态化。
-- [/] `FE-22` 合同创建 → `POST /billing/contracts`
-  - 合同页已接真实创建表单；当前先支持单条收费项录入，复杂多收费项编辑待后续增强。
-- [/] `FE-23` 收款记录 → `POST /billing/invoices/{id}/payments`
-  - 账单页已接真实收款表单并透传 idempotency key；支付列表聚合仍受后端接口缺口限制。
+- [x] `FE-21` 成长观察创建 → `POST /growth/observations`
+  - 观察页已接真实创建表单，并支持按所选 rubric 模板动态切换评分维度后再提交。
+- [x] `FE-22` 合同创建 → `POST /billing/contracts`
+  - 合同页已接真实创建表单，现支持一次提交最多 3 条收费项并使用真实 productId 对接后端 `items[]`。
+- [x] `FE-23` 收款记录 → `POST /billing/invoices/{id}/payments`
+  - 账单页已接真实收款表单并透传 idempotency key；前端已按后端返回的 `paymentId/status/replayed` 正确处理成功态。
 
 #### Phase 4：清理
 

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { billingService } from '@/services/billing-service';
+import { billingService, type CreateContractLineItemPayload } from '@/services/billing-service';
 
 function bounce(params: Record<string, string>) {
   redirect(`/billing/contracts?${new URLSearchParams(params).toString()}`);
@@ -18,8 +18,38 @@ function parseIntValue(value: FormDataEntryValue | null, fallback = 1) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function parseLineItem(formData: FormData, index: number): CreateContractLineItemPayload | null {
+  const productId = String(formData.get(`productId_${index}`) ?? '').trim() || undefined;
+  const itemName = String(formData.get(`itemName_${index}`) ?? '').trim();
+  const quantity = parseIntValue(formData.get(`quantity_${index}`), 1);
+  const unitPriceCents = parseAmount(formData.get(`unitPrice_${index}`));
+
+  if (!itemName && !productId && unitPriceCents <= 0) {
+    return null;
+  }
+
+  if (!itemName) {
+    throw new Error(`请补全第 ${index} 条收费项名称`);
+  }
+
+  return {
+    productId,
+    itemName,
+    unitPriceCents,
+    quantity,
+  };
+}
+
 export async function createBillingContract(formData: FormData) {
   try {
+    const items = [1, 2, 3]
+      .map((index) => parseLineItem(formData, index))
+      .filter((item): item is CreateContractLineItemPayload => Boolean(item));
+
+    if (!items.length) {
+      throw new Error('至少填写 1 条收费项');
+    }
+
     const created = await billingService.createContract({
       contractNo: String(formData.get('contractNo') ?? '').trim(),
       campusId: String(formData.get('campusId') ?? '').trim() || undefined,
@@ -32,12 +62,7 @@ export async function createBillingContract(formData: FormData) {
       discountAmountCents: parseAmount(formData.get('discountAmount')),
       remark: String(formData.get('remark') ?? '').trim() || undefined,
       status: String(formData.get('status') ?? '').trim() || undefined,
-      items: [{
-        productId: String(formData.get('productId') ?? '').trim() || undefined,
-        itemName: String(formData.get('itemName') ?? '').trim(),
-        unitPriceCents: parseAmount(formData.get('unitPrice')),
-        quantity: parseIntValue(formData.get('quantity')),
-      }],
+      items,
     });
 
     revalidatePath('/billing/contracts');
