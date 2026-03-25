@@ -22,6 +22,13 @@
       "when": 1774444838439,
       "tag": "0002_glorious_the_spike",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774450634289,
+      "tag": "0003_married_tinkerer",
+      "breakpoints": true
     }
   ]
 }

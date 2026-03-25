@@ -458,7 +458,8 @@
 - [/] `BE-35` **密码安全**：
   - 用户密码使用 `bcrypt`（cost factor ≥ 12）存储
   - 禁止明文密码存储和传输
-  - 2026-03-25：已彻底去掉明文密码存储与比对，改为 Node.js `scrypt` 哈希（seed/file/db default users 与 create user 全部改为 hash）；由于本工作树无法引入新依赖，尚未切成 checklist 指定的 `bcrypt`，因此保持 `[/]`。
+  - 2026-03-25：已彻底去掉明文密码存储与比对，改为 Node.js `scrypt` 哈希（seed/file/db default users 与 create user 全部改为 hash）；本轮补充了 `PasswordService` 与 file 持久化定向测试，确认默认用户与新建用户只落库 hash、接口返回不暴露密码字段。
+  - 2026-03-25：当前仓库 lockfile / 已安装依赖均不含 `bcrypt`，且本 sandbox 无法联网补装新包，因此仍未满足 checklist 指定的 `bcrypt(cost>=12)` 字面要求，状态保持 `[/]`。
 
 - [x] `BE-36` **敏感数据脱敏**：
   - API 响应中隐藏密码、token 等敏感字段
@@ -472,10 +473,11 @@
   - 已配置 connection pool（min: 5, max: 20）
   - 已配置连接超时和空闲回收（`connectionTimeoutMillis` / `idleTimeoutMillis`）
 
-- [/] `BE-38` **分页查询优化**：
+- [x] `BE-38` **分页查询优化**：
   - 已将通用分页 `pageSize` 上限统一收紧为 100，`users` 链路也已接入同一归一化逻辑
-  - 已在 Drizzle schema 源码补充 students/homework/growth 高频列表索引声明
-  - 本轮按允许编辑范围未生成新的 drizzle migration，索引落库仍需后续 migration 执行
+  - 已生成并提交 `apps/api/drizzle/0003_married_tinkerer.sql`，将 students/homework/growth 高频分页列表索引正式落库
+  - 已补充 migration snapshot / SQL 断言测试，覆盖 students、student_enrollments、homework_submissions、growth_observations、growth_goals、growth_reports、rubric_templates 等关键分页索引
+  - 2026-03-25：已定向通过 `npm run test --workspace @growthpilot/api -- test/security.test.ts test/db-migrations.test.ts test/observability.test.ts test/foundation.test.ts test/api-gap.test.ts` 与 `npm run typecheck --workspace @growthpilot/api`
 
 - [x] `BE-39` **文件上传限制**：
   - 已限制单文件上限 20MB
