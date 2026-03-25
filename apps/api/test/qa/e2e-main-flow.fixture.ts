@@ -3,8 +3,12 @@ import { resolve } from 'node:path';
 import { AuthService } from '../../src/modules/auth/service/auth.service';
 import { AttendanceRepository } from '../../src/modules/attendance/repository/attendance.repository';
 import { AttendanceService } from '../../src/modules/attendance/service/attendance.service';
+import { AnalyticsRepository } from '../../src/modules/analytics/repository/analytics.repository';
+import { AnalyticsService } from '../../src/modules/analytics/service/analytics.service';
 import { BillingRepository } from '../../src/modules/billing/repository/billing.repository';
 import { BillingService } from '../../src/modules/billing/service/billing.service';
+import { CommunicationRepository } from '../../src/modules/communication/repository/communication.repository';
+import { CommunicationService } from '../../src/modules/communication/service/communication.service';
 import { FamiliesRepository } from '../../src/modules/families/repository/families.repository';
 import { FamiliesService } from '../../src/modules/families/families.service';
 import { MockObjectStorageAdapter } from '../../src/modules/files/adapter/mock-object-storage.adapter';
@@ -72,14 +76,35 @@ export function createQaFixture() {
   process.env.GROWTHPILOT_MASTER_DATA_PATH = resolve(dataDir, 'master-data.json');
   const masterDataStore = new MasterDataStore();
   masterDataStore.reset();
+
   const familiesRepository = new FamiliesRepository(masterDataStore);
   const studentsRepository = new StudentsRepository(masterDataStore);
   const teachersRepository = new TeachersRepository(masterDataStore);
+  const attendanceRepository = new AttendanceRepository();
+  const billingRepository = new BillingRepository();
+  const communicationRepository = new CommunicationRepository();
+  const analyticsRepository = new AnalyticsRepository(
+    billingRepository,
+    communicationRepository,
+    attendanceRepository,
+    homeworkRepository,
+  );
+
   const familiesService = new FamiliesService(familiesRepository);
-  const studentsService = new StudentsService(studentsRepository, familiesRepository, homeworkRepository, growthRepository, new AttendanceRepository(), new BillingRepository(), jobsService);
+  const studentsService = new StudentsService(
+    studentsRepository,
+    familiesRepository,
+    homeworkRepository,
+    growthRepository,
+    attendanceRepository,
+    billingRepository,
+    jobsService,
+  );
   const teachersService = new TeachersService(teachersRepository);
-  const attendanceService = new AttendanceService(new AttendanceRepository());
-  const billingService = new BillingService(new BillingRepository());
+  const attendanceService = new AttendanceService(attendanceRepository);
+  const billingService = new BillingService(billingRepository);
+  const communicationService = new CommunicationService(communicationRepository);
+  const analyticsService = new AnalyticsService(analyticsRepository);
 
   return {
     authService,
@@ -96,5 +121,7 @@ export function createQaFixture() {
     teachersService,
     attendanceService,
     billingService,
+    communicationService,
+    analyticsService,
   };
 }

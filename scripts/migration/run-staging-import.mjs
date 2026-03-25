@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { basename, extname, resolve } from 'node:path';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { basename, extname, join, resolve } from 'node:path';
 
 const dictionaryMaps = {
   subject: new Map([
@@ -29,17 +29,71 @@ const dictionaryMaps = {
   ]),
 };
 
+const rejectReportColumns = [
+  'batchId',
+  'sourceFile',
+  'sourceSheet',
+  'sourceRowNo',
+  'sourcePk',
+  'targetDomain',
+  'businessKey',
+  'rejectCode',
+  'rejectReason',
+  'fieldName',
+  'rawValue',
+  'expectedRule',
+  'suggestedAction',
+  'owner',
+  'status',
+];
+
 const args = parseArgs(process.argv.slice(2));
 const dryRun = Boolean(args['dry-run']);
+const dbApply = Boolean(args['db-apply'] ?? args.apply);
 const batchId = args.batchId ?? `BATCH-${new Date().toISOString().slice(0, 10)}`;
 const sourceSystem = args.sourceSystem ?? inferSourceSystem(args);
 const sourceFile = args.sourceFile ?? inferSourceFile(args);
+const dbUrl = args['db-url'] ?? process.env.DATABASE_URL ?? null;
+const dbSchema = args['db-schema'] ?? process.env.GP_STAGING_SCHEMA ?? 'qa_staging';
+const artifactsDir = args['artifacts-dir'] ? resolve(process.cwd(), args['artifacts-dir']) : null;
+
 const sourceRows = loadSourceRows(args, { batchId, sourceSystem, sourceFile });
 const rawRows = sourceRows.map((row, index) => toRawRow(row, index + 2, batchId, sourceSystem, sourceFile));
 const normalizedRows = rawRows.map((row) => normalizeRow(row));
 const rejects = normalizedRows.flatMap((row) => row.rejects);
 const finalLoadPlan = buildFinalLoadPlan(normalizedRows);
-const summary = buildSummary({ batchId, sourceSystem, sourceFile, dryRun, rawRows, normalizedRows, rejects, finalLoadPlan });
+const dbPlan = buildDbPlan({ batchId, dbUrl, dbSchema, rawRows, normalizedRows, rejects });
+const validation = buildValidation(normalizedRows, rejects);
+
+const summary = buildSummary({
+  batchId,
+  sourceSystem,
+  sourceFile,
+  dryRun,
+  dbApply,
+  rawRows,
+  normalizedRows,
+  rejects,
+  finalLoadPlan,
+  dbPlan,
+  validation,
+});
+
+if (artifactsDir) {
+  summary.artifacts = writeArtifacts(artifactsDir, summary, rawRows, normalizedRows, rejects, dbPlan);
+}
+
+if (dbApply) {
+  const execution = await applyDbPlan({
+    dbUrl,
+    dbSchema,
+    summary,
+    rawRows,
+    normalizedRows,
+    rejects,
+  });
+  summary.dbPlan.execution = execution;
+}
 
 console.log(JSON.stringify(summary, null, 2));
 
@@ -303,6 +357,13 @@ function toRawRow(sourceRow, sourceRowNo, batchIdValue, sourceSystemValue, sourc
     sourceRowNo,
     sourcePk: sourceRow.sourcePk,
     sourceHash: hashPayload(sourceRow),
+    idempotencyKey: hashPayload({
+      batchId: batchIdValue,
+      sourceFile: sourceFileValue,
+      sourceSheet: sourceRow.sourceSheet,
+      sourceRowNo,
+      sourcePk: sourceRow.sourcePk,
+    }),
     importStatus: 'raw',
     rawPayload: sourceRow,
   };
@@ -385,6 +446,12 @@ function normalizeRow(rawRow) {
         subject: normalizedPayload.subject,
         errorTaxonomyCode: normalizedPayload.errorTaxonomyCode,
       },
+      transforms: {
+        familyPhone: normalizedPayload.familyPhone,
+        enrollDate: normalizedPayload.enrollDate,
+        homeworkDate: normalizedPayload.homeworkDate,
+        accuracyPct: normalizedPayload.accuracyPct,
+      },
     },
     rejects,
   };
@@ -392,7 +459,6 @@ function normalizeRow(rawRow) {
 
 function buildFinalLoadPlan(normalizedRows) {
   const readyRows = normalizedRows.filter((row) => row.importStatus === 'ready_to_load');
-
   return {
     layers: {
       rawStaging: normalizedRows.length,
@@ -419,6 +485,66 @@ function buildFinalLoadPlan(normalizedRows) {
       'refunds',
     ],
     readyBusinessKeys: readyRows.map((row) => row.normalizedPayload.businessKey),
+    readyRowsByDomain: countBy(readyRows, 'normalizedPayload.targetDomain'),
+  };
+}
+
+function buildDbPlan(context) {
+  const enabled = Boolean(context.dbUrl || context.dbSchema);
+  const tables = {
+    batches: `${context.dbSchema}.import_batches`,
+    raw: `${context.dbSchema}.staging_raw_rows`,
+    normalized: `${context.dbSchema}.staging_normalized_rows`,
+    rejects: `${context.dbSchema}.staging_rejects`,
+  };
+
+  return {
+    enabled,
+    driver: context.dbUrl ? 'pg' : 'preview-only',
+    schema: context.dbSchema,
+    tables,
+    upsertKeys: {
+      raw: ['batch_id', 'source_file', 'source_sheet', 'source_row_no'],
+      normalized: ['batch_id', 'source_file', 'source_sheet', 'source_row_no'],
+      rejects: ['batch_id', 'source_file', 'source_sheet', 'source_row_no', 'reject_code'],
+    },
+    rowCounts: {
+      raw: context.rawRows.length,
+      normalized: context.normalizedRows.length,
+      rejects: context.rejects.length,
+      readyToLoad: context.normalizedRows.filter((row) => row.importStatus === 'ready_to_load').length,
+    },
+    sqlPreview: buildDbSqlPreview(tables),
+    execution: null,
+  };
+}
+
+function buildValidation(normalizedRows, rejects) {
+  const readyRows = normalizedRows.filter((row) => row.importStatus === 'ready_to_load');
+  const importKeys = normalizedRows.map((row) => row.idempotencyKey);
+  return {
+    fieldMapping: {
+      readyRowCount: readyRows.length,
+      mappedSubjects: readyRows.filter((row) => row.normalizedPayload.subject).length,
+      mappedFamilyStructures: readyRows.filter((row) => row.normalizedPayload.familyStructure).length,
+      sampleReadyRows: readyRows.slice(0, 3).map((row) => ({
+        businessKey: row.normalizedPayload.businessKey,
+        targetDomain: row.normalizedPayload.targetDomain,
+        subject: row.normalizedPayload.subject,
+        familyStructure: row.normalizedPayload.familyStructure,
+      })),
+    },
+    idempotency: {
+      importKeyCount: importKeys.length,
+      uniqueImportKeyCount: new Set(importKeys).size,
+      duplicateImportKeys: [...countDuplicateValues(importKeys)],
+      strategy: 'staging upsert by batch/source row identity',
+    },
+    rejectReport: {
+      generated: true,
+      rowCount: rejects.length,
+      columns: [...rejectReportColumns],
+    },
   };
 }
 
@@ -427,7 +553,7 @@ function buildSummary(context) {
     batchId: context.batchId,
     sourceSystem: context.sourceSystem,
     sourceFile: context.sourceFile,
-    mode: context.dryRun ? 'dry-run' : 'plan-only',
+    mode: context.dbApply ? 'db-apply' : (context.dryRun ? 'dry-run' : 'plan-only'),
     plan: {
       strategy: ['raw staging', 'normalized staging', 'final load'],
       rawRows: context.rawRows.length,
@@ -437,8 +563,265 @@ function buildSummary(context) {
     },
     rejectsByCode: countBy(context.rejects, 'rejectCode'),
     finalLoadPlan: context.finalLoadPlan,
+    dbPlan: context.dbPlan,
+    validation: context.validation,
     rejectSamples: context.rejects,
+    artifacts: null,
   };
+}
+
+function writeArtifacts(artifactsDir, summary, rawRows, normalizedRows, rejects, dbPlan) {
+  mkdirSync(artifactsDir, { recursive: true });
+
+  const safeBatchId = summary.batchId.replace(/[^a-zA-Z0-9._-]+/g, '-');
+  const summaryPath = join(artifactsDir, `${safeBatchId}.summary.json`);
+  const rawPath = join(artifactsDir, `${safeBatchId}.raw.ndjson`);
+  const normalizedPath = join(artifactsDir, `${safeBatchId}.normalized.ndjson`);
+  const rejectPath = join(artifactsDir, `${safeBatchId}.reject-report.csv`);
+  const sqlPath = join(artifactsDir, `${safeBatchId}.db-plan.sql`);
+
+  writeFileSync(summaryPath, JSON.stringify(summary, null, 2));
+  writeFileSync(rawPath, rawRows.map((row) => JSON.stringify(row)).join('\n') + (rawRows.length ? '\n' : ''));
+  writeFileSync(normalizedPath, normalizedRows.map((row) => JSON.stringify(row)).join('\n') + (normalizedRows.length ? '\n' : ''));
+  writeFileSync(rejectPath, toCsv(rejects, rejectReportColumns));
+  writeFileSync(sqlPath, dbPlan.sqlPreview);
+
+  return {
+    directory: artifactsDir,
+    summaryJson: summaryPath,
+    rawNdjson: rawPath,
+    normalizedNdjson: normalizedPath,
+    rejectReportCsv: rejectPath,
+    dbPlanSql: sqlPath,
+  };
+}
+
+async function applyDbPlan({ dbUrl, dbSchema, summary, rawRows, normalizedRows, rejects }) {
+  if (!dbUrl) {
+    throw new Error('DATABASE_URL or --db-url is required when --db-apply is set');
+  }
+
+  let Client;
+  try {
+    ({ Client } = await import('pg'));
+  } catch {
+    throw new Error('pg package is required for --db-apply; install workspace dependencies before applying to PostgreSQL');
+  }
+
+  const client = new Client({ connectionString: dbUrl });
+  await client.connect();
+  try {
+    await client.query(buildDbSqlPreview({
+      batches: `${dbSchema}.import_batches`,
+      raw: `${dbSchema}.staging_raw_rows`,
+      normalized: `${dbSchema}.staging_normalized_rows`,
+      rejects: `${dbSchema}.staging_rejects`,
+    }));
+
+    await client.query('begin');
+
+    await client.query(
+      `insert into ${dbSchema}.import_batches (
+        batch_id, source_system, source_file, mode, raw_row_count, normalized_row_count, ready_row_count, rejected_row_count
+      ) values ($1,$2,$3,$4,$5,$6,$7,$8)
+      on conflict (batch_id) do update set
+        source_system = excluded.source_system,
+        source_file = excluded.source_file,
+        mode = excluded.mode,
+        raw_row_count = excluded.raw_row_count,
+        normalized_row_count = excluded.normalized_row_count,
+        ready_row_count = excluded.ready_row_count,
+        rejected_row_count = excluded.rejected_row_count,
+        updated_at = now()`,
+      [
+        summary.batchId,
+        summary.sourceSystem,
+        summary.sourceFile,
+        summary.mode,
+        summary.plan.rawRows,
+        summary.plan.normalizedRows,
+        summary.plan.readyToLoadRows,
+        summary.plan.rejectedRows,
+      ],
+    );
+
+    for (const row of rawRows) {
+      await client.query(
+        `insert into ${dbSchema}.staging_raw_rows (
+          batch_id, source_system, source_file, source_sheet, source_row_no, source_pk, source_hash, idempotency_key, import_status, raw_payload
+        ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb)
+        on conflict (batch_id, source_file, source_sheet, source_row_no) do update set
+          source_pk = excluded.source_pk,
+          source_hash = excluded.source_hash,
+          idempotency_key = excluded.idempotency_key,
+          import_status = excluded.import_status,
+          raw_payload = excluded.raw_payload,
+          updated_at = now()`,
+        [
+          row.batchId,
+          row.sourceSystem,
+          row.sourceFile,
+          row.sourceSheet,
+          row.sourceRowNo,
+          row.sourcePk,
+          row.sourceHash,
+          row.idempotencyKey,
+          row.importStatus,
+          JSON.stringify(row.rawPayload),
+        ],
+      );
+    }
+
+    for (const row of normalizedRows) {
+      await client.query(
+        `insert into ${dbSchema}.staging_normalized_rows (
+          batch_id, source_file, source_sheet, source_row_no, source_pk, target_domain, business_key, idempotency_key, import_status, normalized_payload, mapping_snapshot
+        ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb)
+        on conflict (batch_id, source_file, source_sheet, source_row_no) do update set
+          source_pk = excluded.source_pk,
+          target_domain = excluded.target_domain,
+          business_key = excluded.business_key,
+          idempotency_key = excluded.idempotency_key,
+          import_status = excluded.import_status,
+          normalized_payload = excluded.normalized_payload,
+          mapping_snapshot = excluded.mapping_snapshot,
+          updated_at = now()`,
+        [
+          row.batchId,
+          row.sourceFile,
+          row.sourceSheet,
+          row.sourceRowNo,
+          row.sourcePk,
+          row.normalizedPayload.targetDomain,
+          row.normalizedPayload.businessKey,
+          row.idempotencyKey,
+          row.importStatus,
+          JSON.stringify(row.normalizedPayload),
+          JSON.stringify(row.mappingSnapshot),
+        ],
+      );
+    }
+
+    for (const reject of rejects) {
+      await client.query(
+        `insert into ${dbSchema}.staging_rejects (
+          batch_id, source_file, source_sheet, source_row_no, source_pk, target_domain, business_key, reject_code, reject_reason, field_name, raw_value, expected_rule, suggested_action, owner, status
+        ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+        on conflict (batch_id, source_file, source_sheet, source_row_no, reject_code) do update set
+          source_pk = excluded.source_pk,
+          target_domain = excluded.target_domain,
+          business_key = excluded.business_key,
+          reject_reason = excluded.reject_reason,
+          field_name = excluded.field_name,
+          raw_value = excluded.raw_value,
+          expected_rule = excluded.expected_rule,
+          suggested_action = excluded.suggested_action,
+          owner = excluded.owner,
+          status = excluded.status,
+          updated_at = now()`,
+        [
+          reject.batchId,
+          reject.sourceFile,
+          reject.sourceSheet,
+          reject.sourceRowNo,
+          reject.sourcePk,
+          reject.targetDomain,
+          reject.businessKey,
+          reject.rejectCode,
+          reject.rejectReason,
+          reject.fieldName,
+          reject.rawValue == null ? null : String(reject.rawValue),
+          reject.expectedRule,
+          reject.suggestedAction,
+          reject.owner,
+          reject.status,
+        ],
+      );
+    }
+
+    await client.query('commit');
+    return {
+      applied: true,
+      schema: dbSchema,
+      rawRowsUpserted: rawRows.length,
+      normalizedRowsUpserted: normalizedRows.length,
+      rejectsUpserted: rejects.length,
+    };
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
+  } finally {
+    await client.end();
+  }
+}
+
+function buildDbSqlPreview(tables) {
+  return [
+    `create schema if not exists ${tables.batches.split('.')[0]};`,
+    `create table if not exists ${tables.batches} (`,
+    '  batch_id text primary key,',
+    '  source_system text not null,',
+    '  source_file text not null,',
+    '  mode text not null,',
+    '  raw_row_count integer not null,',
+    '  normalized_row_count integer not null,',
+    '  ready_row_count integer not null,',
+    '  rejected_row_count integer not null,',
+    '  created_at timestamptz not null default now(),',
+    '  updated_at timestamptz not null default now()',
+    ');',
+    `create table if not exists ${tables.raw} (`,
+    '  batch_id text not null,',
+    '  source_system text not null,',
+    '  source_file text not null,',
+    '  source_sheet text not null,',
+    '  source_row_no integer not null,',
+    '  source_pk text not null,',
+    '  source_hash text not null,',
+    '  idempotency_key text not null,',
+    '  import_status text not null,',
+    '  raw_payload jsonb not null,',
+    '  created_at timestamptz not null default now(),',
+    '  updated_at timestamptz not null default now(),',
+    '  primary key (batch_id, source_file, source_sheet, source_row_no)',
+    ');',
+    `create table if not exists ${tables.normalized} (`,
+    '  batch_id text not null,',
+    '  source_file text not null,',
+    '  source_sheet text not null,',
+    '  source_row_no integer not null,',
+    '  source_pk text not null,',
+    '  target_domain text not null,',
+    '  business_key text not null,',
+    '  idempotency_key text not null,',
+    '  import_status text not null,',
+    '  normalized_payload jsonb not null,',
+    '  mapping_snapshot jsonb not null,',
+    '  created_at timestamptz not null default now(),',
+    '  updated_at timestamptz not null default now(),',
+    '  primary key (batch_id, source_file, source_sheet, source_row_no)',
+    ');',
+    `create table if not exists ${tables.rejects} (`,
+    '  batch_id text not null,',
+    '  source_file text not null,',
+    '  source_sheet text not null,',
+    '  source_row_no integer not null,',
+    '  source_pk text not null,',
+    '  target_domain text not null,',
+    '  business_key text not null,',
+    '  reject_code text not null,',
+    '  reject_reason text not null,',
+    '  field_name text not null,',
+    '  raw_value text,',
+    '  expected_rule text not null,',
+    '  suggested_action text not null,',
+    '  owner text not null,',
+    '  status text not null,',
+    '  created_at timestamptz not null default now(),',
+    '  updated_at timestamptz not null default now(),',
+    '  primary key (batch_id, source_file, source_sheet, source_row_no, reject_code)',
+    ');',
+  ].join('\n');
 }
 
 function makeReject(rawRow, normalizedPayload, rejectCode, fieldName, rawValue, rejectReason, suggestedAction, owner) {
@@ -521,8 +904,35 @@ function hashPayload(payload) {
 
 function countBy(items, key) {
   return items.reduce((accumulator, item) => {
-    const value = item[key];
+    const value = key.includes('.')
+      ? key.split('.').reduce((current, segment) => current?.[segment], item)
+      : item[key];
     accumulator[value] = (accumulator[value] ?? 0) + 1;
     return accumulator;
   }, {});
+}
+
+function countDuplicateValues(values) {
+  const counts = values.reduce((accumulator, value) => {
+    accumulator[value] = (accumulator[value] ?? 0) + 1;
+    return accumulator;
+  }, {});
+  return Object.entries(counts).filter(([, count]) => count > 1).map(([value, count]) => ({ value, count }));
+}
+
+function toCsv(rows, columns) {
+  const header = columns.join(',');
+  const body = rows.map((row) => columns.map((column) => csvCell(row[column])).join(','));
+  return [header, ...body].join('\n') + '\n';
+}
+
+function csvCell(value) {
+  if (value === undefined || value === null) {
+    return '';
+  }
+  const text = String(value);
+  if (!/[,"\n]/.test(text)) {
+    return text;
+  }
+  return `"${text.replace(/"/g, '""')}"`;
 }

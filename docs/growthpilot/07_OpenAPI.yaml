@@ -1123,6 +1123,32 @@ components:
           format: date-time
         remark:
           type: string
+    DeviceRequest:
+      type: object
+      required:
+      - serialNo
+      properties:
+        campusId:
+          type: string
+          format: uuid
+        serialNo:
+          type: string
+        deviceType:
+          type: string
+          enum:
+          - beacon
+          - tablet
+          - gate
+          - manual
+        status:
+          type: string
+          enum:
+          - idle
+          - bound
+          - repair
+          - retired
+        note:
+          type: string
     DeviceBindingRequest:
       type: object
       required:
@@ -3140,6 +3166,29 @@ paths:
                                 format: uuid
                         page:
                           $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - attendance
+      summary: 创建设备
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
   /attendance/devices/bindings:
     get:
       tags:
