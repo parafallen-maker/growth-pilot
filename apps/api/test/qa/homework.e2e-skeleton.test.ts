@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createQaFixture } from './e2e-main-flow.fixture';
 
-test('E2E-03 作业闭环：upload -> submission -> analyze -> review executable', async (t) => {
+test('QA-02 作业复核链：upload -> analyze -> review -> submit -> status executable', async (t) => {
   const { filesService, homeworkService, homeworkRepository, homeworkEventPublisher, jobsService } = createQaFixture();
 
   await t.test('smoke: file upload metadata + submission + analysis + review is executable', async () => {

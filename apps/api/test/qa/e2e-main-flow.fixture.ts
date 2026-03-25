@@ -1,6 +1,8 @@
 import { mkdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { AuthService } from '../../src/modules/auth/service/auth.service';
+import { AttendanceRepository } from '../../src/modules/attendance/repository/attendance.repository';
+import { AttendanceService } from '../../src/modules/attendance/service/attendance.service';
 import { BillingRepository } from '../../src/modules/billing/repository/billing.repository';
 import { BillingService } from '../../src/modules/billing/service/billing.service';
 import { FamiliesRepository } from '../../src/modules/families/repository/families.repository';
@@ -72,6 +74,7 @@ export function createQaFixture() {
   const studentsRepository = new StudentsRepository(masterDataStore);
   const familiesService = new FamiliesService(familiesRepository);
   const studentsService = new StudentsService(studentsRepository, familiesRepository);
+  const attendanceService = new AttendanceService(new AttendanceRepository());
   const billingService = new BillingService(new BillingRepository());
 
   return {
@@ -86,6 +89,7 @@ export function createQaFixture() {
     growthRepository,
     studentsService,
     familiesService,
+    attendanceService,
     billingService,
   };
 }

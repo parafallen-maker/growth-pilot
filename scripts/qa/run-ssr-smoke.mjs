@@ -28,7 +28,7 @@ await run('npm', ['run', 'build', '--workspace', '@growthpilot/web'], {
   },
 });
 
-const api = spawn('node', ['dist/apps/api/src/main.js'], {
+const api = spawn('node', [path.join('dist', 'apps', 'api', 'src', 'main.js')], {
   cwd: path.join(repoRoot, 'apps/api'),
   env: {
     ...process.env,

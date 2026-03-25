@@ -9,7 +9,9 @@ export default async function AnalyticsBillingPage() {
   const currentUser = await requireCurrentUser();
   const allowed = hasPermission(currentUser.permissions, analyticsPermissions.billingView);
   const filters = { pageNo: 1, pageSize: 20, campusId: 'campus-guiyang', termId: '2026-spring', dateFrom: '2026-03-01', dateTo: '2026-03-24', sortBy: 'receivableCents', sortOrder: 'desc' as const };
-  const result = await analyticsService.queryBilling(filters);
+  const result = allowed
+    ? await analyticsService.queryBilling(filters).catch(() => null)
+    : null;
 
   return (
     <PermissionGuard allowed={allowed} fallback={<PermissionDeniedState resource="Analytics Billing" permissionCode={analyticsPermissions.billingView} />}>
@@ -19,11 +21,11 @@ export default async function AnalyticsBillingPage() {
           description={`P28 已切到 analytics/billing 真聚合，页面按元展示金额。query key: ${JSON.stringify(queryKeys.analyticsBilling(filters))}`}
           actions={<><button className="btn primary">导出收费分析</button><button className="btn">查看金额口径</button></>}
         />
-        <MetricGrid items={result.metrics} />
+        <MetricGrid items={result?.metrics ?? []} />
         <FilterBar fields={[{ label: '校区', value: '贵阳主校区', kind: 'select' }, { label: '学期', value: '2026 春季', kind: 'select' }, { label: '日期', value: '2026-03-01 ~ 2026-03-24' }]} />
         <div className="grid-2">
-          <SummaryPanel title="图表解读" items={result.chartCards} />
-          <SummaryPanel title="排行 / 摘要" items={result.tableCards} />
+          <SummaryPanel title="图表解读" items={result?.chartCards ?? [{ name: 'billing analytics unavailable', detail: 'SSR smoke 时若 API 聚合异常，页面降级展示而不是 500。' }]} />
+          <SummaryPanel title="排行 / 摘要" items={result?.tableCards ?? [{ name: 'fallback', detail: '待补充 analytics/billing 聚合异常的根因。' }]} />
         </div>
         <div className="grid-3">
           <StateBlock state="loading" title="billing analytics loading" />
@@ -31,8 +33,8 @@ export default async function AnalyticsBillingPage() {
           <StateBlock state="error" title="billing analytics error" actionLabel="重试 billing analytics" />
         </div>
         <div className="grid-2">
-          <SummaryPanel title="无数据策略" items={[result.emptyState]} />
-          <SummaryPanel title="实现守门" items={result.governance} />
+          <SummaryPanel title="无数据策略" items={[result?.emptyState ?? { name: '降级策略', detail: '保留页面骨架与提示，避免 SSR 500。' }]} />
+          <SummaryPanel title="实现守门" items={result?.governance ?? [{ name: 'SSR fallback', detail: 'analytics/billing fetch 失败时返回稳定页面。' }]} />
         </div>
         <SummaryPanel title="导出与验收提示" items={[{ name: '图表导出', detail: analyticsChartExportHint }, { name: '金额显示', detail: '页面展示统一为元，接口传输仍保持 cents。' }]} />
       </div>

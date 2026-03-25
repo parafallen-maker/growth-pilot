@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common';
+import { ApiAuthGuard } from '../../common/auth.guard';
+import { PermissionGuard } from '../../common/permission.guard';
+import { AuthModule } from '../auth/auth.module';
 import { FilesModule } from '../files/files.module';
 import { JobsModule } from '../jobs/jobs.module';
 import { HOMEWORK_ANALYSIS_ADAPTER } from './adapter/homework-analysis.adapter';
@@ -10,9 +13,9 @@ import { HomeworkRepository } from './repository/homework.repository';
 import { HomeworkService } from './service/homework.service';
 
 @Module({
-  imports: [JobsModule, FilesModule],
+  imports: [AuthModule, JobsModule, FilesModule],
   controllers: [HomeworkController],
-  providers: [
+  providers: [ApiAuthGuard, PermissionGuard, 
     HomeworkRepository,
     HomeworkService,
     HomeworkAnalysisQueue,

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createQaFixture } from './e2e-main-flow.fixture';
 
-test('E2E-05 收费闭环：product -> contract -> invoice -> payment -> refund executable', async (t) => {
+test('QA-04 账单收款链：product -> contract -> invoice -> payment -> refund -> status executable', async (t) => {
   const { billingService } = createQaFixture();
 
   await t.test('smoke: create product/contract/invoice/payment/refund and refresh invoice status', () => {

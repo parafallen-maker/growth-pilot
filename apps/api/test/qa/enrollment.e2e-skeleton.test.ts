@@ -2,10 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createQaFixture } from './e2e-main-flow.fixture';
 
-test('E2E-02 学生建档闭环：家庭 -> 学生 -> enrollment -> student360 executable', async (t) => {
-  const { familiesService, studentsService } = createQaFixture();
+test('QA-01 学生建档链：login -> family -> guardian -> student -> enrollment -> teacher assignment -> 360 executable', async (t) => {
+  const { authService, familiesService, studentsService } = createQaFixture();
 
-  await t.test('smoke: create family/student/enrollment and query 360 aggregate', async () => {
+  await t.test('smoke: login + create family/guardian/student/enrollment and query 360 aggregate', async () => {
+    const login = await authService.login('admin', 'admin123');
+    const currentUser = await authService.currentUser(login.accessToken);
     const family = await familiesService.create({
       familyName: '测试家庭',
       primaryContactName: '张妈妈',
@@ -37,8 +39,10 @@ test('E2E-02 学生建档闭环：家庭 -> 学生 -> enrollment -> student360 e
     });
 
     const aggregate = await studentsService.detail360(student.id);
+    assert.equal(currentUser.username, 'admin');
     assert.equal(guardian.familyId, family.id);
     assert.equal(enrollment.studentId, student.id);
+    assert.equal(enrollment.primaryTeacherId, 'teacher-001');
     assert.equal(aggregate.student.id, student.id);
     assert.equal(aggregate.currentEnrollment?.campusId, 'campus-001');
   });

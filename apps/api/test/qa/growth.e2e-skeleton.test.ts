@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createQaFixture } from './e2e-main-flow.fixture';
 
-test('E2E-04 成长管理闭环：rubric -> observation -> goal -> report draft executable', async (t) => {
+test('QA-03 成长目标链：rubric -> observation -> goal -> check-in -> report draft executable', async (t) => {
   const { growthService, jobsService } = createQaFixture();
 
   await t.test('smoke: create rubric/observation/goal/checkin and queue report draft', async () => {
