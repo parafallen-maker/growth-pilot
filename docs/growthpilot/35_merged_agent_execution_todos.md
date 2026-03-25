@@ -197,12 +197,17 @@
 - [/] `BE-10` 替换 `teachers` module — teachers/assignments → DB
   - 已将 teachers 改造成 selectable file/db repository adapter，并补上 teacher assignments 的 DB 查询路径；默认仍为 file，development records 写路径待后续 BE-20 一并接真。
 - [x] `BE-11` 替换 `files` module — file_assets → DB, adapter 保留
-- [/] `BE-12` 替换 `homework` module — submissions/analyses/reviews → DB
-- [/] `BE-13` 替换 `growth` module — rubrics/observations/goals/reports → DB
+- [x] `BE-12` 替换 `homework` module — submissions/analyses/reviews → DB
+  - 已补齐 DB 路径下的 review draft / outbox event 持久化，去掉此前“用正式 review 表伪装 draft”的实现。
+  - 已修复 error taxonomy 在 DB 模式下的状态持久化（`draft` / `active` / `inactive`）与列表兼容性。
+- [x] `BE-13` 替换 `growth` module — rubrics/observations/goals/reports → DB
+  - 已补齐 growth observations 的 `scores` DB 持久化，避免 DB 模式丢失 rubric 维度评分明细。
+  - rubrics / observations / goals / reports 的 DB adapter 已覆盖当前服务层实际读写字段，file adapter 兼容保留。
 - [x] `BE-14` 替换 `billing` module — products/contracts/invoices/payments/refunds → DB
 - [x] `BE-15` 替换 `attendance` module → DB
 - [x] `BE-16` 替换 `communication` module → DB
-- [/] `BE-17` 替换 `analytics` module — 改为真实 SQL 聚合查询
+- [x] `BE-17` 替换 `analytics` module — 改为真实 SQL 聚合查询
+  - 当 `GP_PERSISTENCE_ADAPTER=db` 且存在 `DATABASE_URL` 时，`overview` / `teaching` / `billing` 改走 DB scoped SQL 聚合路径；file 模式仍保留原 repository 聚合实现。
 
 #### Phase 3：补缺失接口
 

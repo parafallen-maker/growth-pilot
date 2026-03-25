@@ -10,6 +10,10 @@ export class AnalyticsService {
   constructor(private readonly analyticsRepository: AnalyticsRepository) {}
 
   async getOverview(query: AnalyticsQueryDto) {
+    if (this.analyticsRepository.supportsSqlAggregation()) {
+      return this.analyticsRepository.getOverviewAggregate(query);
+    }
+
     const contracts = await this.filterContractsByScope(query);
     const invoices = await this.filterInvoicesByScope(query);
     const payments = await this.filterPaymentsByScope(query);
@@ -41,6 +45,13 @@ export class AnalyticsService {
   }
 
   async getTeaching(query: AnalyticsQueryDto) {
+    if (this.analyticsRepository.supportsSqlAggregation()) {
+      return {
+        ...(await this.analyticsRepository.getTeachingAggregate(query)),
+        filtersApplied: this.scope(query),
+      };
+    }
+
     const homework = await this.filterHomeworkSubmissionsByScope(query);
     const homeworkDailyStats = await this.filterHomeworkDailyStatsByScope(query);
     const communicationRecords = await this.filterCommunicationRecordsByScope(query);
@@ -99,6 +110,13 @@ export class AnalyticsService {
   }
 
   async getBilling(query: AnalyticsQueryDto) {
+    if (this.analyticsRepository.supportsSqlAggregation()) {
+      return {
+        ...(await this.analyticsRepository.getBillingAggregate(query)),
+        filtersApplied: this.scope(query),
+      };
+    }
+
     const contracts = await this.filterContractsByScope(query);
     const invoices = await this.filterInvoicesByScope(query);
     const payments = await this.filterPaymentsByScope(query);

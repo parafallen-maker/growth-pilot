@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { asc, eq } from 'drizzle-orm';
+import { asc, desc, eq } from 'drizzle-orm';
 import type {
   GrowthGoal,
   GrowthGoalCheckin,
@@ -163,7 +163,7 @@ class DbGrowthRepository implements GrowthRepositoryPort {
   private readonly db = createDb();
 
   async listRubrics() {
-    const templates = await this.db.select().from(dbSchema.rubricTemplates).orderBy(asc(dbSchema.rubricTemplates.createdAt));
+    const templates = await this.db.select().from(dbSchema.rubricTemplates).orderBy(desc(dbSchema.rubricTemplates.createdAt));
     const dimensions = await this.db.select().from(dbSchema.rubricDimensions).orderBy(asc(dbSchema.rubricDimensions.sortOrder));
     const dimensionsByTemplate = new Map<string, RubricTemplate['dimensions']>();
     for (const dimension of dimensions) {
@@ -221,7 +221,7 @@ class DbGrowthRepository implements GrowthRepositoryPort {
   }
 
   async listObservations() {
-    const rows = await this.db.select().from(dbSchema.growthObservations).orderBy(asc(dbSchema.growthObservations.createdAt));
+    const rows = await this.db.select().from(dbSchema.growthObservations).orderBy(desc(dbSchema.growthObservations.createdAt));
     return rows.map((row) => this.mapObservation(row));
   }
 
@@ -234,6 +234,7 @@ class DbGrowthRepository implements GrowthRepositoryPort {
       templateId: observation.templateId ?? null,
       observationDate: observation.observationDate,
       scene: observation.scene,
+      scores: observation.scores,
       totalScore: observation.totalScore?.toString() ?? null,
       strengths: observation.strengths ?? null,
       improvementNotes: observation.improvementNotes ?? null,
@@ -241,15 +242,12 @@ class DbGrowthRepository implements GrowthRepositoryPort {
       createdAt: new Date(observation.createdAt),
       updatedAt: new Date(observation.updatedAt),
     }).returning();
-    return {
-      ...this.mapObservation(created),
-      scores: observation.scores,
-    };
+    return this.mapObservation(created);
   }
 
   async listGoals() {
-    const goals = await this.db.select().from(dbSchema.growthGoals).orderBy(asc(dbSchema.growthGoals.createdAt));
-    const checkins = await this.db.select().from(dbSchema.growthGoalCheckins).orderBy(asc(dbSchema.growthGoalCheckins.createdAt));
+    const goals = await this.db.select().from(dbSchema.growthGoals).orderBy(desc(dbSchema.growthGoals.createdAt));
+    const checkins = await this.db.select().from(dbSchema.growthGoalCheckins).orderBy(desc(dbSchema.growthGoalCheckins.createdAt));
     const checkinsByGoal = new Map<string, GrowthGoalCheckin[]>();
     for (const checkin of checkins) {
       const list = checkinsByGoal.get(checkin.goalId) ?? [];
@@ -304,7 +302,7 @@ class DbGrowthRepository implements GrowthRepositoryPort {
   }
 
   async listReports() {
-    const rows = await this.db.select().from(dbSchema.growthReports).orderBy(asc(dbSchema.growthReports.createdAt));
+    const rows = await this.db.select().from(dbSchema.growthReports).orderBy(desc(dbSchema.growthReports.createdAt));
     return rows.map((row) => this.mapReport(row));
   }
 
@@ -377,7 +375,13 @@ class DbGrowthRepository implements GrowthRepositoryPort {
       templateId: row.templateId ?? '',
       observationDate: row.observationDate,
       scene: row.scene,
-      scores: [],
+      scores: Array.isArray(row.scores)
+        ? row.scores.map((item) => ({
+            dimensionId: item.dimensionId,
+            score: item.score,
+            note: item.note,
+          }))
+        : [],
       totalScore: this.toNumber(row.totalScore) ?? 0,
       strengths: row.strengths ?? undefined,
       improvementNotes: row.improvementNotes ?? undefined,
@@ -449,8 +453,8 @@ class DbGrowthRepository implements GrowthRepositoryPort {
 export class GrowthRepository {
   private readonly adapter: GrowthRepositoryPort;
 
-  constructor() {
-    this.adapter = isDbPersistenceEnabled() ? new DbGrowthRepository() : new FileGrowthRepository();
+  constructor(filePath?: string) {
+    this.adapter = isDbPersistenceEnabled() ? new DbGrowthRepository() : new FileGrowthRepository(filePath);
   }
 
   listRubrics() { return this.adapter.listRubrics(); }
