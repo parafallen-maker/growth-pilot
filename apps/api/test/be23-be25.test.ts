@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, rmSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { SessionRecord } from '../src/modules/auth/auth.types';
 import { AuthRateLimitService } from '../src/modules/auth/service/auth-rate-limit.service';
@@ -30,6 +30,7 @@ const dataDir = resolve(process.cwd(), '.data');
 function resetDataDir() {
   rmSync(dataDir, { recursive: true, force: true });
   mkdirSync(dataDir, { recursive: true });
+  writeFileSync(resolve(dataDir, '.gitkeep'), '');
 }
 
 async function withEnv<T>(patch: Record<string, string | undefined>, run: () => Promise<T>) {
@@ -57,6 +58,7 @@ async function withEnv<T>(patch: Record<string, string | undefined>, run: () => 
 
 class FakeRedisClient {
   readonly store = new Map<string, { value: string; expiresAtMs: number | null }>();
+  errorListenerCount = 0;
   quitCalls = 0;
 
   constructor(
@@ -101,6 +103,13 @@ class FakeRedisClient {
       expiresAtMs: current?.expiresAtMs ?? null,
     });
     return next;
+  }
+
+  on(event: string, _listener: (...args: unknown[]) => void) {
+    if (event === 'error') {
+      this.errorListenerCount += 1;
+    }
+    return this;
   }
 
   async ping() {
@@ -329,6 +338,7 @@ test('BE-23 redis client probe falls back cleanly when configured Redis is unrea
 
     assert.equal(await redisKvService.getClient(), null);
     assert.equal(redisRuntime.clients.length, 1);
+    assert.equal(redisRuntime.clients[0]?.errorListenerCount, 1);
     assert.equal(redisRuntime.clients[0]?.quitCalls, 1);
   });
 });
@@ -358,6 +368,7 @@ test('BE-23 auth session cache and rate limit use Redis-compatible storage when 
     };
 
     await authSessionCacheService.cache(session);
+    assert.equal(redisRuntime.clients[0]?.errorListenerCount, 1);
     assert.deepEqual(await authSessionCacheService.getByAccessTokenId(session.accessTokenId), session);
     assert.deepEqual(await authSessionCacheService.getByRefreshTokenId(session.refreshTokenId), session);
 

@@ -10,7 +10,8 @@
     "format": "node -e \"console.log('api format placeholder')\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "start:worker": "tsx src/worker.ts",
-    "test": "node --import tsx --test --test-concurrency=1 test/**/*.test.ts"
+    "test": "node --import tsx --test --test-concurrency=1 test/**/*.test.ts",
+    "validate:live:be23-be25": "node --import tsx test/be23-be25.live.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.11",
