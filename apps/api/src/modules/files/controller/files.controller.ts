@@ -41,8 +41,8 @@ export class FilesController {
   }
 
   @Get(':fileId')
-  getFileAsset(@Param('fileId') fileId: string) {
-    return ok(this.filesService.getFileAsset(fileId));
+  async getFileAsset(@Param('fileId') fileId: string) {
+    return ok(await this.filesService.getFileAsset(fileId));
   }
 
   private async parseMultipartRequest(request: IncomingMessage, contentType?: string) {

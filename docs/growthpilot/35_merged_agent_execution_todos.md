@@ -224,9 +224,15 @@
 
 #### Phase 4：基础设施升级
 
-- [ ] `BE-23` 接入 Redis（session cache / rate limit）
-- [ ] `BE-24` 接入 BullMQ worker（homework AI analyze job / growth report draft job）
-- [ ] `BE-25` files adapter 接入 MinIO/S3 SDK
+- [/] `BE-23` 接入 Redis（session cache / rate limit）
+  - 已接入 `RedisKvService`、auth session cache、login/refresh rate limit，并在 refresh rotation / logout 时同步驱逐缓存；未配置 `REDIS_URL` 或未安装 `ioredis` 时自动回退内存实现。
+  - 2026-03-25：已通过 API typecheck/test/build；当前 sandbox 无可用 Redis，且无法在此环境补齐 lockfile/实际安装 `ioredis`，真实 Redis 连通性待外部环境复验。
+- [/] `BE-24` 接入 BullMQ worker（homework AI analyze job / growth report draft job）
+  - 已新增 `BullmqJobBroker`、queue constants/types、独立 `worker.ts` / `WorkerModule`，homework analysis 与 growth report draft 在 `JOB_QUEUE_DRIVER=bullmq` 时走队列，默认保留 inline fallback。
+  - 2026-03-25：已验证 inline 模式下 worker 可独立启动；当前 sandbox 无 Redis，且未能在本地实际安装 `bullmq` / `ioredis`，故 live BullMQ worker 消费保持 `[/]`。
+- [/] `BE-25` files adapter 接入 MinIO/S3 SDK
+  - 已新增 `S3ObjectStorageAdapter`，支持 `OBJECT_STORAGE_DRIVER=s3`、MinIO path-style 配置、signed/public URL 解析，并让 files service/controller 全链路支持异步 URL 生成。
+  - 2026-03-25：已补 env/config surface 与单测覆盖；当前 sandbox 无 MinIO/S3，且未能在本地实际安装 AWS SDK 依赖，真实对象写入验收待外部环境补跑。
 
 **验收（Phase 1+2 最低要求）**：
 - `docker compose up -d` 后数据库可连接

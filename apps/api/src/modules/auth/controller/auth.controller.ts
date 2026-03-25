@@ -8,13 +8,13 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  async login(@Body() body: LoginDto) {
-    return buildApiResponse(await this.authService.login(body.username, body.password));
+  async login(@Body() body: LoginDto, @Headers() headers: Record<string, string | string[] | undefined>) {
+    return buildApiResponse(await this.authService.login(body.username, body.password, this.extractClientAddress(headers)));
   }
 
   @Post('refresh')
-  async refresh(@Body() body: RefreshTokenDto) {
-    return buildApiResponse(await this.authService.refresh(body.refreshToken));
+  async refresh(@Body() body: RefreshTokenDto, @Headers() headers: Record<string, string | string[] | undefined>) {
+    return buildApiResponse(await this.authService.refresh(body.refreshToken, this.extractClientAddress(headers)));
   }
 
   @Get('me')
@@ -45,5 +45,28 @@ export class AuthController {
     }
 
     return authorization.replace(/^Bearer\s+/i, '');
+  }
+
+  private extractClientAddress(headers?: Record<string, string | string[] | undefined>) {
+    if (!headers) {
+      return 'unknown';
+    }
+
+    const candidates = [
+      headers['x-forwarded-for'],
+      headers['x-real-ip'],
+      headers['cf-connecting-ip'],
+    ];
+
+    for (const value of candidates) {
+      const normalized = Array.isArray(value) ? value[0] : value;
+      if (!normalized?.trim()) {
+        continue;
+      }
+
+      return normalized.split(',')[0]?.trim() || 'unknown';
+    }
+
+    return 'unknown';
   }
 }

@@ -1,5 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { FilesService } from '../../files/service/files.service';
+import { BullmqJobBroker } from '../../jobs/queue/bullmq-job-broker';
+import { HOMEWORK_ANALYSIS_JOB, HOMEWORK_ANALYSIS_QUEUE } from '../../jobs/queue/job-queue.constants';
+import { HomeworkAnalysisDispatchInput, HomeworkAnalysisJobPayload } from '../../jobs/queue/job-queue.types';
 import { JobsService } from '../../jobs/service/jobs.service';
 import { HOMEWORK_ANALYSIS_ADAPTER, HomeworkAnalysisAdapter } from '../adapter/homework-analysis.adapter';
 import { HomeworkRepository } from '../repository/homework.repository';
@@ -12,18 +15,12 @@ export class HomeworkAnalysisQueue {
     private readonly filesService: FilesService,
     @Inject(HOMEWORK_ANALYSIS_ADAPTER)
     private readonly homeworkAnalysisAdapter: HomeworkAnalysisAdapter,
+    private readonly bullmqJobBroker: BullmqJobBroker = new BullmqJobBroker(),
   ) {}
 
-  async enqueueAndProcess(input: {
-    submissionId: string;
-    provider: string;
-    modelName: string;
-    promptVersion: string;
-    force?: boolean;
-    idempotencyKey?: string;
-  }) {
+  async enqueueAndProcess(input: HomeworkAnalysisDispatchInput) {
     const submission = await this.homeworkRepository.getSubmissionOrThrow(input.submissionId);
-    return this.jobsService.enqueueAndProcess({
+    const job = this.jobsService.createJob({
       jobType: 'homework_analysis',
       bizType: 'homework_submission',
       bizId: submission.id,
@@ -34,7 +31,21 @@ export class HomeworkAnalysisQueue {
         modelName: input.modelName,
         promptVersion: input.promptVersion,
       },
-    }, async ({ jobId }) => {
+    });
+
+    const payload: HomeworkAnalysisJobPayload = { ...input, jobId: job.jobId };
+    const queued = await this.bullmqJobBroker.enqueue(HOMEWORK_ANALYSIS_QUEUE, HOMEWORK_ANALYSIS_JOB, job.jobId, payload);
+    if (queued) {
+      return this.jobsService.getJob(job.jobId);
+    }
+
+    await this.executeQueuedJob(payload);
+    return this.jobsService.getJob(job.jobId);
+  }
+
+  async executeQueuedJob(input: HomeworkAnalysisJobPayload) {
+    return this.jobsService.processJob(input.jobId, async ({ jobId }) => {
+      const submission = await this.homeworkRepository.getSubmissionOrThrow(input.submissionId);
       await this.homeworkRepository.updateSubmission(submission.id, { aiStatus: 'running' });
 
       try {

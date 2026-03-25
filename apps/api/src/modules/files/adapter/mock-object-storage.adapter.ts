@@ -9,11 +9,11 @@ export class MockObjectStorageAdapter implements ObjectStorageAdapter {
       objectKey: input.objectKey,
       provider: 'mock-s3',
       etag: `etag-${Buffer.from(input.objectKey).toString('base64url').slice(0, 12)}`,
-      url: this.getObjectUrl(input.bucketName, input.objectKey),
+      url: await this.getObjectUrl(input.bucketName, input.objectKey),
     };
   }
 
-  getObjectUrl(bucketName: string, objectKey: string) {
+  async getObjectUrl(bucketName: string, objectKey: string) {
     return `mock-s3://${bucketName}/${objectKey}`;
   }
 }

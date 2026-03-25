@@ -21,5 +21,5 @@ export interface PutObjectResult {
 
 export interface ObjectStorageAdapter {
   putObject(input: PutObjectInput): Promise<PutObjectResult>;
-  getObjectUrl(bucketName: string, objectKey: string): string;
+  getObjectUrl(bucketName: string, objectKey: string): Promise<string>;
 }
