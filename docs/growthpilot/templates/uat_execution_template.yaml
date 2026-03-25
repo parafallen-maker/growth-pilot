@@ -1,0 +1,68 @@
+uat_execution:
+  release_id: <release-id>
+  environment: <target-env>
+  batch_id: <batch-id>
+  qa_owner: <fill-me>
+  business_owner: <fill-me>
+  start_window: <YYYY-MM-DD HH:mm +08:00>
+  end_window: <YYYY-MM-DD HH:mm +08:00>
+  accounts:
+    super_admin: pending
+    principal: pending
+    teacher: pending
+    finance: pending
+  scenarios:
+    - role: super_admin
+      case_id: UAT-SA-01
+      title: 登录后查看 Dashboard 与系统设置
+      expected: 首页可见、系统设置页可打开、无 500
+      result: pending
+      evidence: <fill-me>
+    - role: super_admin
+      case_id: UAT-SA-02
+      title: 创建用户并分配角色/校区
+      expected: 用户创建成功，权限生效
+      result: pending
+      evidence: <fill-me>
+    - role: principal
+      case_id: UAT-PR-01
+      title: 查看 Dashboard 总览与学生 360
+      expected: 统计卡片可加载，学生详情完整
+      result: pending
+      evidence: <fill-me>
+    - role: principal
+      case_id: UAT-PR-02
+      title: 查看教师排班与分析报表
+      expected: 列表可查询，报表无权限错误
+      result: pending
+      evidence: <fill-me>
+    - role: teacher
+      case_id: UAT-TE-01
+      title: 查看作业列表并提交复核
+      expected: 列表可筛选，复核保存成功
+      result: pending
+      evidence: <fill-me>
+    - role: teacher
+      case_id: UAT-TE-02
+      title: 记录习惯观察与成长目标
+      expected: 观察与目标创建成功
+      result: pending
+      evidence: <fill-me>
+    - role: finance
+      case_id: UAT-FI-01
+      title: 查看合同/账单/收款记录
+      expected: 金额一致，筛选正常
+      result: pending
+      evidence: <fill-me>
+    - role: finance
+      case_id: UAT-FI-02
+      title: 录入退款与续费跟进
+      expected: 状态回写正确，无越权
+      result: pending
+      evidence: <fill-me>
+  signoff:
+    qa: pending
+    pm: pending
+    owner: pending
+  notes:
+    - 执行时补充截图、接口返回、缺陷编号与回归结论。
