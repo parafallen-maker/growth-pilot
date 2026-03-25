@@ -792,7 +792,9 @@
   - API 列表查询 P95 < 300ms
   - 文件上传 10MB < 5s
   - 已补完整文档包：基准 runbook `docs/growthpilot/43_QA29_QA31_QA32_性能基准与发布后观察运行手册.md`、measurement sheet `docs/growthpilot/templates/performance_benchmark_sheet_template.md`，并回填 `docs/growthpilot/38_Wave4_生产迁移与UAT操作手册.md`。
-  - 尚未在真实 UAT 环境执行压测。
+  - 2026-03-26：新增 `scripts/qa/run-qa29-local-benchmark.mjs`，可在不启动 HTTP listener 的前提下执行本地 `in-process benchmark`，覆盖 teacher/admin 登录态校验、`API-01` / `API-02` / `API-03` / `API-04` 四个核心服务链路，以及 `UPLOAD-01` 的 10 路并行 10MB 写盘上传；原始结果与 benchmark sheet 已落盘到 `docs/growthpilot/artifacts/2026-03-26/qa-29-local-benchmark/benchmark-report.json` 和 `docs/growthpilot/artifacts/2026-03-26/qa-29-local-benchmark/benchmark-sheet.md`。
+  - 2026-03-26 本地实测：`steady-50` 下 API 列表查询 worst-case `P95=6.935ms`、`P99=6.936ms`、error rate `0%`；`upload-sample` 下 10MB 上传 `P95=150.278ms`、error rate `0%`。这些结果是 file-backed + 本地磁盘对象存储的 lower-bound，未包含真实 HTTP socket / 反向代理 / 浏览器 hydration / 外部 Redis/PostgreSQL/MinIO 延迟。
+  - 当前剩余缺口已明确：sandbox 对 loopback `listen()` / `connect()` 均返回 `EPERM`，本轮无法在会话内启动本地 API/Web server，也无法采集 `WEB-01` 首页加载或真实 HTTP 压测样本；因此 `QA-29` 仍不能标 `[x]`，后续需在无此限制的宿主环境补跑浏览器与 HTTP 基准。
 
 **验收**：
 - 全量迁移成功，reject 率 < 2%
