@@ -254,26 +254,27 @@
   - MetricGrid 显示真实数据
   - 移除 `dashboard-service` mock
 
-- [ ] `FE-05` **Students 列表接真**：
-  - 调用 `GET /students` 带筛选参数
-  - 表格分页、排序、搜索联动
-  - 行内链接跳转 `/students/[id]`
+- [/] `FE-05` **Students 列表接真**：
+  - [x] 调用 `GET /students` 带筛选参数
+  - [/] 表格分页、排序、搜索联动（当前已接分页元数据与筛选参数，交互控件仍是只读占位）
+  - [x] 行内链接跳转 `/students/[id]`
 
-- [ ] `FE-06` **Students 360 接真**：
-  - 调用 `GET /students/{id}/360`
-  - 展示各模块摘要卡片
+- [x] `FE-06` **Students 360 接真**：
+  - [x] 调用 `GET /students/{id}/360`
+  - [x] 展示各模块摘要卡片
 
-- [ ] `FE-07` **Teachers 列表/详情接真**：
-  - 列表调用 `GET /teachers`
-  - 详情调用 `GET /teachers/{id}`
+- [x] `FE-07` **Teachers 列表/详情接真**：
+  - [x] 列表调用 `GET /teachers`
+  - [x] 详情调用 `GET /teachers/{id}`
 
-- [ ] `FE-08` **Families 列表/详情接真**：
-  - 列表调用 `GET /families`
-  - 详情调用 `GET /families/{id}`
+- [x] `FE-08` **Families 列表/详情接真**：
+  - [x] 列表调用 `GET /families`
+  - [x] 详情调用 `GET /families/{id}`
 
-- [ ] `FE-09` **Settings 页面接真**：
-  - users 调用 `GET /users`
-  - system 调用 `GET /settings/campuses`、`GET /settings/terms`、`GET /settings/dictionaries`
+- [/] `FE-09` **Settings 页面接真**：
+  - [x] users 调用 `GET /users`
+  - [x] system 调用 `GET /settings/campuses`、`GET /settings/terms`、`GET /settings/dictionaries`
+  - [/] 角色列表 / 权限点 / AI 任务中心仍缺后端独立接口，页面改为真实数据 + 明确缺口说明
 
 - [x] `FE-10` **统一四态组件**：
   - `LoadingState` — 骨架屏/spinner

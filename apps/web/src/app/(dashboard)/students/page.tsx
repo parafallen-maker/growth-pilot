@@ -4,18 +4,19 @@ import { queryKeys } from '@/features/shared/query-keys';
 import { studentService } from '@/services/students-service';
 
 export default async function StudentsPage() {
-  const result = await studentService.query({ pageNo: 1, pageSize: 20, keyword: '', campusId: 'all', termId: '2026-spring', status: 'active', sortBy: 'updatedAt', sortOrder: 'desc' });
+  const filters = { pageNo: 1, pageSize: 20, keyword: '', campusId: 'all', termId: '2026-spring', status: 'active', sortBy: 'updatedAt', sortOrder: 'desc' } as const;
+  const result = await studentService.query(filters);
 
   return (
     <div className="stack">
       <PageHeader
         title="学生列表"
-        description={`已改接真实 students + student360 聚合。query key: ${JSON.stringify(queryKeys.students({ pageNo: 1, pageSize: 20, termId: '2026-spring' }))}`}
+        description={`真实数据来自 GET /students + GET /students/{id}/360。query key: ${JSON.stringify(queryKeys.students({ pageNo: 1, pageSize: 20, termId: '2026-spring' }))}`}
         actions={<><button className="btn primary">新建学生</button><Link className="btn" href="/students/import">导入学生</Link><button className="btn">批量打标签</button><button className="btn">导出</button></>}
       />
       <FilterBar fields={[{ label: '关键词', value: '姓名 / 学号 / 家庭' }, { label: '校区', value: '全部校区', kind: 'select' }, { label: '学期', value: '2026 春季', kind: 'select' }, { label: '年级', value: '全部年级', kind: 'select' }, { label: '老师', value: '全部老师', kind: 'select' }, { label: '状态', value: '在读', kind: 'select' }]} />
       <DataTable
-        title="学生列表"
+        title={`学生列表（共 ${result.page.total} 条）`}
         columns={['学号', '姓名', '年级', '校区', '当前老师', '家庭主联系人', '最近作业正确率', '本周成长观察', '当前未收余额', '状态', '详情']}
         rows={result.list.map((item) => [item.studentNo, item.name, item.grade, item.campus, item.teacher, item.family, item.accuracy, item.observation, item.balance, item.status, item.detailHref])}
       />

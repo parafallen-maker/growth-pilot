@@ -1,28 +1,73 @@
-import type { PageResult, QueryBase } from '@/features/shared/types';
+import { apiRequest } from '@/lib/api-client';
+import { getAuthTokens } from '@/lib/auth-session';
+import type { QueryBase, PageResult } from '@/features/shared/types';
+import type { Teacher } from '@growthpilot/schema';
 
-type TeacherItem = { id: string; name: string; subject: string; campus: string; students: string; reviews: string; coverage: string; status: string };
+type TeacherItem = {
+  id: string;
+  employeeNo: string;
+  name: string;
+  subject: string;
+  campus: string;
+  students: string;
+  reviews: string;
+  coverage: string;
+  status: string;
+};
 
-const teachers: TeacherItem[] = [
-  { id: 'T-001', name: '周老师', subject: '数学', campus: '贵阳主校区', students: '32', reviews: '8', coverage: '92%', status: '在岗' },
-  { id: 'T-014', name: '吴老师', subject: '英语', campus: '南明校区', students: '24', reviews: '5', coverage: '87%', status: '在岗' },
-];
+type TeacherDetail = {
+  teacher: Teacher;
+  subjects: Array<{ subject: string; gradeRange?: string; level?: string }>;
+  shifts: Array<{ id: string; weekday: number; startTime: string; endTime: string; shiftType: string }>;
+  developmentRecords: Array<{ id: string; recordType: string; title: string; status: string; occurredAt: string }>;
+};
+
+function buildQuery(params: Record<string, string | number | undefined>) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== '' && value !== 'all') query.set(key, String(value));
+  });
+  const text = query.toString();
+  return text ? `?${text}` : '';
+}
+
+function formatStatus(status: string) {
+  if (status === 'active') return '在岗';
+  if (status === 'inactive') return '离岗';
+  return status;
+}
+
+function campusName(campusId: string) {
+  const map: Record<string, string> = {
+    'campus-guanshanhu': '观山湖校区',
+    'campus-nanming': '南明校区',
+    'campus-guiyang': '贵阳主校区',
+  };
+  return map[campusId] ?? campusId;
+}
 
 export const teacherService = {
-  query(params: QueryBase = {}): PageResult<TeacherItem> {
-    return { list: teachers, page: { pageNo: params.pageNo ?? 1, pageSize: params.pageSize ?? 20, total: teachers.length } };
-  },
-  detail(id: string) {
+  async query(params: QueryBase = {}): Promise<PageResult<TeacherItem>> {
+    const auth = await getAuthTokens();
+    const result = await apiRequest<PageResult<Teacher>>(`/teachers${buildQuery(params)}`, { auth, retryOn401: Boolean(auth.refreshToken) });
     return {
-      id,
-      profile: [
-        { name: '基础档案', detail: '工号 T-001 / 数学组 / 评级 A' },
-        { name: '学科能力', detail: '数学建模、错因拆解、家长沟通' },
-        { name: '班次/值班', detail: '周二-周日 13:00-21:00' },
-      ],
-      timeline: [
-        { title: '发展记录 2026-Q1', detail: '完成教学复盘 4 次，待补 1 次公开课记录。' },
-        { title: '带学生列表', detail: '挂接 32 名学生；后续接 A5 真接口聚合。' },
-      ],
+      ...result,
+      list: result.list.map((teacher) => ({
+        id: teacher.id,
+        employeeNo: teacher.employeeNo,
+        name: teacher.name,
+        subject: teacher.leadSubject ?? '--',
+        campus: campusName(teacher.campusId),
+        students: '--',
+        reviews: '--',
+        coverage: '--',
+        status: formatStatus(teacher.status),
+      })),
     };
+  },
+
+  async detail(id: string): Promise<TeacherDetail> {
+    const auth = await getAuthTokens();
+    return apiRequest<TeacherDetail>(`/teachers/${id}`, { auth, retryOn401: Boolean(auth.refreshToken) });
   },
 };

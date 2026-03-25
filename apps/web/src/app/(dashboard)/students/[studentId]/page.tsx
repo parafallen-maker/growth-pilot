@@ -23,14 +23,6 @@ export default async function Student360Page({ params }: { params: Promise<{ stu
   const { studentId } = await params;
   const aggregate = await studentService.detail360(studentId);
 
-  if (!aggregate) {
-    return (
-      <div className="stack">
-        <PageHeader title="Student 360" description={`未能加载学生 ${studentId} 的真实聚合数据。`} actions={<Link className="btn" href="/students">返回学生列表</Link>} />
-      </div>
-    );
-  }
-
   return (
     <div className="stack">
       <PageHeader

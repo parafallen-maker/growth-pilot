@@ -6,14 +6,14 @@ import { settingsService } from '@/services/settings-service';
 
 export default async function SettingsSystemPage() {
   const currentUser = await requireCurrentUser();
-  const detail = settingsService.detail();
+  const detail = await settingsService.detail();
 
   return (
     <PermissionGuard allowed={currentUser.permissions.includes('settings:view')}>
       <div className="stack">
         <PageHeader
-          title="系统设置页面骨架"
-          description={`P30 已预铺：校区、学期、字典、AI 任务中心。jobId 基线与 pageNo/pageSize 查询口径已对齐。示例 key: ${JSON.stringify(queryKeys.jobs({ pageNo: 1, pageSize: 20 }))}`}
+          title="系统设置"
+          description={`真实数据来自 GET /settings/campuses、/settings/terms、/settings/dictionaries。示例 key: ${JSON.stringify(queryKeys.jobs({ pageNo: 1, pageSize: 20 }))}`}
           actions={<><button className="btn primary">创建校区</button><button className="btn">创建学期</button><button className="btn">查看失败任务</button></>}
         />
         <TabStrip tabs={['校区', '学期', '字典', 'AI 任务中心']} active="校区" />
