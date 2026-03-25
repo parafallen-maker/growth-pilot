@@ -13,13 +13,13 @@ export class UsersController {
 
   @Get()
   @RequirePermission('users:view')
-  listUsers(@Query('keyword') keyword?: string) {
-    return buildApiResponse(this.usersService.listUsers(keyword));
+  async listUsers(@Query('keyword') keyword?: string) {
+    return buildApiResponse(await this.usersService.listUsers(keyword));
   }
 
   @Post(':userId/roles')
   @RequirePermission('users:view')
-  assignRoles(@Param('userId') userId: string, @Body() body: AssignRolesDto) {
-    return buildApiResponse(this.usersService.assignRoles(userId, body.roleIds ?? []));
+  async assignRoles(@Param('userId') userId: string, @Body() body: AssignRolesDto) {
+    return buildApiResponse(await this.usersService.assignRoles(userId, body.roleIds ?? []));
   }
 }

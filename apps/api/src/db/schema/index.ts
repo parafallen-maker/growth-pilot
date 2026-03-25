@@ -1,5 +1,6 @@
 export * from './settings';
 export * from './users';
+export * from './auth';
 export * from './families';
 export * from './teachers';
 export * from './students';

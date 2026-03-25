@@ -12,19 +12,19 @@ export class SettingsController {
 
   @Get('campuses')
   @RequirePermission('settings:view')
-  listCampuses() {
-    return buildApiResponse(this.settingsService.listCampuses());
+  async listCampuses() {
+    return buildApiResponse(await this.settingsService.listCampuses());
   }
 
   @Get('terms')
   @RequirePermission('settings:view')
-  listTerms(@Query('campusId') campusId?: string) {
-    return buildApiResponse(this.settingsService.listTerms(campusId));
+  async listTerms(@Query('campusId') campusId?: string) {
+    return buildApiResponse(await this.settingsService.listTerms(campusId));
   }
 
   @Get('dictionaries')
   @RequirePermission('settings:view')
-  listDictionaries(@Query('dictType') dictType?: string) {
-    return buildApiResponse(this.settingsService.listDictionaries(dictType));
+  async listDictionaries(@Query('dictType') dictType?: string) {
+    return buildApiResponse(await this.settingsService.listDictionaries(dictType));
   }
 }

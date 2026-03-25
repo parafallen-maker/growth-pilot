@@ -5,7 +5,7 @@ import { AuthService } from '../modules/auth/service/auth.service';
 export class ApiAuthGuard implements CanActivate {
   constructor(private readonly authService: AuthService) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<{ headers: Record<string, string | undefined>; authUser?: unknown }>();
     const header = request.headers.authorization ?? request.headers.Authorization;
     const token = this.extractBearerToken(header);
@@ -13,7 +13,7 @@ export class ApiAuthGuard implements CanActivate {
       throw new UnauthorizedException({ code: 'AUTH_401', message: 'missing bearer token' });
     }
 
-    const user = this.authService.currentUser(token);
+    const user = await this.authService.currentUser(token);
     request.authUser = user;
     return true;
   }

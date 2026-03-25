@@ -1,45 +1,30 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { createHmac, randomUUID } from 'node:crypto';
-import { FileJsonStore } from '../../../shared/persistence/file-json-store';
+import { DefaultAuthSessionRepository } from '../repository/auth-session.repository';
+import { AuthSessionRepository, SessionRecord } from '../auth.types';
 import { UsersService } from '../../users/service/users.service';
 import { CurrentUserProfile } from '../../users/users.types';
 
-interface SessionRecord {
-  sessionId: string;
-  userId: string;
-  accessTokenId: string;
-  refreshTokenId: string;
-  accessToken: string;
-  refreshToken: string;
-  accessExpiresAt: string;
-  refreshExpiresAt: string;
-  createdAt: string;
-  rotatedAt?: string | null;
-  revokedAt?: string | null;
-}
-
-interface AuthStoreShape {
-  sessions: SessionRecord[];
-}
-
 @Injectable()
 export class AuthService {
-  private readonly store = new FileJsonStore<AuthStoreShape>('.data/auth-sessions.json', () => ({ sessions: [] }));
   private readonly jwtSecret = process.env.JWT_SECRET ?? 'growthpilot-dev-secret';
   private readonly issuer = 'growthpilot-api';
   private readonly audience = 'growthpilot-web';
   private readonly accessTtlSeconds = Number(process.env.JWT_ACCESS_TTL_SECONDS ?? 15 * 60);
   private readonly refreshTtlSeconds = Number(process.env.JWT_REFRESH_TTL_SECONDS ?? 30 * 24 * 60 * 60);
 
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly authSessionRepository: AuthSessionRepository = new DefaultAuthSessionRepository(),
+  ) {}
 
-  login(username: string, password: string) {
-    const user = this.usersService.validateCredentials(username, password);
+  async login(username: string, password: string) {
+    const user = await this.usersService.validateCredentials(username, password);
     if (!user) {
       throw new UnauthorizedException('invalid username or password');
     }
 
-    const session = this.issueSession(user.id);
+    const session = await this.issueSession(user.id);
     return {
       accessToken: session.accessToken,
       refreshToken: session.refreshToken,
@@ -53,24 +38,24 @@ export class AuthService {
     };
   }
 
-  refresh(refreshToken: string) {
+  async refresh(refreshToken: string) {
     const claims = this.verifyToken(refreshToken, 'refresh');
-    const existingSession = this.getActiveSessionByRefreshTokenId(claims.jti);
+    const existingSession = await this.getActiveSessionByRefreshTokenId(claims.jti);
     if (!existingSession || existingSession.userId !== claims.sub) {
       throw new UnauthorizedException('refresh token is invalid');
     }
 
-    this.revokeSession(existingSession.sessionId, 'rotated');
-    const rotatedSession = this.issueSession(existingSession.userId);
+    await this.revokeSession(existingSession.sessionId, 'rotated');
+    const rotatedSession = await this.issueSession(existingSession.userId);
     return {
       accessToken: rotatedSession.accessToken,
       refreshToken: rotatedSession.refreshToken,
     };
   }
 
-  currentUser(accessToken: string): CurrentUserProfile {
+  async currentUser(accessToken: string): Promise<CurrentUserProfile> {
     const claims = this.verifyToken(accessToken, 'access');
-    const session = this.getActiveSessionByAccessTokenId(claims.jti);
+    const session = await this.getActiveSessionByAccessTokenId(claims.jti);
     if (!session || session.userId !== claims.sub) {
       throw new UnauthorizedException('access token is invalid');
     }
@@ -78,27 +63,27 @@ export class AuthService {
     return this.usersService.getCurrentUserProfile(session.userId);
   }
 
-  logout(accessToken?: string, refreshToken?: string) {
+  async logout(accessToken?: string, refreshToken?: string) {
     if (accessToken) {
       const accessClaims = this.tryVerifyToken(accessToken, 'access');
       if (accessClaims) {
-        const session = this.getActiveSessionByAccessTokenId(accessClaims.jti);
-        if (session) this.revokeSession(session.sessionId, 'logout');
+        const session = await this.getActiveSessionByAccessTokenId(accessClaims.jti);
+        if (session) await this.revokeSession(session.sessionId, 'logout');
       }
     }
 
     if (refreshToken) {
       const refreshClaims = this.tryVerifyToken(refreshToken, 'refresh');
       if (refreshClaims) {
-        const session = this.getActiveSessionByRefreshTokenId(refreshClaims.jti);
-        if (session) this.revokeSession(session.sessionId, 'logout');
+        const session = await this.getActiveSessionByRefreshTokenId(refreshClaims.jti);
+        if (session) await this.revokeSession(session.sessionId, 'logout');
       }
     }
 
     return {};
   }
 
-  private issueSession(userId: string): SessionRecord {
+  private async issueSession(userId: string): Promise<SessionRecord> {
     const now = new Date();
     const sessionId = randomUUID();
     const accessTokenId = randomUUID();
@@ -122,36 +107,21 @@ export class AuthService {
       revokedAt: null,
     };
 
-    this.store.update((state) => {
-      state.sessions = [session, ...state.sessions.filter((item) => item.userId !== userId || item.revokedAt !== null)];
-    });
+    await this.authSessionRepository.save(session);
 
     return session;
   }
 
   private revokeSession(sessionId: string, reason: 'logout' | 'rotated') {
-    this.store.update((state) => {
-      const session = state.sessions.find((item) => item.sessionId === sessionId);
-      if (!session || session.revokedAt) return;
-      session.revokedAt = new Date().toISOString();
-      if (reason === 'rotated') {
-        session.rotatedAt = session.revokedAt;
-      }
-    });
+    return this.authSessionRepository.revoke(sessionId, reason);
   }
 
   private getActiveSessionByAccessTokenId(tokenId: string) {
-    return this.store.read().sessions.find((item) => item.accessTokenId === tokenId && this.isSessionActive(item, 'access'));
+    return this.authSessionRepository.findActiveByAccessTokenId(tokenId);
   }
 
   private getActiveSessionByRefreshTokenId(tokenId: string) {
-    return this.store.read().sessions.find((item) => item.refreshTokenId === tokenId && this.isSessionActive(item, 'refresh'));
-  }
-
-  private isSessionActive(session: SessionRecord, kind: 'access' | 'refresh') {
-    const now = Date.now();
-    const expiresAt = kind === 'access' ? session.accessExpiresAt : session.refreshExpiresAt;
-    return !session.revokedAt && new Date(expiresAt).getTime() > now;
+    return this.authSessionRepository.findActiveByRefreshTokenId(tokenId);
   }
 
   private signToken(payload: { sub: string; sid: string; jti: string; type: 'access' | 'refresh'; exp: number }) {

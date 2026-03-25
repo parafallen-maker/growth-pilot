@@ -184,9 +184,12 @@
 
 #### Phase 2：逐模块替换 Repository（按依赖顺序）
 
-- [ ] `BE-05` 替换 `auth` module — session 存 DB 或 Redis
-- [ ] `BE-06` 替换 `users` module — users/roles 从 JSON → DB
-- [ ] `BE-07` 替换 `settings` module — campuses/terms/dictionaries → DB
+- [/] `BE-05` 替换 `auth` module — session 存 DB 或 Redis
+  - 已新增 `auth_sessions` Drizzle schema、auth session repository 抽象与 file/db selectable adapter；默认仍走 file，设置 `GP_PERSISTENCE_ADAPTER=db` 且提供 `DATABASE_URL` 后可切到 DB。
+- [/] `BE-06` 替换 `users` module — users/roles 从 JSON → DB
+  - 已将 users/roles/permissions 改造成 repository adapter 结构，并提供 Drizzle DB 实现与 seed 基线；当前为了兼容现有同步链路与测试，默认 adapter 仍为 file。
+- [/] `BE-07` 替换 `settings` module — campuses/terms/dictionaries → DB
+  - 已将 campuses/terms/dictionaries 改造成 repository adapter 结构，并提供 Drizzle DB 实现与 seed 基线；默认 adapter 仍为 file，待后续联通 migration/真实数据库验收后切默认值。
 - [ ] `BE-08` 替换 `students` module — students/enrollments → DB
 - [ ] `BE-09` 替换 `families` module — families/guardians → DB
 - [ ] `BE-10` 替换 `teachers` module — teachers/assignments → DB

@@ -8,31 +8,31 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  login(@Body() body: LoginDto) {
-    return buildApiResponse(this.authService.login(body.username, body.password));
+  async login(@Body() body: LoginDto) {
+    return buildApiResponse(await this.authService.login(body.username, body.password));
   }
 
   @Post('refresh')
-  refresh(@Body() body: RefreshTokenDto) {
-    return buildApiResponse(this.authService.refresh(body.refreshToken));
+  async refresh(@Body() body: RefreshTokenDto) {
+    return buildApiResponse(await this.authService.refresh(body.refreshToken));
   }
 
   @Get('me')
-  currentUser(@Headers('authorization') authorization?: string) {
+  async currentUser(@Headers('authorization') authorization?: string) {
     const token = this.extractBearerToken(authorization);
     if (!token) {
       throw new Error('authorization header is required');
     }
-    return buildApiResponse(this.authService.currentUser(token));
+    return buildApiResponse(await this.authService.currentUser(token));
   }
 
   @Post('logout')
-  logout(
+  async logout(
     @Headers('authorization') authorization?: string,
     @Body() body?: RefreshTokenDto,
   ) {
     return buildApiResponse(
-      this.authService.logout(this.extractBearerToken(authorization, false), body?.refreshToken),
+      await this.authService.logout(this.extractBearerToken(authorization, false), body?.refreshToken),
     );
   }
 

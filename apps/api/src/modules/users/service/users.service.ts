@@ -7,20 +7,20 @@ import { CurrentUserProfile, Permission, Role, UserRecord } from '../users.types
 export class UsersService {
   constructor(private readonly usersRepository: UsersRepository) {}
 
-  listUsers(keyword?: string) {
-    const users = this.usersRepository.list(keyword).map((user) => this.toContractUser(user));
+  async listUsers(keyword?: string) {
+    const users = (await this.usersRepository.list(keyword)).map((user) => this.toContractUser(user));
     return buildPagedResult(users);
   }
 
-  getCurrentUserProfile(userId: string): CurrentUserProfile {
-    const user = this.usersRepository.findById(userId);
+  async getCurrentUserProfile(userId: string): Promise<CurrentUserProfile> {
+    const user = await this.usersRepository.findById(userId);
     if (!user) {
       throw new NotFoundException('user not found');
     }
 
-    const roleMap = new Map(this.usersRepository.listRoles().map((role) => [role.code, role]));
+    const roleMap = new Map((await this.usersRepository.listRoles()).map((role) => [role.code, role]));
     const permissionMap = new Map(
-      this.usersRepository.listPermissions().map((permission) => [permission.id, permission]),
+      (await this.usersRepository.listPermissions()).map((permission) => [permission.id, permission]),
     );
 
     const roles = user.roles
@@ -43,10 +43,10 @@ export class UsersService {
     };
   }
 
-  assignRoles(userId: string, roleIds: string[]) {
-    const roleCodes = new Set(this.usersRepository.listRoles().map((role) => role.code));
+  async assignRoles(userId: string, roleIds: string[]) {
+    const roleCodes = new Set((await this.usersRepository.listRoles()).map((role) => role.code));
     const resolvedRoles = roleIds.filter((roleId) => roleCodes.has(roleId));
-    const updatedUser = this.usersRepository.assignRoles(userId, resolvedRoles);
+    const updatedUser = await this.usersRepository.assignRoles(userId, resolvedRoles);
     if (!updatedUser) {
       throw new NotFoundException('user not found');
     }
@@ -54,8 +54,8 @@ export class UsersService {
     return { success: true };
   }
 
-  validateCredentials(username: string, password: string): UserRecord | undefined {
-    const user = this.usersRepository.findByUsername(username);
+  async validateCredentials(username: string, password: string): Promise<UserRecord | undefined> {
+    const user = await this.usersRepository.findByUsername(username);
     if (!user || user.password !== password || user.status !== 'active') {
       return undefined;
     }

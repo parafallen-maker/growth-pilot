@@ -6,15 +6,15 @@ import { SettingsRepository } from '../repository/settings.repository';
 export class SettingsService {
   constructor(private readonly settingsRepository: SettingsRepository) {}
 
-  listCampuses() {
-    return buildPagedResult(this.settingsRepository.listCampuses());
+  async listCampuses() {
+    return buildPagedResult(await this.settingsRepository.listCampuses());
   }
 
-  listTerms(campusId?: string) {
-    return buildPagedResult(this.settingsRepository.listTerms(campusId));
+  async listTerms(campusId?: string) {
+    return buildPagedResult(await this.settingsRepository.listTerms(campusId));
   }
 
-  listDictionaries(dictType?: string) {
-    return buildPagedResult(this.settingsRepository.listDictionaries(dictType));
+  async listDictionaries(dictType?: string) {
+    return buildPagedResult(await this.settingsRepository.listDictionaries(dictType));
   }
 }

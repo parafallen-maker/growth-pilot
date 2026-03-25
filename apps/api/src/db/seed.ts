@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import { campuses, roles, schoolTerms, systemDictionaries } from './schema';
+import { authSessions, campuses, permissions, roles, schoolTerms, systemDictionaries, userRoles, users } from './schema';
 
 const now = new Date();
 const currentYear = now.getUTCFullYear();
@@ -47,10 +47,52 @@ export const defaultDictionaries = [
 
 export function buildSeedPlan() {
   const campusId = randomUUID();
+  const adminRoleId = randomUUID();
+  const teacherRoleId = randomUUID();
+  const permissionRows = [
+    { id: randomUUID(), code: 'auth.session.read', name: '读取会话信息', module: 'auth', action: 'read' },
+    { id: randomUUID(), code: 'settings.campus.read', name: '读取校区', module: 'settings', action: 'read' },
+    { id: randomUUID(), code: 'settings.term.read', name: '读取学期', module: 'settings', action: 'read' },
+    { id: randomUUID(), code: 'settings.dictionary.read', name: '读取字典', module: 'settings', action: 'read' },
+    { id: randomUUID(), code: 'jobs.read', name: '读取任务中心', module: 'jobs', action: 'read' },
+    { id: randomUUID(), code: 'users.read', name: '读取用户', module: 'users', action: 'read' },
+    { id: randomUUID(), code: 'users.role.bind', name: '绑定用户角色', module: 'users', action: 'bind' },
+  ];
+  const adminUserId = randomUUID();
+  const teacherUserId = randomUUID();
 
   return {
     campuses: defaultCampuses.map((campus) => ({ id: campusId, ...campus })),
-    roles: defaultRoles.map((role) => ({ id: randomUUID(), ...role })),
+    roles: [
+      { id: adminRoleId, code: 'admin', name: '系统管理员', scopeLevel: 'system', status: 'active' },
+      { id: teacherRoleId, code: 'teacher', name: '任课老师', scopeLevel: 'campus', status: 'active' },
+      ...defaultRoles.map((role) => ({ id: randomUUID(), ...role })),
+    ],
+    permissions: permissionRows,
+    users: [
+      {
+        id: adminUserId,
+        username: 'admin',
+        passwordHash: 'admin123',
+        displayName: '系统管理员',
+        mobile: '13800000000',
+        email: 'admin@growthpilot.local',
+        status: 'active',
+      },
+      {
+        id: teacherUserId,
+        username: 'teacher.zhang',
+        passwordHash: 'teacher123',
+        displayName: '张老师',
+        mobile: '13800000001',
+        email: 'teacher.zhang@growthpilot.local',
+        status: 'active',
+      },
+    ],
+    userRoles: [
+      { userId: adminUserId, roleId: adminRoleId, campusId },
+      { userId: teacherUserId, roleId: teacherRoleId, campusId },
+    ],
     schoolTerms: defaultTerms.map((term) => ({ id: randomUUID(), campusId, ...term })),
     systemDictionaries: defaultDictionaries.map((item) => ({
       id: randomUUID(),
@@ -58,6 +100,7 @@ export function buildSeedPlan() {
       active: 1,
       extra: {},
     })),
+    authSessions: [] as typeof authSessions.$inferInsert[],
   };
 }
 
@@ -73,6 +116,9 @@ export async function seedDatabase(databaseUrl = process.env.DATABASE_URL) {
   try {
     await db.insert(campuses).values(plan.campuses).onConflictDoNothing();
     await db.insert(roles).values(plan.roles).onConflictDoNothing();
+    await db.insert(permissions).values(plan.permissions).onConflictDoNothing();
+    await db.insert(users).values(plan.users).onConflictDoNothing();
+    await db.insert(userRoles).values(plan.userRoles).onConflictDoNothing();
     await db.insert(schoolTerms).values(plan.schoolTerms).onConflictDoNothing();
     await db.insert(systemDictionaries).values(plan.systemDictionaries).onConflictDoNothing();
   } finally {
@@ -82,6 +128,9 @@ export async function seedDatabase(databaseUrl = process.env.DATABASE_URL) {
   return {
     campuses: plan.campuses.length,
     roles: plan.roles.length,
+    permissions: plan.permissions.length,
+    users: plan.users.length,
+    userRoles: plan.userRoles.length,
     schoolTerms: plan.schoolTerms.length,
     systemDictionaries: plan.systemDictionaries.length,
   };
