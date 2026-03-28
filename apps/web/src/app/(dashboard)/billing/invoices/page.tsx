@@ -33,7 +33,7 @@ export default async function BillingInvoicesPage({
       <div className="stack">
         <PageHeader
           title="账单 / 支付 / 退款"
-          description={`当前展示 billing/invoices 真实数据；payment/refund 列表仍受后端接口缺口限制。query key: ${JSON.stringify(queryKeys.billingInvoices(filters))}`}
+          description="账单开具、收款记录与退费管理"
           actions={<><a className="btn primary" href="#invoice-create-form">新建账单</a><a className="btn" href="#payment-create-form">记录支付</a><a className="btn" href="#refund-create-form">发起退款</a><button className="btn">添加调整</button></>}
         />
         {query?.invoice ? <section className="panel"><div className="badge success">账单已创建：{query.invoice}</div></section> : null}
@@ -44,7 +44,7 @@ export default async function BillingInvoicesPage({
           <div className="page-header">
             <div>
               <h3>新建账单</h3>
-              <p>当前表单直连 POST /billing/invoices，并允许带 1 条真实账单项创建。</p>
+              <p>为学生创建账单并添加收费项目。</p>
             </div>
             <span className="badge success">POST /billing/invoices</span>
           </div>

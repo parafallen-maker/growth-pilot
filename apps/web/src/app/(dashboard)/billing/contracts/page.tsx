@@ -32,7 +32,7 @@ export default async function BillingContractsPage({
       <div className="stack">
         <PageHeader
           title="合同列表"
-          description={`当前展示 billing/contracts 与合同详情真实数据。query key: ${JSON.stringify(queryKeys.billingContracts(filters))}`}
+          description="学生合同签订与管理"
           actions={<><a className="btn primary" href="#contract-create-form">新建合同</a><button className="btn">创建账单</button><button className="btn">创建续费任务</button></>}
         />
         {query?.created ? <section className="panel"><div className="badge success">合同已创建：{query.created}</div></section> : null}

@@ -8,7 +8,7 @@ export default function StudentsImportPage() {
     <div className="stack">
       <PageHeader
         title="学生导入中心"
-        description="当前提供模板、字段映射说明与导入任务信息；正式导入入口待后端 /students/import 落地后接入。"
+        description="从 Excel 批量导入学生数据"
         actions={<><button className="btn primary">下载模板</button><button className="btn" disabled>上传文件</button></>}
       />
       <div className="grid-2">

@@ -18,7 +18,7 @@ export default async function AnalyticsOverviewPage() {
       <div className="stack">
         <PageHeader
           title="校区总览"
-          description={`当前展示 analytics/overview 真实聚合结果。query key: ${JSON.stringify(queryKeys.analyticsOverview(filters))}`}
+          description="校区经营核心指标与趋势"
           actions={<><button className="btn primary">导出总览图</button><button className="btn">查看口径说明</button></>}
         />
         <MetricGrid items={result?.metrics ?? []} />

@@ -22,7 +22,7 @@ export default async function BillingProductsPage({
       <div className="stack">
         <PageHeader
           title="收费产品"
-          description={`当前展示 billing/products 真实数据，金额统一按元展示。query key: ${JSON.stringify(queryKeys.billingProducts(filters))}`}
+          description="收费方案与收费项目管理"
           actions={<><a className="btn primary" href="#billing-product-create-form">新建产品</a><button className="btn">编辑</button><button className="btn">停用</button></>}
         />
         {query?.created ? <section className="panel"><div className="badge success">收费产品已创建：{query.created}</div></section> : null}

@@ -16,7 +16,7 @@ export default async function SettingsUsersPage() {
       <div className="stack">
         <PageHeader
           title="用户与角色"
-          description={`真实数据来自 GET /users 与 GET /settings/dictionaries?dictType=access_role|access_permission；角色与权限目录不再由 /users 或当前登录态推断。query key: ${JSON.stringify(queryKeys.users({ pageNo: 1, pageSize: 20 }))}`}
+          description="系统用户管理与角色权限配置"
           actions={<><button className="btn primary">创建用户</button><button className="btn">绑定角色</button><button className="btn danger">重置密码</button></>}
         />
         <TabStrip tabs={['用户列表', '角色列表', '权限点']} active="用户列表" />

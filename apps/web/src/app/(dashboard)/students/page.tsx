@@ -60,7 +60,7 @@ export default async function StudentsPage({
     <div className="stack">
       <PageHeader
         title="学生列表"
-        description={`真实数据来自 GET /students + GET /students/{id}/360。query key: ${JSON.stringify(queryKeys.students({ pageNo: filters.pageNo ?? 1, pageSize: filters.pageSize ?? 20, termId: filters.termId }))}`}
+        description="学生档案管理与状态查看"
         actions={<><a className="btn primary" href="#new-student-form">新建学生</a><Link className="btn" href="/students/import">导入学生</Link><button className="btn">批量打标签</button><button className="btn">导出</button></>}
       />
       {query?.created ? <section className="panel"><div className="badge success">学生已创建：{query.created}</div></section> : null}

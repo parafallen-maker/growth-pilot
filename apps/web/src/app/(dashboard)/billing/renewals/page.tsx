@@ -30,7 +30,7 @@ export default async function BillingRenewalsPage({
       <div className="stack">
         <PageHeader
           title="续费跟进"
-          description={`当前展示 billing/renewals 真实数据，包含续费池与跟进时间线。query key: ${JSON.stringify(queryKeys.billingRenewals(filters))}`}
+          description="续费到期跟进与提醒"
           actions={<><a className="btn primary" href="#renewal-status-form">更新跟进状态</a><a className="btn" href="#renewal-create-form">新建续费任务</a><a className="btn" href="#renewal-follow-up-form">更新下次跟进</a></>}
         />
         {query?.created ? <section className="panel"><div className="badge success">续费任务已创建：{query.created}{query.status ? ` / status=${query.status}` : ''}</div></section> : null}
@@ -41,7 +41,7 @@ export default async function BillingRenewalsPage({
           <div className="page-header">
             <div>
               <h3>新建续费任务</h3>
-              <p>当前表单直连 POST /billing/renewals，用已有家庭、学生、负责人做真实选择。</p>
+              <p>创建续费跟进记录，指定负责人和到期时间。</p>
             </div>
             <span className="badge success">POST /billing/renewals</span>
           </div>

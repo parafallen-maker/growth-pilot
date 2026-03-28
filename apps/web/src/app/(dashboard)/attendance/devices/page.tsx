@@ -49,7 +49,7 @@ export default async function AttendanceDevicesPage({
       <div className="stack">
         <PageHeader
           title="设备与绑定"
-          description={`当前展示 attendance/devices 与 bindings 真实数据。query key: ${JSON.stringify(queryKeys.attendanceDevices(deviceFilters))}`}
+          description="签到设备管理与学生绑定"
           actions={<><a className="btn primary" href="#attendance-device-create-form">新增设备</a><a className="btn" href="#attendance-binding-create-form">绑定学生</a><a className="btn" href="#attendance-binding-update-form">解绑设备</a></>}
         />
         {query?.deviceCreated ? <section className="panel"><div className="badge success">设备已创建：{query.deviceCreated}{query.status ? ` / status=${query.status}` : ''}</div></section> : null}
