@@ -78,7 +78,7 @@ export class UsersService {
 
     const created = await this.usersRepository.create({
       username: payload.username,
-      passwordHash: this.passwordService.hash(payload.password),
+      passwordHash: await this.passwordService.hash(payload.password),
       displayName: payload.displayName,
       mobile: payload.mobile,
       email: payload.email,
@@ -91,7 +91,7 @@ export class UsersService {
 
   async validateCredentials(username: string, password: string): Promise<UserRecord | undefined> {
     const user = await this.usersRepository.findByUsername(username);
-    if (!user || user.status !== 'active' || !this.passwordService.verify(password, user.passwordHash)) {
+    if (!user || user.status !== 'active' || !(await this.passwordService.verify(password, user.passwordHash))) {
       return undefined;
     }
 

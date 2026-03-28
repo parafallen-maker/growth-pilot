@@ -182,9 +182,12 @@ export class AuthService {
     if (!header || !payload || !signature) return null;
     if (!secureCompare(this.sign(`${header}.${payload}`), signature)) return null;
 
-    const claims = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as {
-      sub: string; sid: string; jti: string; type: 'access' | 'refresh'; exp: number; iss: string; aud: string;
-    };
+    let claims: { sub: string; sid: string; jti: string; type: 'access' | 'refresh'; exp: number; iss: string; aud: string };
+    try {
+      claims = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    } catch {
+      return null;
+    }
 
     if (claims.type !== expectedType || claims.iss !== this.issuer || claims.aud !== this.audience) return null;
     if (claims.exp * 1000 <= Date.now()) return null;

@@ -1,7 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InferSelectModel, desc, eq, ilike, inArray, or } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
-import { PasswordService } from '../../../common/security';
 import { createDb, dbSchema } from '../../../db';
 import { FileJsonStore } from '../../../shared/persistence/file-json-store';
 import { isDbPersistenceEnabled } from '../../../shared/persistence/adapter';
@@ -13,7 +12,9 @@ interface UsersStoreShape {
   users: UserRecord[];
 }
 
-const passwordService = new PasswordService();
+// Sync hash used only for static seed data at module load time
+const bcryptSync = require('bcrypt') as { hashSync(data: string, rounds: number): string };
+const seedHash = (plain: string) => bcryptSync.hashSync(plain, 12);
 
 const defaultPermissions: Permission[] = [
   { id: 'perm-auth-session-read', code: 'auth.session.read', name: '读取会话信息', module: 'auth', action: 'read' },
@@ -81,7 +82,7 @@ const defaultUsers: UserRecord[] = [
   {
     id: 'user-admin-001',
     username: 'admin',
-    passwordHash: passwordService.hash('admin123'),
+    passwordHash: seedHash('admin123'),
     displayName: '系统管理员',
     mobile: '13800000000',
     email: 'admin@growthpilot.local',
@@ -92,7 +93,7 @@ const defaultUsers: UserRecord[] = [
   {
     id: 'user-teacher-001',
     username: 'teacher.zhang',
-    passwordHash: passwordService.hash('teacher123'),
+    passwordHash: seedHash('teacher123'),
     displayName: '张老师',
     mobile: '13800000001',
     email: 'teacher.zhang@growthpilot.local',

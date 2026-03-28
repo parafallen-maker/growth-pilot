@@ -28,7 +28,7 @@ export class FilesService {
     const body = this.validatePayload(payload);
     const objectKey = this.buildObjectKey(payload);
     const putResult = await this.objectStorageAdapter.putObject({
-      bucketName: payload.bucketName ?? process.env.S3_BUCKET ?? 'growthpilot-dev',
+      bucketName: process.env.S3_BUCKET ?? 'growthpilot-dev',
       objectKey,
       fileName: payload.fileName,
       mimeType: payload.mimeType,
@@ -60,7 +60,6 @@ export class FilesService {
     fileName: string;
     mimeType: string;
     content: Buffer;
-    bucketName?: string;
     uploadedBy?: string;
     purpose?: string;
     sourceType?: string;
@@ -71,7 +70,6 @@ export class FilesService {
       mimeType: input.mimeType,
       sizeBytes: input.content.byteLength,
       checksum: `sha256:${createHash('sha256').update(input.content).digest('hex')}`,
-      bucketName: input.bucketName,
       uploadedBy: input.uploadedBy,
       purpose: input.purpose,
       sourceType: input.sourceType ?? 'api_multipart_upload',

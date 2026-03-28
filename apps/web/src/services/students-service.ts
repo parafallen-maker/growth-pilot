@@ -96,60 +96,20 @@ export const studentService = {
     const auth = await getAuthTokens();
     const result = await apiRequest<PageResult<StudentListItem>>(`/students${buildQuery(params)}`, { auth, retryOn401: Boolean(auth.refreshToken) });
 
-    const detailAggregates = await Promise.all(
-      result.list.map(async (student) => {
-        try {
-          return await apiRequest<Student360Aggregate>(`/students/${student.id}/360`, { auth, retryOn401: Boolean(auth.refreshToken) });
-        } catch {
-          return null;
-        }
-      }),
-    );
-
-    let list = result.list.map((student, index) => {
-      const aggregate = detailAggregates[index];
-      if (!aggregate) {
-        return {
-          id: student.id,
-          studentNo: student.studentNo,
-          name: student.name,
-          grade: student.gradeLabel,
-          campus: '--',
-          teacher: '--',
-          family: student.familyId ?? '--',
-          accuracy: '--',
-          observation: '--',
-          balance: '¥0',
-          status: formatStudentStatus(student.status),
-          detailHref: `/students/${student.id}`,
-        };
-      }
-      return mapStudentAggregate(aggregate);
-    });
-
-    if (params.keyword) {
-      const keyword = params.keyword.trim().toLowerCase();
-      list = list.filter((item) => [item.studentNo, item.name, item.family, item.teacher].some((field) => field.toLowerCase().includes(keyword)));
-    }
-
-    if (params.sortBy) {
-      const direction = params.sortOrder === 'asc' ? 1 : -1;
-      const sorter = (left: StudentItem, right: StudentItem) => {
-        switch (params.sortBy) {
-          case 'studentNo':
-            return left.studentNo.localeCompare(right.studentNo, 'zh-CN');
-          case 'name':
-            return left.name.localeCompare(right.name, 'zh-CN');
-          case 'gradeLabel':
-            return left.grade.localeCompare(right.grade, 'zh-CN');
-          case 'status':
-            return left.status.localeCompare(right.status, 'zh-CN');
-          default:
-            return 0;
-        }
-      };
-      list = [...list].sort((left, right) => sorter(left, right) * direction);
-    }
+    const list = result.list.map((student) => ({
+      id: student.id,
+      studentNo: student.studentNo,
+      name: student.name,
+      grade: student.gradeLabel,
+      campus: '--',
+      teacher: '--',
+      family: student.familyId ?? '--',
+      accuracy: '--',
+      observation: '--',
+      balance: '--',
+      status: formatStudentStatus(student.status),
+      detailHref: `/students/${student.id}`,
+    }));
 
     return {
       ...result,
