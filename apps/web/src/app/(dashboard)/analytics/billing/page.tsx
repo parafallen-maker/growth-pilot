@@ -18,7 +18,7 @@ export default async function AnalyticsBillingPage() {
       <div className="stack">
         <PageHeader
           title="收费分析"
-          description={`当前展示 analytics/billing 真实聚合结果，页面按元展示金额。query key: ${JSON.stringify(queryKeys.analyticsBilling(filters))}`}
+          description="收费与财务数据分析"
           actions={<><button className="btn primary">导出收费分析</button><button className="btn">查看金额口径</button></>}
         />
         <MetricGrid items={result?.metrics ?? []} />

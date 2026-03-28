@@ -37,7 +37,7 @@ export default async function CommunicationMessagesPage({
       queued: { list: [], page: { pageNo: 1, pageSize: 20, total: 0 } },
       sent: { list: [], page: { pageNo: 1, pageSize: 20, total: 0 } },
       failed: { list: [], page: { pageNo: 1, pageSize: 20, total: 0 } },
-      statusPanels: [{ name: '接口状态', detail: 'message_tasks 或 templates 当前不可用，页面已保留真实结构并降级。' }],
+      statusPanels: [{ name: '消息状态', detail: '消息模板与任务发送管理。' }],
     })),
     serverApiRequest<PageResult<{ id: string; familyName?: string | null; primaryContactName?: string | null; familyCode: string }>>('/families?pageNo=1&pageSize=50').catch(() => ({ list: [], page: { pageNo: 1, pageSize: 50, total: 0 } })),
     serverApiRequest<PageResult<{ id: string; name: string; studentNo: string }>>('/students?pageNo=1&pageSize=50').catch(() => ({ list: [], page: { pageNo: 1, pageSize: 50, total: 0 } })),
@@ -50,7 +50,7 @@ export default async function CommunicationMessagesPage({
       <div className="stack">
         <PageHeader
           title="消息中心"
-          description={`当前展示 communication/templates 与 message_tasks 真实数据。query key: ${JSON.stringify(queryKeys.communicationMessages(filters))}`}
+          description="消息模板与任务管理"
           actions={<><a className="btn primary" href="#communication-message-create-form">创建消息</a><a className="btn" href="#communication-template-create-form">创建模板</a><a className="btn" href="#communication-message-status-form">更新状态</a><button className="btn">查看回执</button></>}
         />
         {query?.templateCreated ? <section className="panel"><div className="badge success">消息模板已创建：{query.templateCreated}{query.code ? ` / ${query.code}` : ''}</div></section> : null}
@@ -87,7 +87,7 @@ export default async function CommunicationMessagesPage({
             <div className="page-header">
               <div>
                 <h3>创建消息任务</h3>
-                <p>当前表单直连 POST /communication/message-tasks，真实发送 adapter 缺口继续明确保留。</p>
+                <p>创建消息任务，选择模板并指定接收人。</p>
               </div>
               <span className="badge success">POST /communication/message-tasks</span>
             </div>

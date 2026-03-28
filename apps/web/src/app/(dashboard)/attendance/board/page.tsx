@@ -45,7 +45,7 @@ export default async function AttendanceBoardPage({
       <div className="stack">
         <PageHeader
           title="出勤看板"
-          description={`当前展示 attendance/events 真实数据看板。query key: ${JSON.stringify(queryKeys.attendanceBoard(filters))}`}
+          description="今日校区考勤数据概览"
           actions={<><a className="btn primary" href="#attendance-event-create-form">手动补签到</a><button className="btn">修正事件备注</button><button className="btn">导出今日异常</button></>}
         />
         {query?.created ? <section className="panel"><div className="badge success">{query.replayed === '1' ? '事件幂等重放成功' : '出勤事件已创建'}：{query.created}</div></section> : null}

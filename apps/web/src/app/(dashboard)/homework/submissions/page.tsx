@@ -45,7 +45,7 @@ export default async function HomeworkSubmissionsPage({
       <div className="stack">
         <PageHeader
           title="作业提交队列"
-          description={`真实列表接口已接：${JSON.stringify(queryKeys.homeworkSubmissions(filters))}`}
+          description="作业提交记录与复核管理"
           actions={
             <>
               <a className="btn primary" href="#homework-upload-form">上传作业</a>
@@ -56,16 +56,16 @@ export default async function HomeworkSubmissionsPage({
           }
         />
 
-        {query?.created ? <section className="panel"><div className="badge success">作业已上传并生成提交：{query.created} / fileId={query.fileId}</div></section> : null}
+        {query?.created ? <section className="panel"><div className="badge success">作业已上传成功</div></section> : null}
         {query?.reviewed ? <section className="panel"><div className="badge success">复核已提交：{query.reviewed}</div></section> : null}
         {query?.error ? <section className="panel"><div className="badge warning">{decodeURIComponent(query.error)}</div></section> : null}
 
         <MetricGrid
           items={[
-            { label: '当前页记录', value: String(result.list.length), hint: `total ${result.page.total}` },
-            { label: '待 AI', value: String(pendingAi), hint: 'pending / queued' },
-            { label: '待复核', value: String(reviewing), hint: 'reviewing / unreviewed / draft' },
-            { label: '已完成', value: String(reviewed), hint: 'reviewed / published' },
+            { label: '当前页记录', value: String(result.list.length), hint: `共 ${result.page.total} 条` },
+            { label: '待 AI 分析', value: String(pendingAi), hint: '等待系统分析' },
+            { label: '待复核', value: String(reviewing), hint: '等待教师复核' },
+            { label: '已完成', value: String(reviewed), hint: '复核已提交' },
           ]}
         />
 
@@ -73,9 +73,9 @@ export default async function HomeworkSubmissionsPage({
           <div className="page-header">
             <div>
               <h3>上传作业</h3>
-              <p>FE-19 已接真：先走 POST /files/upload/multipart，再用返回 fileId 调 POST /homework/submissions。</p>
+              <p>选择学生，上传作业图片，系统将自动触发 AI 分析。</p>
             </div>
-            <span className="badge success">multipart + create</span>
+
           </div>
           <form className="form-grid" action={createHomeworkSubmission}>
             <div className="field"><label>学生</label><select className="select" name="studentId" required defaultValue={students.list[0]?.id ?? ''}>{students.list.map((student) => <option key={student.id} value={student.id}>{student.name} / {student.studentNo}</option>)}</select></div>
@@ -84,7 +84,7 @@ export default async function HomeworkSubmissionsPage({
             <div className="field"><label>学期 ID（可选）</label><input className="input" name="termId" placeholder="term-2026-spring" /></div>
             <div className="field"><label>学科</label><input className="input" name="subject" defaultValue="math" required /></div>
             <div className="field"><label>作业日期</label><input className="input" type="date" name="homeworkDate" required /></div>
-            <div className="field"><label>来源类型</label><select className="select" name="sourceType" defaultValue="manual_upload"><option value="manual_upload">manual_upload</option><option value="camera_scan">camera_scan</option><option value="wechat">wechat</option></select></div>
+            <div className="field"><label>来源类型</label><select className="select" name="sourceType" defaultValue="manual_upload"><option value="manual_upload">手动上传</option><option value="camera_scan">拍照扫描</option><option value="wechat">微信提交</option></select></div>
             <div className="field"><label>作业文件</label><input className="input" type="file" name="file" required /></div>
             <div className="field form-span-2"><label>备注</label><textarea className="textarea" name="remark" placeholder="可填写批次、来源、页面数、特殊说明" /></div>
             <div className="button-row form-span-2"><button className="btn primary" type="submit">上传并创建提交</button></div>
@@ -95,13 +95,13 @@ export default async function HomeworkSubmissionsPage({
           <div className="page-header">
             <div>
               <h3>快速提交复核</h3>
-              <p>FE-20 已接 POST /homework/submissions/{'{id}'}/review。完整工作台仍保留在详情页，这里补一个高频快口。</p>
+              <p>无需进入详情页，在列表直接提交复核结果。</p>
             </div>
-            <span className="badge success">POST /review</span>
+
           </div>
           <form className="form-grid" action={submitHomeworkReviewFromList}>
             <div className="field"><label>提交单</label><select className="select" name="submissionId" defaultValue={defaultSubmission?.submissionId ?? ''}>{result.list.map((item) => <option key={item.submissionId} value={item.submissionId}>{item.submissionNo} / {item.studentName} / {item.subject}</option>)}</select></div>
-            <div className="field"><label>复核结论</label><select className="select" name="reviewResult" defaultValue="adjusted"><option value="approved">approved</option><option value="adjusted">adjusted</option><option value="rejected">rejected</option></select></div>
+            <div className="field"><label>复核结论</label><select className="select" name="reviewResult" defaultValue="adjusted"><option value="approved">通过</option><option value="adjusted">修正</option><option value="rejected">退回</option></select></div>
             <div className="field"><label>最终正确率</label><input className="input" type="number" min="0" max="100" name="finalAccuracyPct" defaultValue="92" /></div>
             <div className="field form-span-2"><label>错因标签</label><div className="chip-row">{taxonomies.list.slice(0, 8).map((taxonomy) => <label className="tab" key={taxonomy.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><input type="checkbox" name="errorTaxonomyId" value={taxonomy.id} defaultChecked={taxonomy.id === taxonomies.list[0]?.id} /><span>{taxonomy.name}</span></label>)}</div></div>
             <div className="field form-span-2"><label>错因总结</label><textarea className="textarea" name="finalErrorSummary" placeholder="本次主要问题与改进方向" /></div>

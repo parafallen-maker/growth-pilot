@@ -12,9 +12,9 @@ export default async function LoginPage() {
     <main className="auth-shell">
       <section className="auth-card stack">
         <div>
-          <div className="badge">Login</div>
-          <h1 style={{ marginBottom: 8 }}>Growth Pilot 后台登录</h1>
-          <p className="subtle">现在不是摆拍页了，真打 POST /auth/login，成了就进 dashboard，败了就老实报错。</p>
+          <div className="badge">登录</div>
+          <h1 style={{ marginBottom: 8 }}>洪基托管成长中心</h1>
+          <p className="subtle">请输入账号和密码登录管理后台</p>
         </div>
         <LoginForm />
       </section>

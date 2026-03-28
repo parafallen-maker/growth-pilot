@@ -18,7 +18,7 @@ export default async function AnalyticsTeachingPage() {
       <div className="stack">
         <PageHeader
           title="教学分析"
-          description={`当前展示 analytics/teaching 真实聚合结果。query key: ${JSON.stringify(queryKeys.analyticsTeaching(filters))}`}
+          description="教师工作量与教学质量分析"
           actions={<><button className="btn primary">导出教学分析</button><button className="btn">查看老师维度</button></>}
         />
         <MetricGrid items={result?.metrics ?? []} />

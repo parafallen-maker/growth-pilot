@@ -11,7 +11,7 @@ export default async function FamiliesPage() {
     <div className="stack">
       <PageHeader
         title="家庭列表"
-        description={`真实数据来自 GET /families。query key: ${JSON.stringify(queryKeys.families({ pageNo: 1, pageSize: 20, status: 'active' }))}`}
+        description="家庭档案与联系人管理"
         actions={<><button className="btn primary">新建家庭</button><button className="btn">导出</button>{result.list[0] ? <Link className="btn" href={`/families/${result.list[0].id}`}>打开首个家庭详情</Link> : null}</>}
       />
       <FilterBar fields={[{ label: '关键词', value: '家庭名 / 联系人 / 电话' }, { label: '校区', value: '全部校区', kind: 'select' }, { label: '状态', value: '正常', kind: 'select' }, { label: '未收余额', value: '全部', kind: 'select' }, { label: '待办任务', value: '全部', kind: 'select' }]} />

@@ -15,7 +15,7 @@ function ReportListSection({ title, items }: { title: string; items: GrowthRepor
       <div className="page-header">
         <div>
           <h3>{title}</h3>
-          <p>真实 reports 数据按状态分组展示。</p>
+          <p>成长报告按状态分组展示。</p>
         </div>
         <button className="btn">批量处理</button>
       </div>
@@ -55,7 +55,7 @@ export default async function GrowthReportsPage({
       <div className="stack">
         <PageHeader
           title="成长报告"
-          description={`真实 reports 列表已接：${JSON.stringify(queryKeys.growthReports({ pageNo: 1, pageSize: 20, reportType: 'weekly' }))}`}
+          description="成长周报生成与管理"
           actions={<><a className="btn primary" href="#report-generate-form">生成草稿</a><a className="btn" href="#report-review-form">报告复核</a><a className="btn" href="#report-publish-form">发布设置</a></>}
         />
         {query?.generated ? <section className="panel"><div className="badge success">已生成报告：{query.generated} 份</div></section> : null}

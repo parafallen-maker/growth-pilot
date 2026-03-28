@@ -27,7 +27,7 @@ export default async function GrowthGoalsPage({
       <div className="stack">
         <PageHeader
           title="成长目标"
-          description={`真实 goals 列表已接：${JSON.stringify(queryKeys.growthGoals({ pageNo: 1, pageSize: 20, status: 'active' }))}`}
+          description="学生成长目标设定与跟进"
           actions={<><a className="btn primary" href="#goal-create-form">新建目标</a><a className="btn" href="#goal-checkin-form">提交 Check-in</a><button className="btn">同步家庭任务</button></>}
         />
         {query?.created ? <section className="panel"><div className="badge success">目标已创建：{query.created}</div></section> : null}
@@ -70,7 +70,7 @@ export default async function GrowthGoalsPage({
             <div className="page-header">
               <div>
                 <h3>目标列表</h3>
-                <p>当前页展示真实 goal 数据。</p>
+                <p>学生成长目标与跟进记录。</p>
               </div>
               <span className="badge">{result.page.total} goals</span>
             </div>

@@ -13,7 +13,7 @@ export default async function SettingsSystemPage() {
       <div className="stack">
         <PageHeader
           title="系统设置"
-          description={`真实数据来自 GET /settings/campuses、/settings/terms、/settings/dictionaries，AI 任务中心读取 ${JSON.stringify(queryKeys.jobs({ pageNo: 1, pageSize: 20 }))}。`}
+          description="校区、学期、字典等基础数据维护"
           actions={<><button className="btn primary">创建校区</button><button className="btn">创建学期</button><button className="btn">查看失败任务</button></>}
         />
         <TabStrip tabs={['校区', '学期', '字典', 'AI 任务中心']} active="校区" />

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { PermissionGuard } from '@/components/business/permission-guard';
 import { PageHeader, SummaryPanel, TabStrip, TimelinePanel } from '@/components/business/page-blocks';
 import { homeworkPermissions, reviewViewModes } from '@/features/homework/constants';
-import { homeworkReviewFormSchema } from '@/features/homework/schema';
+
 import { queryKeys } from '@/features/shared/query-keys';
 import { requireCurrentUser } from '@/lib/current-user';
 import { homeworkService } from '@/services/homework-service';
@@ -35,12 +35,12 @@ export default async function HomeworkReviewWorkbenchPage({
       <div className="stack">
         <PageHeader
           title={`作业复核工作台 / ${detail.submissionNo}`}
-          description={`detail key: ${JSON.stringify(queryKeys.homeworkSubmissionDetail(submissionId))} / review key: ${JSON.stringify(queryKeys.homeworkReviewDraft(submissionId))}`}
+          description="查看 AI 分析结果，提交教师复核意见"
           actions={
             <>
               {detail.navigation.prev ? <Link className="btn" href={`/homework/review/${detail.navigation.prev.id}`}>上一条：{detail.navigation.prev.label}</Link> : <button className="btn" disabled>没有上一条</button>}
               {detail.navigation.next ? <Link className="btn" href={`/homework/review/${detail.navigation.next.id}`}>下一条：{detail.navigation.next.label}</Link> : <button className="btn" disabled>没有下一条</button>}
-              <span className="badge">status: {detail.aiJob.status}</span>
+              <span className="badge">{detail.aiJob.status === 'completed' ? '分析完成' : detail.aiJob.status === 'pending' ? '分析中' : detail.aiJob.status}</span>
             </>
           }
         />
@@ -54,8 +54,8 @@ export default async function HomeworkReviewWorkbenchPage({
           <section className="panel stack">
             <div className="page-header">
               <div>
-                <h3>左栏 / 附件</h3>
-                <p>当前可读取真实 fileId 元数据，并在同页切换上一条 / 下一条作业。</p>
+                <h3>作业附件</h3>
+                <p>作业附件预览，可切换上一条/下一条。</p>
               </div>
               <div className="button-row">
                 {detail.navigation.prev ? <Link className="btn" href={`/homework/review/${detail.navigation.prev.id}`}>上一条</Link> : null}
@@ -78,12 +78,12 @@ export default async function HomeworkReviewWorkbenchPage({
           <section className="panel stack">
             <div className="page-header">
               <div>
-                <h3>中栏 / AI 结果</h3>
-                <p>真实 detail 已接；没有分析结果时回退到 submission/review 当前状态摘要。</p>
+                <h3>AI 分析结果</h3>
+                <p>AI 自动分析结果，教师可参考后提交复核。</p>
               </div>
               <div className="button-row">
                 <span className="badge">{detail.aiJob.status}</span>
-                <span className="badge">jobId: {detail.aiJob.jobId}</span>
+
                 <form action={triggerHomeworkAnalysis.bind(null, submissionId)}>
                   <button className="btn" type="submit">重新触发 AI</button>
                 </form>
@@ -102,10 +102,10 @@ export default async function HomeworkReviewWorkbenchPage({
           <form className="panel stack">
             <div className="page-header">
               <div>
-                <h3>右栏 / 教师复核表单</h3>
-                <p>PUT review-draft + POST review 已接真实 API。</p>
+                <h3>教师复核</h3>
+                <p>填写复核意见，支持保存草稿或直接提交。</p>
               </div>
-              <div className="badge success">schema fields: {Object.keys(homeworkReviewFormSchema.shape).length}</div>
+
             </div>
 
             <div className="summary-item">
@@ -115,15 +115,15 @@ export default async function HomeworkReviewWorkbenchPage({
 
             <div className="form-grid">
               <div className="field">
-                <label>reviewResult</label>
+                <label>复核结论</label>
                 <select className="select" name="reviewResult" defaultValue={formDefaults.reviewResult}>
-                  <option value="approved">approved</option>
-                  <option value="adjusted">adjusted</option>
-                  <option value="rejected">rejected</option>
+                  <option value="approved">通过</option>
+                  <option value="adjusted">修正</option>
+                  <option value="rejected">退回</option>
                 </select>
               </div>
               <div className="field">
-                <label>finalAccuracyPct</label>
+                <label>最终正确率 (%)</label>
                 <input className="input" name="finalAccuracyPct" type="number" min="0" max="100" defaultValue={String(formDefaults.finalAccuracyPct)} />
               </div>
               <div className="field form-span-2">
