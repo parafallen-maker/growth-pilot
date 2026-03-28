@@ -1038,6 +1038,8 @@ agents:
         notes:
           - 已补 `scripts/migration/run-staging-import.mjs --input <json|csv>`，可直接消费 repo 示例样本，并输出 `summary.json / reject-report.csv / validation-report.md / ready-to-load.json` 正式工件。
           - PostgreSQL staging schema 与 final upsert 仍未接入，本轮先把真实输入、规则校验、artifact 沉淀打通。
+          - 本轮先交付样本导入报告骨架与 reject 模板，真实首批样本尚待接入 CSV/Excel 与 PostgreSQL staging schema。
+          - dry-run 已可输出批次摘要、rejectSamples、rejectsByCode，后续可直接沉淀为 import_validation_report / data_exception_list。
         completion_note: 已产出 docs/growthpilot/27_首批样本迁移校验报告.md，并将 dry-run skeleton 升级为可消费 JSON/CSV 样本、可落 validation artifact 的 migration runner。
         handoff_to: [A1, A2]
       - task_id: T-QA1-1
