@@ -25,7 +25,7 @@ export default async function GrowthRubricsPage({
       <div className="stack">
         <PageHeader
           title="Rubric 模板"
-          description={`真实列表 + detail 已接：${JSON.stringify(queryKeys.growthRubrics({ pageNo: 1, pageSize: 20 }))}`}
+          description="习惯观察评价维度模板管理"
           actions={<><a className="btn primary" href="#rubric-create-form">新建模板</a><a className="btn" href="#rubric-detail-panel">查看详情</a><button className="btn">发布版本</button></>}
         />
         {query?.created ? <section className="panel"><div className="badge success">Rubric 模板已创建：{query.created}</div></section> : null}
@@ -35,7 +35,7 @@ export default async function GrowthRubricsPage({
             <div className="page-header">
               <div>
                 <h3>模板列表</h3>
-                <p>当前直接展示真实 rubric template 数据。</p>
+                <p>当前评价模板与维度配置。</p>
               </div>
               <span className="badge">{result.page.total} templates</span>
             </div>
@@ -68,7 +68,7 @@ export default async function GrowthRubricsPage({
             <div className="page-header">
               <div>
                 <h3>新建模板</h3>
-                <p>当前可直接提交 POST /growth/rubrics。模板详情区域只展示真实返回结果，不再保留假编辑控件。</p>
+                <p>创建新的评价模板，配置评分维度与权重。</p>
               </div>
               <span className="badge success">POST /growth/rubrics</span>
             </div>

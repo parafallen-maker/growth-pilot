@@ -33,7 +33,7 @@ export default async function AttendanceHomeworkTimePage() {
       <div className="stack">
         <PageHeader
           title="作业时长"
-          description={`当前展示 attendance/homework-time/daily-stats 真实统计结果。query key: ${JSON.stringify(queryKeys.attendanceHomeworkTime(filters))}`}
+          description="学生学习时长统计与分析"
           actions={<><button className="btn primary">导出统计</button><button className="btn">查看异常会话</button></>}
         />
 

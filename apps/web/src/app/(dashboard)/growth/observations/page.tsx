@@ -32,7 +32,7 @@ export default async function GrowthObservationsPage({
       <div className="stack">
         <PageHeader
           title="成长观察"
-          description={`真实列表接口已接：${JSON.stringify(queryKeys.growthObservations({ pageNo: 1, pageSize: 20, scene: 'all' }))}`}
+          description="学生日常习惯观察记录"
           actions={<><a className="btn primary" href="#observation-create-form">新建观察</a><button className="btn">导出</button><button className="btn">动态 schema 预览</button></>}
         />
         {query?.created ? <section className="panel"><div className="badge success">成长观察已创建：{query.created}</div></section> : null}
@@ -47,7 +47,7 @@ export default async function GrowthObservationsPage({
           <div className="page-header">
             <div>
               <h3>新建成长观察</h3>
-              <p>表单已接入 POST /growth/observations，可先切换所用 rubric，再按该模板的真实维度提交评分。</p>
+              <p>选择学生和评价模板，按维度为学生打分。</p>
             </div>
             <span className="badge success">POST /growth/observations</span>
           </div>

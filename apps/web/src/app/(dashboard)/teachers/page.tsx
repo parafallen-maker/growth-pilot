@@ -11,7 +11,7 @@ export default async function TeachersPage() {
     <div className="stack">
       <PageHeader
         title="教师列表"
-        description={`真实数据来自 GET /teachers。query key: ${JSON.stringify(queryKeys.teachers({ pageNo: 1, pageSize: 20, status: 'active' }))}`}
+        description="教师档案与工作管理"
         actions={<><button className="btn primary">新建教师</button><button className="btn">导出</button></>}
       />
       <FilterBar fields={[{ label: '关键词', value: '姓名 / 工号' }, { label: '校区', value: '全部校区', kind: 'select' }, { label: '状态', value: '在岗', kind: 'select' }, { label: '学科', value: '全部学科', kind: 'select' }]} />

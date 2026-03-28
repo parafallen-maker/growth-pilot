@@ -39,7 +39,7 @@ export default async function CommunicationRecordsPage({
       <div className="stack">
         <PageHeader
           title="沟通记录"
-          description={`当前展示 communication/records 真实台账。query key: ${JSON.stringify(queryKeys.communicationRecords(filters))}`}
+          description="家校沟通记录管理"
           actions={<><a className="btn primary" href="#communication-record-create-form">新建沟通</a><button className="btn">关联会谈</button><button className="btn">创建家庭任务</button></>}
         />
         {query?.created ? <section className="panel"><div className="badge success">沟通记录已创建：{query.created}{query.topic ? ` / ${query.topic}` : ''}</div></section> : null}

@@ -15,7 +15,7 @@ export default async function HomeworkErrorTaxonomiesPage() {
       <div className="stack">
         <PageHeader
           title="错因词典维护"
-          description={`真实列表已接 GET /homework/error-taxonomies。query key: ${JSON.stringify(queryKeys.homeworkErrorTaxonomies(filters))}`}
+          description="错因标签分类与管理"
           actions={
             <>
               <button className="btn primary">新建错因</button>
@@ -36,7 +36,7 @@ export default async function HomeworkErrorTaxonomiesPage() {
 
         <DataTable
           title="错因词典"
-          description="当前展示真实词典数据。"
+          description="按学科和年级分类管理错因标签"
           columns={['code', '名称', '分类', '学科范围', '启用状态', '排序', '动作']}
           rows={result.list.map((item) => [item.code, item.name, item.category, item.subjects, item.enabled, item.sort, item.actions])}
         />
