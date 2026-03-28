@@ -3,15 +3,12 @@ import { PageHeader, MetricGrid, SummaryPanel, TimelinePanel } from '@/component
 import { requireCurrentUser } from '@/lib/current-user';
 import { roleLabels, type AppRole } from '@/lib/navigation';
 
-const priorityLabel: Record<string, string> = { high: '🔴 紧急', medium: '🟡 一般', low: '⚪ 低' };
-const statusLabel: Record<string, string> = { todo: '待办', doing: '进行中', done: '已完成', canceled: '已取消' };
-const typeLabel: Record<string, string> = {
-  homework_followup: '作业跟进',
-  overdue_payment: '欠费提醒',
-  parent_communication: '家长沟通',
-  goal_followup: '目标跟进',
-  custom: '自定义',
-};
+import { 
+  TASK_PRIORITY_LABELS as priorityLabel, 
+  TASK_STATUS_LABELS as statusLabel, 
+  TASK_TYPE_LABELS as typeLabel,
+  getPriorityStyle
+} from '@/lib/business-logic';
 
 // Stub data until backend /tasks endpoint is available
 function getStubTasks(role: string) {
@@ -76,7 +73,7 @@ export default async function TasksPage() {
         <h3>待办列表</h3>
         <div className="summary-list">
           {tasks.filter((t) => t.status !== 'done' && t.status !== 'canceled').map((task) => (
-            <div className="summary-item" key={task.id}>
+            <div className="summary-item" key={task.id} style={{ ...getPriorityStyle(task.priority), paddingLeft: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <strong>{priorityLabel[task.priority]} {task.title}</strong>
                 <span className="badge">{statusLabel[task.status]}</span>

@@ -1,12 +1,14 @@
-import Link from 'next/link';
 import { PermissionGuard } from '@/components/business/permission-guard';
-import { PageHeader, SummaryPanel, TabStrip, TimelinePanel } from '@/components/business/page-blocks';
-import { homeworkPermissions, reviewViewModes } from '@/features/homework/constants';
-
-import { queryKeys } from '@/features/shared/query-keys';
+import { homeworkPermissions } from '@/features/homework/constants';
 import { requireCurrentUser } from '@/lib/current-user';
 import { homeworkService } from '@/services/homework-service';
 import { saveHomeworkReviewDraft, submitHomeworkReview, triggerHomeworkAnalysis } from './actions';
+
+// New Sub-components
+import { ReviewHeader } from './components/ReviewHeader';
+import { AttachmentGallery } from './components/AttachmentGallery';
+import { AIAnalysisResult } from './components/AIAnalysisResult';
+import { TeacherReviewForm } from './components/TeacherReviewForm';
 
 export default async function HomeworkReviewWorkbenchPage({
   params,
@@ -18,12 +20,20 @@ export default async function HomeworkReviewWorkbenchPage({
   const currentUser = await requireCurrentUser();
   const { submissionId } = await params;
   const query = await searchParams;
+  
+  // Data Fetching
   const detail = await homeworkService.detail(submissionId);
   const taxonomies = await homeworkService.taxonomyQuery();
   const draft = detail.reviewDraft;
-  const selectedErrorIds = new Set(draft?.finalErrorItems?.map((item) => item.errorTaxonomyId) ?? taxonomies.list.slice(0, 2).map((item) => item.id));
+  
+  // Logic & Defaults
+  const selectedErrorIds = new Set(
+    draft?.finalErrorItems?.map((item) => item.errorTaxonomyId) ?? 
+    taxonomies.list.slice(0, 2).map((item) => item.id)
+  );
+  
   const formDefaults = {
-    reviewResult: draft?.reviewResult ?? ((detail.review?.reviewResult as 'approved' | 'adjusted' | 'rejected' | undefined) ?? 'adjusted'),
+    reviewResult: draft?.reviewResult ?? ((detail.review?.reviewResult as string) ?? 'adjusted'),
     finalAccuracyPct: draft?.finalAccuracyPct ?? detail.review?.finalAccuracyPct ?? 0,
     finalErrorSummary: draft?.finalErrorSummary ?? detail.review?.finalErrorSummary ?? '',
     finalSuggestion: draft?.finalSuggestion ?? detail.review?.finalSuggestion ?? '',
@@ -33,133 +43,49 @@ export default async function HomeworkReviewWorkbenchPage({
   return (
     <PermissionGuard allowed={currentUser.permissions.includes(homeworkPermissions.review)}>
       <div className="stack">
-        <PageHeader
-          title={`作业复核工作台 / ${detail.submissionNo}`}
-          description="查看 AI 分析结果，提交教师复核意见"
-          actions={
-            <>
-              {detail.navigation.prev ? <Link className="btn" href={`/homework/review/${detail.navigation.prev.id}`}>上一条：{detail.navigation.prev.label}</Link> : <button className="btn" disabled>没有上一条</button>}
-              {detail.navigation.next ? <Link className="btn" href={`/homework/review/${detail.navigation.next.id}`}>下一条：{detail.navigation.next.label}</Link> : <button className="btn" disabled>没有下一条</button>}
-              <span className="badge">{detail.aiJob.status === 'completed' ? '分析完成' : detail.aiJob.status === 'pending' ? '分析中' : detail.aiJob.status}</span>
-            </>
-          }
+        {/* P1 Refactored: Structured Header */}
+        <ReviewHeader 
+          submissionNo={detail.submissionNo}
+          aiStatus={detail.aiJob.status}
+          navigation={detail.navigation}
         />
 
-        {query?.saved === '1' ? <section className="panel"><div className="badge success">草稿已保存</div></section> : null}
-        {query?.saved?.startsWith('analysis:') ? <section className="panel"><div className="badge success">AI 分析已触发：{query.saved.replace(/^analysis:/, '')}</div></section> : null}
-        {query?.submitted === '1' ? <section className="panel"><div className="badge success">正式复核已提交</div></section> : null}
-        {query?.error ? <section className="panel"><div className="badge warning">{decodeURIComponent(query.error)}</div></section> : null}
+        {/* Notifications */}
+        {query?.saved === '1' && <section className="panel"><div className="badge success">草稿已保存</div></section>}
+        {query?.saved?.startsWith('analysis:') && <section className="panel"><div className="badge success">AI 分析已触发</div></section>}
+        {query?.submitted === '1' && <section className="panel"><div className="badge success">正式复核已提交</div></section>}
+        {query?.error && <section className="panel"><div className="badge warning">{decodeURIComponent(query.error)}</div></section>}
 
         <div className="review-layout">
-          <section className="panel stack">
-            <div className="page-header">
-              <div>
-                <h3>作业附件</h3>
-                <p>作业附件预览，可切换上一条/下一条。</p>
-              </div>
-              <div className="button-row">
-                {detail.navigation.prev ? <Link className="btn" href={`/homework/review/${detail.navigation.prev.id}`}>上一条</Link> : null}
-                {detail.navigation.next ? <Link className="btn" href={`/homework/review/${detail.navigation.next.id}`}>下一条</Link> : null}
-              </div>
-            </div>
-            {detail.attachments.map((attachment) => (
-              <div className="attachment-card" key={attachment.fileId}>
-                <div className="attachment-preview">{attachment.name}</div>
-                <div className="subtle">{attachment.detail}</div>
-                {attachment.blockedReason ? <div className="subtle" style={{ marginTop: 8 }}>{attachment.blockedReason}</div> : null}
-                <div className="button-row" style={{ marginTop: 12 }}>
-                  {attachment.directHref ? <a className="btn primary" href={attachment.directHref} target="_blank" rel="noreferrer">打开文件</a> : null}
-                  <a className="btn" href={attachment.href} target="_blank" rel="noreferrer">查看元数据</a>
-                </div>
-              </div>
-            ))}
-          </section>
+          {/* P1 Refactored: Attachment Review with Image Preview */}
+          <AttachmentGallery 
+            attachments={detail.attachments}
+            navigation={detail.navigation}
+          />
 
-          <section className="panel stack">
-            <div className="page-header">
-              <div>
-                <h3>AI 分析结果</h3>
-                <p>AI 自动分析结果，教师可参考后提交复核。</p>
-              </div>
-              <div className="button-row">
-                <span className="badge">{detail.aiJob.status}</span>
+          {/* P1 Refactored: AI Analysis result display */}
+          <AIAnalysisResult 
+            status={detail.aiJob.status}
+            rawMarkdown={detail.rawMarkdown}
+            structuredResult={detail.structuredResult}
+            suggestions={detail.suggestions}
+            triggerAction={triggerHomeworkAnalysis.bind(null, submissionId)}
+          />
 
-                <form action={triggerHomeworkAnalysis.bind(null, submissionId)}>
-                  <button className="btn" type="submit">重新触发 AI</button>
-                </form>
-              </div>
-            </div>
-
-            <TabStrip tabs={[...reviewViewModes]} active="Markdown" />
-            <div className="code">{detail.rawMarkdown}</div>
-
-            <TabStrip tabs={[...reviewViewModes]} active="Structured JSON" />
-            <div className="code">{JSON.stringify(detail.structuredResult, null, 2)}</div>
-
-            <TimelinePanel title="AI 错因建议 / 家长反馈草案" items={detail.suggestions} />
-          </section>
-
-          <form className="panel stack">
-            <div className="page-header">
-              <div>
-                <h3>教师复核</h3>
-                <p>填写复核意见，支持保存草稿或直接提交。</p>
-              </div>
-
-            </div>
-
-            <div className="summary-item">
-              <strong>当前学生 / 学科</strong>
-              <div className="subtle">{detail.studentName} / {detail.subject} / 教师 {detail.teacherName}</div>
-            </div>
-
-            <div className="form-grid">
-              <div className="field">
-                <label>复核结论</label>
-                <select className="select" name="reviewResult" defaultValue={formDefaults.reviewResult}>
-                  <option value="approved">通过</option>
-                  <option value="adjusted">修正</option>
-                  <option value="rejected">退回</option>
-                </select>
-              </div>
-              <div className="field">
-                <label>最终正确率 (%)</label>
-                <input className="input" name="finalAccuracyPct" type="number" min="0" max="100" defaultValue={String(formDefaults.finalAccuracyPct)} />
-              </div>
-              <div className="field form-span-2">
-                <label>错因勾选</label>
-                <div className="chip-row">
-                  {taxonomies.list.map((taxonomy) => (
-                    <label className="tab" key={taxonomy.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <input type="checkbox" name="errorTaxonomyId" value={taxonomy.id} defaultChecked={selectedErrorIds.has(taxonomy.id)} />
-                      <span>{taxonomy.name}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="field form-span-2">
-                <label>错因备注</label>
-                <textarea className="textarea" name="finalErrorSummary" defaultValue={formDefaults.finalErrorSummary} />
-              </div>
-              <div className="field form-span-2">
-                <label>家长反馈建议</label>
-                <textarea className="textarea" name="finalSuggestion" defaultValue={formDefaults.finalSuggestion} />
-              </div>
-              <div className="field form-span-2">
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input type="checkbox" name="publishToFamily" defaultChecked={formDefaults.publishToFamily} />
-                  <span>提交后同步发布给家庭</span>
-                </label>
-              </div>
-            </div>
-
-            <div className="button-row">
-              <button className="btn" formAction={saveHomeworkReviewDraft.bind(null, submissionId)}>保存草稿</button>
-              <button className="btn primary" formAction={submitHomeworkReview.bind(null, submissionId)}>提交正式复核</button>
-            </div>
-
-            <SummaryPanel title="复核元信息" items={detail.reviewMeta} />
-          </form>
+          {/* P1 Refactored: Localized teacher review form with keyboard nav */}
+          <TeacherReviewForm 
+            submissionId={submissionId}
+            studentName={detail.studentName}
+            subject={detail.subject}
+            teacherName={detail.teacherName}
+            taxonomies={taxonomies.list}
+            selectedErrorIds={selectedErrorIds}
+            formDefaults={formDefaults}
+            navigation={detail.navigation}
+            saveAction={saveHomeworkReviewDraft}
+            submitAction={submitHomeworkReview}
+            reviewMeta={detail.reviewMeta}
+          />
         </div>
       </div>
     </PermissionGuard>

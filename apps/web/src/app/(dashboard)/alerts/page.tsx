@@ -2,13 +2,11 @@ import Link from 'next/link';
 import { PageHeader, MetricGrid, SummaryPanel, TimelinePanel } from '@/components/business/page-blocks';
 import { requireCurrentUser } from '@/lib/current-user';
 
-const levelLabel: Record<string, string> = { high: '🔴 严重', medium: '🟡 注意', low: '⚪ 提示' };
-const typeLabel: Record<string, string> = {
-  overdue_payment: '欠费预警',
-  academic_risk: '学业预警',
-  absent_streak: '缺勤预警',
-  goal_overdue: '目标逾期',
-};
+import { 
+  ALERT_LEVEL_LABELS as levelLabel, 
+  ALERT_TYPE_LABELS as typeLabel,
+  getPriorityStyle
+} from '@/lib/business-logic';
 
 // Stub data until backend /alerts endpoint is available
 function getStubAlerts() {
@@ -103,7 +101,7 @@ export default async function AlertsPage() {
         <h3>⚡ 未处理预警</h3>
         <div className="summary-list">
           {openAlerts.map((alert) => (
-            <div className="summary-item" key={alert.id} style={{ borderLeft: alert.level === 'high' ? '4px solid #ef4444' : alert.level === 'medium' ? '4px solid #f59e0b' : '4px solid #94a3b8', paddingLeft: 16 }}>
+            <div className="summary-item" key={alert.id} style={{ ...getPriorityStyle(alert.level), paddingLeft: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <strong>{levelLabel[alert.level]} {alert.title}</strong>
                 <span className="badge">{typeLabel[alert.type]}</span>
