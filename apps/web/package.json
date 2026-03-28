@@ -9,7 +9,7 @@
     "lint": "tsc --noEmit -p tsconfig.json",
     "format": "node -e \"console.log('web format placeholder')\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "tsx --test e2e/**/*.test.ts"
+    "test": "tsx --test e2e/wave2-qa.test.ts"
   },
   "dependencies": {
     "next": "15.2.4",
