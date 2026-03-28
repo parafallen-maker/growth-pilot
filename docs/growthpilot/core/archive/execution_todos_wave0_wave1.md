@@ -1,17 +1,371 @@
-# 多 Agent 执行 Todo（活跃任务）
+# 35 多 Agent 执行总 Todo
 
+> **用途**：直接交给 AI Agent 执行的任务清单。每个 Agent 对应一个独立会话窗口。
 > **Source of Truth**：本文件是执行层唯一准绳，冲突时以本文件为准。
-> **当前仓库阶段**：DB + Redis + S3 已接真，前端 31 页面已接 API，Wave 0/1 已全部完成。
-> **已完成归档**：Wave 0（INFRA + SPEC）与 Wave 1（BACKEND + FRONTEND）的完整记录见 `core/archive/execution_todos_wave0_wave1.md`
+> **当前仓库阶段**：Persisted JSON Beta（后端有完整模块但全用 JSON 文件持久化，前端有 31 页面但大部分静态骨架）
 
 ---
 
 ## 执行规则
 
-1. 每个任务完成后标 `[x]`，阻塞标 `[\!]`，进行中标 `[/]`
-2. Agent 只允许修改自己"允许编辑"范围内的文件
-3. 任何新增字段必须同步更新 `packages/schema/src/index.ts`
-4. 任何新增接口必须同步更新 `docs/openapi.yaml`
+1. **Wave 0 必须先过**，不允许跳过
+2. 每个任务完成后标 `[x]`，阻塞标 `[!]`，进行中标 `[/]`
+3. Agent 只允许修改自己"允许编辑"范围内的文件
+4. 任何新增字段必须同步更新 `packages/schema/src/index.ts`
+5. 任何新增接口必须同步更新 `docs/openapi.yaml`
+
+---
+
+## Wave 0：启动门（必须先过）
+
+### Agent INFRA — 仓库可运行
+
+**目标**：让仓库在任何 clean 环境 `npm ci && npm run ci:check` 都能通过，API 能本地启动。
+
+**允许编辑**：根目录配置文件、`apps/api/package.json`、`apps/api/tsconfig.json`、`.github/`、`.gitignore`
+
+- [x] `INF-01` 在 `apps/api/package.json` 的 dependencies 中补齐 `@nestjs/platform-express`
+  ```bash
+  cd apps/api && npm install @nestjs/platform-express
+  ```
+- [x] `INF-02` 更新根目录 `.gitignore`，确保排除以下内容：
+  ```
+  node_modules/
+  .next/
+  dist/
+  .data/
+  .runtime/
+  *.tsbuildinfo
+  .env
+  .env.local
+  ```
+- [x] `INF-03` 在根 `package.json` scripts 中新增：
+  ```json
+  "smoke:api": "cd apps/api && node -e \"require('./dist/main')\" || echo 'dist not built, run npm run build first'",
+  "dev:all": "npm run dev:web & npm run dev:api",
+  "clean": "rm -rf apps/*/dist apps/*/.next apps/*/tsconfig.tsbuildinfo packages/*/dist"
+  ```
+- [x] `INF-04` 在根目录创建 `docker-compose.yml`：
+  ```yaml
+  # PostgreSQL 16 + Redis 7 + MinIO
+  # postgres: port 5432, db=growthpilot, user=gp, password=gp_dev
+  # redis: port 6379
+  # minio: port 9000, console 9001, user=minioadmin, password=minioadmin
+  ```
+- [x] `INF-05` 在根目录创建 `.env.example`：
+  ```env
+  DATABASE_URL=postgresql://gp:gp_dev@localhost:5432/growthpilot
+  REDIS_URL=redis://localhost:6379
+  JWT_SECRET=growthpilot-dev-secret
+  JWT_ACCESS_TTL_SECONDS=900
+  JWT_REFRESH_TTL_SECONDS=2592000
+  S3_ENDPOINT=http://localhost:9000
+  S3_ACCESS_KEY=minioadmin
+  S3_SECRET_KEY=minioadmin
+  S3_BUCKET=growthpilot-dev
+  ```
+- [x] `INF-06` 确保 `apps/api/.data/` 目录有 `.gitkeep` 但 JSON 运行时数据不提交
+- [x] `INF-07` 执行验证：
+  ```bash
+  rm -rf node_modules apps/*/node_modules
+  npm ci
+  npm run lint
+  npm run typecheck
+  npm run test
+  npm run build --workspace @growthpilot/api
+  ```
+- [x] `INF-08` 在 `apps/api/` 中安装 Drizzle 依赖（先装不用，给 Wave 1 铺路）：
+  ```bash
+  cd apps/api && npm install drizzle-orm pg && npm install -D drizzle-kit @types/pg
+  ```
+
+**验收**：
+- `npm ci && npm run ci:check` 通过
+- `npm run build --workspace @growthpilot/api` 通过
+- API 能通过 `npm run dev:api` 启动且 health check 响应 200
+
+---
+
+### Agent SPEC — 文档与代码对齐
+
+**目标**：消除文档与代码的所有已知差异，让后续 Agent 有唯一可信的文档基线。
+
+**允许编辑**：`docs/`、根目录 `README.md`
+
+- [x] `SPEC-01` 将以下 `hongji_vibe_docs` 文件复制到 `core/` / `eng/` 并重命名：
+  | 源文件 | 目标 |
+  |---|---|
+  | `01_scope_and_principles.md` | `core/scope_and_principles.md` |
+  | `02_prd.md` | `core/prd.md` |
+  | `04_development_spec.md` | `eng/development_spec.md` |
+  | `06_seed_data.sql` | `eng/db/seed_data.sql` |
+  | `11_data_dictionary.md` | `eng/db/data_dictionary.md` |
+  | `08_page_prototypes.md` | `archive/08_page_prototypes.md` |
+  | `09_excel_migration.md` | `ops/migration_spec.md` |
+
+- [x] `SPEC-02` 将以下 5 个**文档有但代码缺失**的接口做出决定并记录：
+  | 接口 | 建议决定 |
+  |---|---|
+  | `POST /students/import` | **保留，Wave 1 实现** |
+  | `POST /families/{familyId}/tasks` | **保留，Wave 1 实现** |
+  | `POST /teachers/{teacherId}/development-records` | **保留，Wave 1 实现** |
+  | `POST /users` | **保留，Wave 1 实现** |
+  | `GET /growth/rubrics/{rubricId}` vs `{templateId}` | **统一为 templateId**，更新文档 |
+
+- [x] `SPEC-03` 将以下 30+ 个**代码有但文档缺失**的接口补入 `api/openapi.yaml`：
+  - files: GET /files/{fileId}, POST /files/upload, POST /files/upload/batch, POST /files/upload/multipart
+  - homework: DELETE/PATCH /homework/error-taxonomies/{id}, POST /homework/error-taxonomies, GET /homework/outbox-events, GET/PUT /homework/submissions/{id}/review-draft
+  - growth: GET /growth/reports/{id}, GET /growth/rubrics/{templateId}, POST /growth/reports/{id}/publish, POST /growth/reports/{id}/review
+  - attendance: GET /attendance/devices/bindings, PATCH /attendance/devices/bindings/{id}, POST /attendance/devices
+  - billing: GET /billing/contracts/{id}, GET /billing/payments/{id}, GET /billing/refunds/{id}, PATCH /billing/renewals/{id}/follow-up, PATCH /billing/renewals/{id}/status, POST /billing/renewals
+  - communication: GET /communication/message-tasks, GET /communication/records/{id}, GET /communication/templates, PATCH /communication/message-tasks/{id}/status, PATCH /communication/templates/{id}, POST /communication/message-tasks, POST /communication/templates
+  - jobs: GET /jobs
+
+- [x] `SPEC-04` 更新 `README.md`：
+  - 删除"当前是最小可运行脚手架"表述
+  - 更新为"Persisted JSON Beta，后端模块完整，前端骨架就绪"
+  - 新增 docker-compose 启动说明
+  - 新增文档索引（指向本文件）
+
+- [x] `SPEC-05` 在 `docs/growthpilot/` 创建 `00_start_here.md`：
+  - 列出当前文档优先级
+  - 列出 Source of Truth 规则
+  - 列出推荐阅读顺序
+
+**验收**：
+- OpenAPI 操作数 ≥ 89（与代码路由一致）
+- 文档中不再有"骨架期"误导
+- 5 个冲突接口有明确决定
+
+---
+
+## Wave 1：接真（INFRA/SPEC 验收后开始）
+
+### Agent BACKEND — 后端真化
+
+**目标**：
+1. 定义 Repository 抽象层
+2. 引入 Drizzle + PostgreSQL 替换 FileJsonStore
+3. 补齐缺失接口
+
+**允许编辑**：`apps/api/src/`、`packages/schema/src/`、`apps/api/drizzle/`
+
+#### Phase 1：抽象层 + Drizzle Schema（先做）
+
+- [x] `BE-01` 在 `apps/api/src/shared/persistence/` 创建 Repository 接口抽象：
+  - 定义 `IRepository<T>` 接口（findById, findMany, create, update, delete）
+  - 定义 `ITransactionRunner` 接口
+  - 让现有 FileJsonStore 实现该接口（兼容模式）
+
+- [x] `BE-02` 在 `apps/api/src/db/` 创建 Drizzle schema：
+  - `schema/users.ts` — users, roles, user_roles, permissions
+  - `schema/settings.ts` — campuses, terms, dictionaries
+  - `schema/students.ts` — students, enrollments, student_labels
+  - `schema/families.ts` — families, guardians, family_tasks
+  - `schema/teachers.ts` — teachers, teacher_assignments, development_records
+  - `schema/homework.ts` — homework_submissions, homework_ai_analyses, homework_reviews, homework_review_tags, error_taxonomies
+  - `schema/growth.ts` — rubric_templates, rubric_dimensions, growth_observations, growth_goals, growth_goal_checkins, growth_reports
+  - `schema/attendance.ts` — devices, device_bindings, attendance_events, homework_time_sessions, homework_time_daily_stats
+  - `schema/billing.ts` — billing_products, contracts, contract_items, invoices, invoice_items, payments, refunds, renewals
+  - `schema/communication.ts` — communication_records, message_templates, message_tasks
+  - `schema/jobs.ts` — jobs, file_assets
+
+- [x] `BE-03` 创建 `apps/api/drizzle.config.ts` + 第一批 migration
+  ```bash
+  cd apps/api && npx drizzle-kit generate --config drizzle.config.ts
+  ```
+  - 已补齐 workspace 根级 `drizzle-kit` / `drizzle-orm` 依赖，修复 CLI 从仓库根解析不到 `drizzle-orm` 的问题。
+  - 已删除手工占位迁移，生成正式基线迁移：`apps/api/drizzle/0000_stormy_the_twelve.sql`。
+  - `drizzle.config.ts` 改为显式引用 Phase 1 schema 文件，避免把当前工作树里未提交的后续 auth 草稿误卷入基线 migration。
+
+- [x] `BE-04` 创建 `apps/api/src/db/seed.ts`：
+  - 插入默认角色（super_admin, principal, teacher, finance）
+  - 插入默认校区、默认学期、基础字典
+
+#### Phase 2：逐模块替换 Repository（按依赖顺序）
+
+- [x] `BE-05` 替换 `auth` module — session 存 DB 或 Redis
+  - 已将 `auth_sessions` 纳入 Drizzle config 与正式 migration，auth session 的 DB 持久化不再停留在“代码有 schema、数据库无表”的半接真状态；未配置 DB 时 file adapter 仍保留作本地/测试 fallback。
+- [x] `BE-06` 替换 `users` module — users/roles 从 JSON → DB
+  - 已修复 DB 路径的真实缺口：`user_roles` 允许无 `campusId` 角色绑定、权限 seed id 与 repository fallback 对齐、用户列表关键字匹配补齐 `username`，并补上 `campusId` 存在性校验。
+  - 2026-03-25 续跑补丁：将 `user_roles_user_role_campus_uq` 改为 `UNIQUE NULLS NOT DISTINCT`，避免 Postgres 把 system-level 角色绑定里的 `NULL campusId` 视为可重复值。
+- [x] `BE-07` 替换 `settings` module — campuses/terms/dictionaries → DB
+  - 已让 DB seed 与 settings/users 默认基线对齐：校区、学期、字典、默认用户的 campus 绑定不再与 file 默认数据分叉；未配置 DB 时 file adapter 仍保留作 fallback。
+- [x] `BE-08` 替换 `students` module — students/enrollments → DB
+  - 已补齐 DB enrollment 写路径校验（campus / term / teacher 存在性与 term-campus 归属），并修正 student 360 作业汇总对 `reviewed` / `published` 状态的统计。
+- [x] `BE-09` 替换 `families` module — families/guardians → DB
+  - 已完成家庭、监护人、家庭任务的 DB 读写路径，并补齐与 file adapter 一致的结果顺序语义，primary guardian 约束保持生效。
+- [x] `BE-10` 替换 `teachers` module — teachers/assignments → DB
+  - 已完成 teachers / assignments / development records 的 DB 路径，补上教师创建时的 campus 存在性校验，并统一 assignments / development records 的返回顺序语义。
+  - 本轮定向验证已执行：`foundation.test.ts`、`api-gap.test.ts`、`students.test.ts`、`db-seed.test.ts`、`db-migrations.test.ts` 以及 `npm run typecheck --workspace @growthpilot/api`；未在本轮额外启动真实 PostgreSQL 实库联调。
+- [x] `BE-11` 替换 `files` module — file_assets → DB, adapter 保留
+- [x] `BE-12` 替换 `homework` module — submissions/analyses/reviews → DB
+  - 已补齐 DB 路径下的 review draft / outbox event 持久化，去掉此前“用正式 review 表伪装 draft”的实现。
+  - 已修复 error taxonomy 在 DB 模式下的状态持久化（`draft` / `active` / `inactive`）与列表兼容性。
+- [x] `BE-13` 替换 `growth` module — rubrics/observations/goals/reports → DB
+  - 已补齐 growth observations 的 `scores` DB 持久化，避免 DB 模式丢失 rubric 维度评分明细。
+  - rubrics / observations / goals / reports 的 DB adapter 已覆盖当前服务层实际读写字段，file adapter 兼容保留。
+- [x] `BE-14` 替换 `billing` module — products/contracts/invoices/payments/refunds → DB
+- [x] `BE-15` 替换 `attendance` module → DB
+- [x] `BE-16` 替换 `communication` module → DB
+- [x] `BE-17` 替换 `analytics` module — 改为真实 SQL 聚合查询
+  - 当 `GP_PERSISTENCE_ADAPTER=db` 且存在 `DATABASE_URL` 时，`overview` / `teaching` / `billing` 改走 DB scoped SQL 聚合路径；file 模式仍保留原 repository 聚合实现。
+
+#### Phase 3：补缺失接口
+
+- [x] `BE-18` 实现 `POST /students/import`（CSV/JSON 解析 + job 返回）
+  - 已支持 inline CSV/JSON 解析并复用 `JobsService` 返回 enqueue-compatible job payload；仅传 `fileId`/无内容时会返回 queued job，便于后续接 file asset 拉取。
+- [x] `BE-19` 实现 `POST /families/{familyId}/tasks`
+  - 已补齐 file/db repository 写路径，家庭详情返回真实 `tasks`。
+- [x] `BE-20` 实现 `POST /teachers/{teacherId}/development-records`
+  - 已补齐 file/db repository 写路径，教师详情返回真实 `developmentRecords`。
+- [x] `BE-21` 实现 `POST /users`（admin 创建用户）
+  - 已支持 admin 创建用户并可一次性绑定 `roleIds` / `campusIds`。
+- [x] `BE-22` 统一 rubric 参数命名为 `templateId`
+  - 已在 backend controller/service/repository、OpenAPI 与 API QA contract 中统一为 `templateId`。
+
+#### Phase 4：基础设施升级
+
+- [x] `BE-23` 接入 Redis（session cache / rate limit）
+  - 已接入 `RedisKvService`、auth session cache、login/refresh rate limit，并在 refresh rotation / logout 时同步驱逐缓存；未配置 `REDIS_URL` 或未安装 `ioredis` 时自动回退内存实现。
+  - 2026-03-25：补上 Redis client probe，避免 `REDIS_URL` 已配置但 Redis 不可达时把坏连接注入 auth 链路；新增 `apps/api/test/be23-be25.test.ts`，用 injected Redis-compatible runtime 验证 session cache / rate limit 的 Redis 路径与失联 fallback。
+  - 2026-03-26：Redis client probe 现在会预先挂载 `error` listener，避免真实探活失败时抛出未处理的 `ioredis` error 噪音；`apps/api/test/be23-be25.live.ts` 也已改为逐项顺序执行并分别报告 BE-23/24/25 结果。
+  - 2026-03-26 实测：在已打通的宿主环境下执行 `cd apps/api && REDIS_URL=redis://127.0.0.1:6379 S3_ENDPOINT=http://127.0.0.1:9000 S3_ACCESS_KEY=minioadmin S3_SECRET_KEY=minioadmin S3_BUCKET=growthpilot-dev npm run validate:live:be23-be25`，BE-23 live validation passed。
+- [x] `BE-24` 接入 BullMQ worker（homework AI analyze job / growth report draft job）
+  - 已新增 `BullmqJobBroker`、queue constants/types、独立 `worker.ts` / `WorkerModule`，homework analysis 与 growth report draft 在 `JOB_QUEUE_DRIVER=bullmq` 时走队列，默认保留 inline fallback。
+  - 2026-03-25：补上 broker env parsing（`JOB_QUEUE_WORKER_CONCURRENCY` / `REMOVE_ON_*`）、可注入 runtime loader，以及 growth report inline fallback 的拒绝保护；新增 `apps/api/test/be23-be25.test.ts`，用 fake BullMQ runtime 注册真实 worker callback，跑通 homework analysis / growth report draft 的 queue -> worker -> job success 链路。
+  - 2026-03-25 追加：新增 `apps/api/test/be23-be25.live.ts`，在真实 `ioredis` / `bullmq` 可安装时会注册实际 worker、入队 `homework_analysis` 与 `growth_report_generate`，并轮询 job 状态直到 `success`，用于替代当前 fake runtime 验证。
+  - 2026-03-26 实测：在同一条 live 命令下，BE-24 真正完成 BullMQ queue -> worker -> success 验证，live validation passed。
+- [x] `BE-25` files adapter 接入 MinIO/S3 SDK
+  - 已新增 `S3ObjectStorageAdapter`，支持 `OBJECT_STORAGE_DRIVER=s3`、MinIO path-style 配置、signed/public URL 解析，并让 files service/controller 全链路支持异步 URL 生成。
+  - 2026-03-25：补上可注入 SDK loader，新增 `apps/api/test/be23-be25.test.ts` 验证 `putObject` command 构造、MinIO path-style client config、signed URL 生成，以及 files service 的 file asset 持久化链路。
+  - 2026-03-25 追加：`docker-compose.yml` 新增 `minio-create-bucket` init service，避免本地 MinIO 首次启动时缺少 `growthpilot-dev` bucket 导致 live upload 直接失败；`apps/api/test/be23-be25.live.ts` 也会在 SDK 可用时先执行 bucket existence probe / create，再跑真实 `uploadMultipartFile` 与 `HeadObject` 验证。
+  - 2026-03-26 实测：在同一条 live 命令下，BE-25 已完成真实 MinIO/S3 SDK 连接、bucket/object probe、对象写入与 `HeadObject` 校验，live validation passed。
+
+**验收（Phase 1+2 最低要求）**：
+- `docker compose up -d` 后数据库可连接
+- `npm run dev:api` 启动后 auth/students/homework 链路可跑通
+- 不再依赖 `.data/*.json` 文件
+
+**验收（Phase 3+4 完整要求）**：
+- 5 个缺失接口均已实现
+- homework AI job 走真实 worker queue
+- 文件上传写入 MinIO
+
+---
+
+### Agent FRONTEND — 前端去 mock 接真
+
+**目标**：把 31 个静态骨架页变成能真实交互的页面。
+
+**允许编辑**：`apps/web/src/`、`packages/ui/src/`
+
+#### Phase 1：核心流程（P0，先做）
+
+- [x] `FE-01` **登录页真化**：
+  - 表单提交调用 `POST /auth/login`
+  - 成功后存 token（cookie 或 localStorage）
+  - 失败显示错误信息
+  - 成功跳转 `/dashboard`
+  - 拦截未登录访问跳转 `/login`
+
+- [x] `FE-02` **AppShell 接真**：
+  - 顶栏调用 `GET /auth/me` 获取当前用户
+  - 侧边菜单根据 `permissions` 做权限裁剪
+  - 退出按钮调用 `POST /auth/logout`
+
+- [x] `FE-03` **API Client 统一层**：
+  - `lib/api-client.ts` 添加 token 自动附加
+  - 添加 401 自动 refresh 或跳转 login
+  - 添加统一错误处理
+
+- [x] `FE-04` **Dashboard 接真**：
+  - 调用 `GET /analytics/overview`
+  - MetricGrid 显示真实数据
+  - 移除 `dashboard-service` mock
+
+- [x] `FE-05` **Students 列表接真**：
+  - [x] 调用 `GET /students` 带筛选参数
+  - [x] 表格分页、排序、搜索联动（已用 URL search params 驱动真实查询与翻页）
+  - [x] 行内链接跳转 `/students/[id]`
+
+- [x] `FE-06` **Students 360 接真**：
+  - [x] 调用 `GET /students/{id}/360`
+  - [x] 展示各模块摘要卡片
+
+- [x] `FE-07` **Teachers 列表/详情接真**：
+  - [x] 列表调用 `GET /teachers`
+  - [x] 详情调用 `GET /teachers/{id}`
+
+- [x] `FE-08` **Families 列表/详情接真**：
+  - [x] 列表调用 `GET /families`
+  - [x] 详情调用 `GET /families/{id}`
+
+- [x] `FE-09` **Settings 页面接真**：
+  - [x] users 调用 `GET /users`
+  - [x] system 调用 `GET /settings/campuses`、`GET /settings/terms`、`GET /settings/dictionaries`
+  - [x] AI 任务中心已接 `GET /jobs`；本轮补齐 users 真状态字段与校区名展示，并将角色/权限目录切到真实 `GET /settings/dictionaries?dictType=access_role|access_permission`，前端不再从 `/users` 或当前登录态推断 catalog。
+  - 2026-03-26：已完成收口验证，`npm run test --workspace @growthpilot/api` 31/31 PASS，`npm run build --workspace @growthpilot/web` PASS。
+
+- [x] `FE-10` **统一四态组件**：
+  - `LoadingState` — 骨架屏/spinner
+  - `EmptyState` — 无数据提示 + 操作引导
+  - `ErrorState` — 错误信息 + 重试按钮
+  - `ForbiddenState` — 无权限提示
+
+#### Phase 2：业务页面接真（P1）
+
+- [x] `FE-11` Homework submissions 列表接真 `GET /homework/submissions`
+- [x] `FE-12` Homework review 工作台接真 `GET /homework/submissions/{id}` + `PUT review-draft` + `POST review`
+  - 已接真实 detail / review-draft / review submit；上一条/下一条导航、AI 重新触发、学生/教师名解析、附件 file 元数据入口与 HTTP 直开已补上；`local-s3://` / `mock-s3://` 非 HTTP 地址场景下浏览器二进制预览/下载仍受后端 storage adapter 限制，但不再阻塞 FE-12 核心链路验收。
+  - 2026-03-26 复核：`npm run typecheck --workspace @growthpilot/web`、`npm run test --workspace @growthpilot/web`、`npm run build --workspace @growthpilot/web` 均通过；本轮未再发现 FE-12 专属前端阻塞。
+- [x] `FE-13` Growth rubrics/observations/goals/reports 各页面接真
+  - rubrics/observations/goals/reports 列表与关键 detail 已接真实 API；本轮补上 rubric 模板真实创建 + 详情切换，以及 goals create/check-in、reports generate/review/publish、observations template-aware create 的真实提交入口。
+- [x] `FE-14` Billing products/contracts/invoices/renewals 各页面接真
+  - 已接 `billing/products`、`billing/contracts`、`billing/contracts/{id}`、`billing/invoices`、`billing/renewals` 真接口；本轮补上产品创建、账单创建、收款录入、基于 payment detail 的退款提交、续费任务创建与状态/跟进更新表单，并继续通过现有 families/students/users 真接口补齐合同/账单/续费里的家庭、学生、负责人展示名；同时修正 invoices 页此前误把 UI-only `tab` 参数传给严格 query DTO 的 422 风险；payments/refunds/adjustments 列表聚合仍受后端接口缺口限制，页面明确显示缺口而不伪造数据。
+  - 2026-03-26 复核：`npm run typecheck --workspace @growthpilot/web`、`npm run test --workspace @growthpilot/web`、`npm run build --workspace @growthpilot/web` 均通过；当前剩余缺口均为后端未开放聚合接口，不再属于 FE-14 收口阻塞。
+- [x] `FE-15` Attendance board/devices/homework-time 各页面接真
+  - 已接 `attendance/events`、`attendance/devices`、`attendance/devices/bindings`、`attendance/homework-time/daily-stats` 真接口；本轮补上手动出勤事件录入、设备创建、设备绑定/解绑表单，把 `/attendance/*` 默认查询维持在当前登录账号可见校区，并修正看板“最近 1h 事件”统计口径、手动事件标签，以及 board/devices 页此前误把 UI-only `date` / `tab` 参数传给严格 query DTO 的 422 风险；未签到名单 roster、异常修正 workflow、homework-time 专用写入口与趋势序列仍待后端补齐。
+  - 2026-03-26 复核：`npm run typecheck --workspace @growthpilot/web`、`npm run test --workspace @growthpilot/web`、`npm run build --workspace @growthpilot/web` 均通过；当前剩余缺口均为 roster / workflow / trend 类后端能力未开放，不再属于 FE-15 收口阻塞。
+- [x] `FE-16` Communication records/messages 各页面接真
+  - 已接 `communication/records`、`communication/records/{id}`、`communication/templates`、`communication/message-tasks` 真接口；本轮补上沟通记录创建、消息模板创建、消息任务创建与状态更新表单，继续严格按当前接口契约拉取真实记录/任务并补上 SSR 降级；family/student 展示名继续通过现有 families/students 真接口补全，meeting/task 反查聚合与真实渠道发送 adapter 仍待后端。
+  - 2026-03-26 复核：`npm run typecheck --workspace @growthpilot/web`、`npm run test --workspace @growthpilot/web`、`npm run build --workspace @growthpilot/web` 均通过；当前剩余缺口均为反查聚合与发送 adapter 等后端能力，不再属于 FE-16 收口阻塞。
+- [x] `FE-17` Analytics overview/teaching/billing 各页面接真图表
+  - 已接 `analytics/overview`、`analytics/teaching`、`analytics/billing` 真聚合数据；本轮补了共享条形图组件并把 overview/teaching/billing 三页切到真实图表渲染，同时保留 SSR 友好降级与导出占位。
+
+#### Phase 3：表单交互（P1）
+
+- [x] `FE-18` 新建学生表单 → `POST /students`
+  - 学生列表页已新增真实创建表单，提交后回跳列表并展示成功/错误状态。
+- [x] `FE-19` 作业上传表单 → `POST /files/upload/multipart` + `POST /homework/submissions`
+  - 作业队列页已串起文件 multipart 上传 + submission 创建，使用真实 fileId 落库。
+- [x] `FE-20` 复核提交 → `POST /homework/submissions/{id}/review`
+  - 复核工作台正式提交已接真；另补了列表页“快速复核”表单，走同一真实接口。
+- [x] `FE-21` 成长观察创建 → `POST /growth/observations`
+  - 观察页已接真实创建表单，并支持按所选 rubric 模板动态切换评分维度后再提交。
+- [x] `FE-22` 合同创建 → `POST /billing/contracts`
+  - 合同页已接真实创建表单，现支持一次提交最多 3 条收费项并使用真实 productId 对接后端 `items[]`。
+- [x] `FE-23` 收款记录 → `POST /billing/invoices/{id}/payments`
+  - 账单页已接真实收款表单并透传 idempotency key；前端已按后端返回的 `paymentId/status/replayed` 正确处理成功态。
+
+#### Phase 4：清理
+
+- [x] `FE-24` 删除所有页面中"骨架/占位/后续接接口/P01/P10"等描述文案
+  - 已清理 analytics / attendance / billing / communication / growth / settings 等 shipped 页面中的任务编号、占位说明与常驻状态演示块；保留的缺口文案仅用于诚实说明未开放的后端能力。
+- [x] `FE-25` 删除所有 mock service 文件（如可安全移除）
+  - 已删除遗留 `dashboard-service` 薄包装；attendance / communication 中剩余“mock-ish”硬编码展示名已改为走现有 students / families / settings 真接口，其他 service 文件保留为真实 API adapter。
+- [x] `FE-26` packages/ui 导出实际共用组件（PageHeader/DataTable/FilterBar 等）
+  - 已在 `packages/ui` 导出 `PageHeader`、`MetricGrid`、`FilterBar`、`DataTable`、`TabStrip`、`SummaryPanel`、`TimelinePanel`，并让 web 侧开始复用。
+
+**验收（Phase 1 最低要求）**：
+- 登录 → Dashboard → 学生列表 → 学生 360 可完整操作
+- 至少 10 个页面使用真实 API 数据
+- 页面文案无"骨架"字样
+
+**验收（全部完成）**：
+- 27 个骨架页 → 全部接真
+- 所有列表页支持筛选+分页
+- 所有表单可提交
 
 ---
 

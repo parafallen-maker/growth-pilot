@@ -5,11 +5,11 @@ Welcome to the reorganized GrowthPilot documentation. This directory is structur
 ## 📂 Directory Structure
 
 ### [core/](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/core/) (Product & Strategy)
-- [architecture.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/core/architecture.md) — System architecture overview.
+- [system_architecture.md](core/system_architecture.md) — System architecture overview.
 - [scope_and_principles.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/core/scope_and_principles.md) — Project scope and design principles.
 - [prd.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/core/prd.md) — Product Requirements Document (Latest).
 - [domain_model.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/core/domain_model.md) — Domain model and information architecture.
-- [references.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/core/references.md) — Background references and historical context.
+- [references.md](core/references.md) — Educational research references and design foundations.
 
 ### [eng/](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/eng/) (Technical & Development)
 - [development_spec.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/eng/development_spec.md) — Technical and development specifications.
@@ -35,12 +35,18 @@ Welcome to the reorganized GrowthPilot documentation. This directory is structur
 - [performance_manual.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/quality/performance_manual.md) — Performance benchmarking and monitoring.
 - [release_observation_checklist.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/quality/release_observation_checklist.md) — Release observation checklist.
 
-### [archive/](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/archive/) (Outdated & Reference)
-- Historical documents and superseded versions for audit and context.
+### [templates/](templates/) (Reusable Templates)
+- Active templates for migration, QA, and defect triage.
+- `future/` — Templates for UAT, go-live, and post-release (not yet needed).
+
+### [core/archive/](core/archive/) (Completed & Outdated)
+- `execution_todos_wave0_wave1.md` — Completed Wave 0 + Wave 1 task records.
+- `prd_v1_legacy.md` — Superseded PRD version.
 
 ---
 
-## 🔝 Active Documents
+## Active Documents
 
-- **[execution_todos.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/execution_todos.md)** — **Primary execution document.** Check this for current task status.
-- **[00_start_here.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/00_start_here.md)** — Entry point for new developers.
+- **[execution_todos.md](execution_todos.md)** — Active tasks (Wave 2-5). Check this for current status.
+- **[CHANGELOG.md](CHANGELOG.md)** — What changed and when.
+- **[00_start_here.md](00_start_here.md)** — Entry point for new developers.

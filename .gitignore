@@ -16,3 +16,6 @@ dist/
 .env.local
 !.data/.gitkeep
 !apps/api/.data/.gitkeep
+
+# QA artifacts (generated, not source)
+docs/growthpilot/artifacts/
