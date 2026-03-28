@@ -1,168 +1,46 @@
-# 洪基托管成长中心｜Vibe Coding 交付包
+# GrowthPilot Documentation Index
 
-> 目标：让大模型或工程团队可以**不再反复追问业务细节**，直接基于本文档完成整套后台系统的设计、开发、联调、迁移和上线。
-> 本版已**移除法律合规模块**与**心理筛查模块**，保留工程层面的权限、日志、人工审核和操作留痕。
+Welcome to the reorganized GrowthPilot documentation. This directory is structured to separate concern and provide a clear hierarchy for development, operations, and product management.
 
-## 1. 推荐使用顺序
+## 📂 Directory Structure
 
-1. `01_系统架构.md`
-2. `02_PRD.md`
-3. `03_领域模型与信息架构.md`
-4. `04_数据库字典.md`
-5. `05_数据库DDL.sql`
-6. `06_API文档.md`
-7. `07_OpenAPI.yaml`
-8. `08_页面原型清单.md`
-9. `09_前端开发规格.md`
-10. `10_后端开发规格.md`
-11. `11_Agent团队设计.md`
-12. `12_开发任务Todo.md`
-13. `13_历史表迁移映射.md`
-14. `14_参考依据.md`
+### [core/](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/core/) (Product & Strategy)
+- [architecture.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/core/architecture.md) — System architecture overview.
+- [scope_and_principles.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/core/scope_and_principles.md) — Project scope and design principles.
+- [prd.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/core/prd.md) — Product Requirements Document (Latest).
+- [domain_model.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/core/domain_model.md) — Domain model and information architecture.
+- [references.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/core/references.md) — Background references and historical context.
 
-## 2. 交付边界
+### [eng/](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/eng/) (Technical & Development)
+- [development_spec.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/eng/development_spec.md) — Technical and development specifications.
+- [interface_decisions.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/eng/interface_decisions.md) — API conflict resolution and decisions.
+- **[db/](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/eng/db/)**
+  - [data_dictionary.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/eng/db/data_dictionary.md) — Data dictionary and field semantics.
+  - [ddl_schema.sql](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/eng/db/ddl_schema.sql) — Database DDL (Schema baseline).
+  - [seed_data.sql](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/eng/db/seed_data.sql) — System seed data.
 
-### 已包含
-- 系统架构
-- PRD
-- 领域模型与信息架构
-- PostgreSQL DDL
-- API 契约摘要 + OpenAPI
-- 页面原型清单
-- 前后端开发规格
-- 多 Agent 团队设计
-- 开发任务 Todo
-- 现有 Excel 历史表迁移映射
+### [ops/](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/ops/) (Operations & Migration)
+- [migration_spec.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/ops/migration_spec.md) — Excel to DB migration specification.
+- [wave4_uat_manual.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/ops/wave4_uat_manual.md) — Wave 4 UAT execution manual.
+- [wave5_go_live_manual.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/ops/wave5_go_live_manual.md) — Wave 5 Go-live procedures.
+- [wave5_env_matrix.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/ops/wave5_env_matrix.md) — Production environment variable matrix.
+- [ops_manual.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/ops/ops_manual.md) — General operations and maintenance guide.
+- [user_manual.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/ops/user_manual.md) — User manual for business roles.
 
-### 明确不做
-- 法律合规模块
-- 心理筛查/测评/分级/转介流程
-- 家长端 UI 视觉稿
-- 详细高保真页面设计图
-- 复杂排课/课消引擎
-- 财务会计总账
+### [api/](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/api/) (Contracts & Protocols)
+- [openapi.yaml](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/api/openapi.yaml) — Machine-readable OpenAPI contract.
 
-## 3. 设计总原则
+### [quality/](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/quality/) (QA & Acceptance)
+- [wave2_acceptance_report.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/quality/wave2_acceptance_report.md) — Wave 2 acceptance report.
+- [performance_manual.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/quality/performance_manual.md) — Performance benchmarking and monitoring.
+- [release_observation_checklist.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/quality/release_observation_checklist.md) — Release observation checklist.
 
-1. **学生为中心**：所有核心数据围绕 student_id 统一归档。
-2. **一人一档**：不再按学期重复建学生表，学期只是 enrollment 维度。
-3. **AI 只出草稿**：AI 分析永远进入草稿层，正式结果必须经过教师复核。
-4. **成长优先**：系统不只是记录作业，更要记录习惯、目标、表扬、家校协同和长期变化。
-5. **家校共育闭环**：家长可见的是任务、建议、进展和报告，不是碎片数据。
-6. **最小可运行复杂度**：优先采用模块化单体，而不是一开始拆微服务。
-7. **为大模型编码而写**：文档结构尽量固定、字段命名稳定、跨文档保持一致。
+### [archive/](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/archive/) (Outdated & Reference)
+- Historical documents and superseded versions for audit and context.
 
-## 4. 推荐技术栈
+---
 
-### 单体优先方案
-- Web 前端：Next.js 15 + React 19 + TypeScript + Tailwind + shadcn/ui
-- 后端：NestJS 11 + TypeScript
-- ORM：Prisma 或 Drizzle（二选一，不混用）
-- 数据库：PostgreSQL 16
-- 缓存/队列：Redis + BullMQ
-- 文件：S3 兼容对象存储
-- 图表：ECharts
-- 表单：React Hook Form + Zod
-- 数据请求：TanStack Query
-- 鉴权：JWT + Refresh Token + RBAC + 校区数据域
+## 🔝 Active Documents
 
-### Monorepo 建议
-```text
-apps/
-  web/
-  api/
-packages/
-  ui/
-  schema/
-  config/
-  eslint-config/
-infra/
-  docker/
-  scripts/
-docs/
-```
-
-## 5. 现有 Excel 识别结论（供迁移使用）
-
-已识别来源表：
-- 学生档案表
-- 2025下半学年学生信息表
-- 2026上半学年学生信息表
-- 2025下半学年每日作业完成质量表
-- 2026上半学年每日作业完成质量表
-- 2026上半学年学习习惯评分表
-- 2026每日作业时间统计表
-- 作业时间统计表
-- 设备签到记录表
-- 作业时间记录设备绑定表
-
-关键观察：
-- 现有模式最成熟的是：**作业上传 -> AI 解析 -> 正确率/错因 -> 教师反馈**
-- 学生表按学期重复建档，无法形成统一主档
-- 家庭、教师、收费模块缺失
-- 家长联系方式、照片、设备 SN 等字段缺失较多
-- Excel 内存在无效数据验证范围，不能直接当数据库结构
-
-## 6. 这套文档如何被大模型直接使用
-
-### 用于生代码
-- 先应用 `05_数据库DDL.sql`
-- 再根据 `10_后端开发规格.md` 生后端模块骨架
-- 再根据 `09_前端开发规格.md` 生前端页面骨架
-- 再按 `08_页面原型清单.md` 实现页面
-- 再按 `06_API文档.md`/`07_OpenAPI.yaml` 对齐联调
-- 最后按 `13_历史表迁移映射.md` 编写导入脚本
-
-### 用于多 Agent 协作
-- Agent 分工见 `11_Agent团队设计.md`
-- 任务拆解见 `12_开发任务Todo.md`
-
-## 7. 交付一致性约束
-
-下面这些命名在全包内保持一致，编码时不要再改：
-- 学生：`student`
-- 家庭：`family`
-- 监护人：`guardian`
-- 在读档：`enrollment`
-- 作业提交：`homework_submission`
-- AI 分析：`homework_ai_analysis`
-- 教师复核：`homework_review`
-- 成长观察：`growth_observation`
-- 成长目标：`growth_goal`
-- 成长报告：`growth_report`
-- 合同：`contract`
-- 账单：`invoice`
-- 支付：`payment`
-- 退款：`refund`
-
-## 8. 最终验收口径
-
-### 功能验收
-- 能创建学生主档、家庭、教师、合同、账单
-- 能上传作业并生成 AI 结果
-- 能由教师复核作业结果并生成家长反馈
-- 能记录成长观察、目标、家庭任务和周/月报告
-- 能记录签到、设备绑定和作业时长
-- 能查看校区总览、教学、收费看板
-
-### 数据验收
-- student、family、teacher、billing、homework 五大主对象有稳定主键
-- 历史表可迁移到新结构
-- 不再出现“同一学生跨学期多份主档”
-
-### 工程验收
-- OpenAPI 与前后端实现一致
-- 列表页统一支持分页、筛选、排序
-- 核心写接口具备事务
-- 支付、签到、AI 任务具备幂等或去重能力
-
-## 9. 运行与上线文档
-
-- `25_迁移执行与校验清单.md`：staging import、artifact、reject report 基线
-- `26_预发上线与回滚清单.md`：预发前自检、回滚与放行模板
-- `37_Wave2_QA验收报告.md`：上一轮 QA 结论与未完成项
-- `38_Wave4_生产迁移与UAT操作手册.md`：Wave 4 迁移、校验、UAT 计划与执行
-- `39_Wave5_正式上线操作手册.md`：Wave 5 正式环境初始化、迁移、部署、冒烟
-- `40_发布观察窗口与验收模板.md`：Go/No-Go、24h/72h 观察、发布验收模板
-- `41_运维手册.md`：服务启停、日志、备份恢复、联系人
-- `42_用户操作手册_简版.md`：各角色首次登录、常用操作、FAQ
+- **[execution_todos.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/execution_todos.md)** — **Primary execution document.** Check this for current task status.
+- **[00_start_here.md](file:///Users/Ljc_1/Downloads/vibeCoding/growth-pilot/docs/growthpilot/00_start_here.md)** — Entry point for new developers.

@@ -73,9 +73,10 @@ npm run ci:check
 
 - `docs/growthpilot/00_start_here_merged.md` — 当前文档入口
 - `docs/growthpilot/35_merged_agent_execution_todos.md` — Wave 0~5 执行总 Todo
-- `docs/growthpilot/36_interface_decisions.md` — 接口冲突决策与兼容策略
-- `docs/growthpilot/07_OpenAPI.yaml` — 机器可读 API 契约
-- `docs/growthpilot/05_数据库DDL.sql` — 当前数据库结构基线
+- `docs/growthpilot/README.md` — **文档地图与目录索引**
+- `docs/growthpilot/core/02_prd.md` — 最新 PRD
+- `docs/growthpilot/eng/db/schema.sql` — 数据库结构基线
+- `docs/growthpilot/api/openapi.yaml` — API 契约
 
 ## 当前状态说明
 

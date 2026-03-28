@@ -12,7 +12,7 @@
 2. 每个任务完成后标 `[x]`，阻塞标 `[!]`，进行中标 `[/]`
 3. Agent 只允许修改自己"允许编辑"范围内的文件
 4. 任何新增字段必须同步更新 `packages/schema/src/index.ts`
-5. 任何新增接口必须同步更新 `docs/growthpilot/07_OpenAPI.yaml`
+5. 任何新增接口必须同步更新 `docs/openapi.yaml`
 
 ---
 
@@ -90,18 +90,18 @@
 
 **目标**：消除文档与代码的所有已知差异，让后续 Agent 有唯一可信的文档基线。
 
-**允许编辑**：`docs/growthpilot/`、根目录 `README.md`
+**允许编辑**：`docs/`、根目录 `README.md`
 
-- [x] `SPEC-01` 将以下 `hongji_vibe_docs` 文件复制到 `docs/growthpilot/` 并重命名：
+- [x] `SPEC-01` 将以下 `hongji_vibe_docs` 文件复制到 `core/` / `eng/` 并重命名：
   | 源文件 | 目标 |
   |---|---|
-  | `01_scope_and_principles.md` | `35a_scope_and_principles.md` |
-  | `02_prd.md` | `35b_prd.md` |
-  | `04_development_spec.md` | `35c_development_spec.md` |
-  | `06_seed_data.sql` | `35d_seed_data.sql` |
-  | `11_data_dictionary.md` | `35e_data_dictionary.md` |
-  | `08_page_prototypes.md` | `35f_page_prototypes.md` |
-  | `09_excel_migration.md` | `35g_excel_migration.md` |
+  | `01_scope_and_principles.md` | `core/scope_and_principles.md` |
+  | `02_prd.md` | `core/prd.md` |
+  | `04_development_spec.md` | `eng/development_spec.md` |
+  | `06_seed_data.sql` | `eng/db/seed_data.sql` |
+  | `11_data_dictionary.md` | `eng/db/data_dictionary.md` |
+  | `08_page_prototypes.md` | `archive/08_page_prototypes.md` |
+  | `09_excel_migration.md` | `ops/migration_spec.md` |
 
 - [x] `SPEC-02` 将以下 5 个**文档有但代码缺失**的接口做出决定并记录：
   | 接口 | 建议决定 |
@@ -112,7 +112,7 @@
   | `POST /users` | **保留，Wave 1 实现** |
   | `GET /growth/rubrics/{rubricId}` vs `{templateId}` | **统一为 templateId**，更新文档 |
 
-- [x] `SPEC-03` 将以下 30+ 个**代码有但文档缺失**的接口补入 `07_OpenAPI.yaml`：
+- [x] `SPEC-03` 将以下 30+ 个**代码有但文档缺失**的接口补入 `api/openapi.yaml`：
   - files: GET /files/{fileId}, POST /files/upload, POST /files/upload/batch, POST /files/upload/multipart
   - homework: DELETE/PATCH /homework/error-taxonomies/{id}, POST /homework/error-taxonomies, GET /homework/outbox-events, GET/PUT /homework/submissions/{id}/review-draft
   - growth: GET /growth/reports/{id}, GET /growth/rubrics/{templateId}, POST /growth/reports/{id}/publish, POST /growth/reports/{id}/review
@@ -127,7 +127,7 @@
   - 新增 docker-compose 启动说明
   - 新增文档索引（指向本文件）
 
-- [x] `SPEC-05` 在 `docs/growthpilot/` 创建 `00_start_here_merged.md`：
+- [x] `SPEC-05` 在 `docs/growthpilot/` 创建 `00_start_here.md`：
   - 列出当前文档优先级
   - 列出 Source of Truth 规则
   - 列出推荐阅读顺序
@@ -375,7 +375,7 @@
 
 **目标**：确保核心链路端到端可跑通，数据可迁移，可进入预发。
 
-**允许编辑**：`apps/api/test/`、`apps/web/e2e/`（新建）、`scripts/`、`docs/growthpilot/`
+**允许编辑**：`apps/api/test/`、`apps/web/e2e/`（新建）、`scripts/`、`docs/`
 
 #### E2E 主流程测试
 
@@ -388,7 +388,7 @@
 #### API 合约验证
 
 - [/] `QA-06` 对照 OpenAPI 逐条验证所有接口：请求格式、响应格式、状态码、错误码
-  - 2026-03-25：已复跑 `npm run test --workspace @growthpilot/api`（31/31 PASS）；`openapi-contract.test.ts` 会从 Nest controller metadata 自动枚举已实现路由，并逐条断言 `docs/growthpilot/07_OpenAPI.yaml` 覆盖全部 89+ operations；同时保留 auth / settings / users / teachers / students / families / files / homework / growth / attendance / billing / communication / analytics / jobs 的代表性 happy-path 与 error semantics smoke。
+  - 2026-03-25：已复跑 `npm run test --workspace @growthpilot/api`（31/31 PASS）；`openapi-contract.test.ts` 会从 Nest controller metadata 自动枚举已实现路由，并逐条断言 `api/openapi.yaml` 覆盖全部 89+ operations；同时保留 auth / settings / users / teachers / students / families / files / homework / growth / attendance / billing / communication / analytics / jobs 的代表性 happy-path 与 error semantics smoke。
   - 仍未做到“所有接口逐条 HTTP 级别矩阵”，因此保持 `[/]` 而不标全绿。
 - [x] `QA-07` auth 接口安全验证：过期 token、无效 token、权限不足
 - [x] `QA-08` 分页接口统一验证：pageNo/pageSize/total 格式一致
@@ -397,40 +397,40 @@
 
 - [x] `QA-09` 更新 `scripts/migration/run-staging-import.mjs` 对接真实 DB
   - 2026-03-25：脚本已补齐 post-apply artifact 回写，`summary.json` 现在会带上 `dbPlan.execution`；同时新增 `fixtures/pg-client-stateful.mjs`，`node --test scripts/migration/run-staging-import.test.mjs` 已验证 begin / upsert / commit、重复 `--db-apply` 的 staging upsert 幂等性，以及注入失败后的 rollback。
-  - 同日已执行本地 runnable apply：`BATCH-QA-STATEFUL-SAMPLE` / `BATCH-QA-STATEFUL-INVALID` artifact 与持久化 state 见 `docs/growthpilot/artifacts/2026-03-25/stateful-local/`；但当前 sandbox 仍无可用 live PostgreSQL / `DATABASE_URL`，因此保持 `[/]`。
+  - 同日已执行本地 runnable apply：`BATCH-QA-STATEFUL-SAMPLE` / `BATCH-QA-STATEFUL-INVALID` artifact 与持久化 state 见 `docs/artifacts/2026-03-25/stateful-local/`；但当前 sandbox 仍无可用 live PostgreSQL / `DATABASE_URL`，因此保持 `[/]`。
   - 2026-03-25：新增 `scripts/migration/run-local-postgres-validation.mjs`，会尝试 `docker compose up -d postgres`、探测 `postgresql://gp:gp_dev@localhost:5432/growthpilot`，并在 DB 可达时对 isolated schema 执行 sample apply 两次 + invalid batch 一次的真实 `pg` 写库校验与 query-based evidence 汇总。
-  - 2026-03-25：已实际执行 `node scripts/migration/run-local-postgres-validation.mjs --ensure-docker-postgres`；artifact 见 `docs/growthpilot/artifacts/2026-03-25/local-postgres-validation/qa-09-qa-11-local-postgres-validation.json`。结果显示 Docker socket 被 sandbox 拒绝（`permission denied while trying to connect to ... docker.sock`），且 `localhost:5432` TCP probe 返回 `EPERM`，本轮未拿到 live PostgreSQL apply evidence，因此 `QA-09` 继续保持 `[/]`。
-  - 2026-03-26：已将 `scripts/migration/run-local-postgres-validation.mjs` 的默认探测地址改为 `postgresql://gp:gp_dev@127.0.0.1:5432/growthpilot`，并产出真实本地库 batch artifact：`docs/growthpilot/artifacts/2026-03-26/local-postgres-validation/BATCH-QA-LOCAL-PG-SAMPLE.*` / `BATCH-QA-LOCAL-PG-INVALID.*`。当时的 aggregate report 在覆盖前已观测到 `status: "passed"`、`pgProbe.ok=true`（`database_name=growthpilot`, `current_user=gp`）；其可持久化摘要现保存在 `docs/growthpilot/artifacts/2026-03-26/local-postgres-validation/qa-09-qa-11-local-postgres-validation.json`。
-  - 2026-03-26：本轮重新执行 `node scripts/migration/run-local-postgres-validation.mjs --ensure-docker-postgres` 与 `node --test scripts/migration/run-staging-import.test.mjs`；测试仍 PASS，但当前 Codex sandbox 的 TCP probe 继续报 `connect EPERM 127.0.0.1:5432`。为避免再次覆盖已通过的主 evidence，脚本现改为在检测到既有 `passed` report 时把后续尝试写到时间戳 `*.rerun-*.json`；补丁后的受限重跑已落到 `docs/growthpilot/artifacts/2026-03-26/local-postgres-validation/qa-09-qa-11-local-postgres-validation.rerun-20260326-012855.json`。
+  - 2026-03-25：已实际执行 `node scripts/migration/run-local-postgres-validation.mjs --ensure-docker-postgres`；artifact 见 `docs/artifacts/2026-03-25/local-postgres-validation/qa-09-qa-11-local-postgres-validation.json`。结果显示 Docker socket 被 sandbox 拒绝（`permission denied while trying to connect to ... docker.sock`），且 `localhost:5432` TCP probe 返回 `EPERM`，本轮未拿到 live PostgreSQL apply evidence，因此 `QA-09` 继续保持 `[/]`。
+  - 2026-03-26：已将 `scripts/migration/run-local-postgres-validation.mjs` 的默认探测地址改为 `postgresql://gp:gp_dev@127.0.0.1:5432/growthpilot`，并产出真实本地库 batch artifact：`docs/artifacts/2026-03-26/local-postgres-validation/BATCH-QA-LOCAL-PG-SAMPLE.*` / `BATCH-QA-LOCAL-PG-INVALID.*`。当时的 aggregate report 在覆盖前已观测到 `status: "passed"`、`pgProbe.ok=true`（`database_name=growthpilot`, `current_user=gp`）；其可持久化摘要现保存在 `docs/artifacts/2026-03-26/local-postgres-validation/qa-09-qa-11-local-postgres-validation.json`。
+  - 2026-03-26：本轮重新执行 `node scripts/migration/run-local-postgres-validation.mjs --ensure-docker-postgres` 与 `node --test scripts/migration/run-staging-import.test.mjs`；测试仍 PASS，但当前 Codex sandbox 的 TCP probe 继续报 `connect EPERM 127.0.0.1:5432`。为避免再次覆盖已通过的主 evidence，脚本现改为在检测到既有 `passed` report 时把后续尝试写到时间戳 `*.rerun-*.json`；补丁后的受限重跑已落到 `docs/artifacts/2026-03-26/local-postgres-validation/qa-09-qa-11-local-postgres-validation.rerun-20260326-012855.json`。
 - [x] `QA-10` 用 `fixtures/staging-import-sample.csv` 执行首批导入
   - 2026-03-25：已执行 `fixtures/staging-import-sample.csv` dry-run，批次 `BATCH-QA-DOC` 产出 sample artifact，`3/3` rows ready-to-load。
 - [x] `QA-11` 验证导入数据：字段映射正确、幂等性、reject report 生成
   - 2026-03-25：`node --test scripts/migration/run-staging-import.test.mjs` 已覆盖 sample batch 的字段映射持久化校验（`familyStructure=single_parent`、`subject=math`、`errorTaxonomyCode=NO_ERROR`、`payableAmountCents=120000`）、重复 `--db-apply` 后 staging 表仍保持 `1 batch / 3 raw / 3 normalized / 0 rejects`，以及 invalid batch 产出 `7` 条 reject rows 与 `reject-report.csv`。
-  - 同日 fresh local artifact 已落到 `docs/growthpilot/artifacts/2026-03-25/stateful-local/`，包含 `BATCH-QA-STATEFUL-SAMPLE`、`BATCH-QA-STATEFUL-INVALID` 与持久化 state snapshot；live PostgreSQL apply 仍由 `QA-09` 单独跟踪。
-  - 2026-03-26：`scripts/migration/run-local-postgres-validation.mjs` 的 live query 校验已在真实本地 PostgreSQL 上通过一次；由 aggregate report 的 `status: "passed"` 可知 `collectValidation(...)` 里的全部断言均成立。对应结论已摘要固化在 `docs/growthpilot/artifacts/2026-03-26/local-postgres-validation/qa-09-qa-11-local-postgres-validation.json`：sample batch 最终保持 `1 batch / 3 raw / 3 normalized / 0 rejects`，invalid batch 保持 `1 batch / 4 raw / 4 normalized / 7 rejects`，sample field mapping 命中 `familyStructure=single_parent`、`subject=math`、`errorTaxonomyCode=NO_ERROR`、`payableAmountCents=120000`，reject report 总计 `7` 行。
+  - 同日 fresh local artifact 已落到 `docs/artifacts/2026-03-25/stateful-local/`，包含 `BATCH-QA-STATEFUL-SAMPLE`、`BATCH-QA-STATEFUL-INVALID` 与持久化 state snapshot；live PostgreSQL apply 仍由 `QA-09` 单独跟踪。
+  - 2026-03-26：`scripts/migration/run-local-postgres-validation.mjs` 的 live query 校验已在真实本地 PostgreSQL 上通过一次；由 aggregate report 的 `status: "passed"` 可知 `collectValidation(...)` 里的全部断言均成立。对应结论已摘要固化在 `docs/artifacts/2026-03-26/local-postgres-validation/qa-09-qa-11-local-postgres-validation.json`：sample batch 最终保持 `1 batch / 3 raw / 3 normalized / 0 rejects`，invalid batch 保持 `1 batch / 4 raw / 4 normalized / 7 rejects`，sample field mapping 命中 `familyStructure=single_parent`、`subject=math`、`errorTaxonomyCode=NO_ERROR`、`payableAmountCents=120000`，reject report 总计 `7` 行。
   - 2026-03-26：本轮在当前 sandbox 里复跑同一命令时仍被 `connect EPERM 127.0.0.1:5432` 挡住，因此无法再次导出同样的 live query payload；但现有 passed evidence 与同目录 batch artifact 已足以支撑 QA-11 验收，受限重跑则单独归档到 `qa-09-qa-11-local-postgres-validation.rerun-20260326-012855.json` 供 coordinator 参考。
 
 #### 页面验证
 
 - [/] `QA-12` 所有 31 个页面 SSR 渲染成功（无 500 错误）
-  - 2026-03-25：新增 host-runnable compiled runtime smoke：`node scripts/qa/run-ssr-smoke.mjs --assert-route-count 31 --report-file docs/growthpilot/artifacts/2026-03-25/compiled-ssr-smoke.json`，在不绑定 localhost 端口的前提下直接执行 `.next/server/app/**/page.js`，为每个页面构造 Next request scope、fixture-backed fetch，并递归解析 server component tree；结果 `31/31` routes 为 `29 ok + 2 redirect + 0 server_error`。
-  - 同日保留环境阻塞证据：`node scripts/qa/probe-runtime-blockers.mjs --report-file docs/growthpilot/artifacts/2026-03-25/runtime-blockers.json` 明确记录 `listen EPERM 127.0.0.1:3911` 与 Docker socket `permission denied while trying to connect to the docker API`。因此“页面 bundle/runtime 级别无 500”已验证，但 HTTP-level localhost SSR 仍无法在当前 sandbox 闭环，状态保持 `[/]`。
-  - 2026-03-26：新增 `scripts/qa/run-qa12-qa14-runtime-validation.mjs`，并执行 `node scripts/qa/run-qa12-qa14-runtime-validation.mjs --artifact-dir docs/growthpilot/artifacts/2026-03-26/runtime-wave2-localhost` 生成统一证据包 `qa-12-qa-14-runtime-validation.json`。
+  - 2026-03-25：新增 host-runnable compiled runtime smoke：`node scripts/qa/run-ssr-smoke.mjs --assert-route-count 31 --report-file docs/artifacts/2026-03-25/compiled-ssr-smoke.json`，在不绑定 localhost 端口的前提下直接执行 `.next/server/app/**/page.js`，为每个页面构造 Next request scope、fixture-backed fetch，并递归解析 server component tree；结果 `31/31` routes 为 `29 ok + 2 redirect + 0 server_error`。
+  - 同日保留环境阻塞证据：`node scripts/qa/probe-runtime-blockers.mjs --report-file docs/artifacts/2026-03-25/runtime-blockers.json` 明确记录 `listen EPERM 127.0.0.1:3911` 与 Docker socket `permission denied while trying to connect to the docker API`。因此“页面 bundle/runtime 级别无 500”已验证，但 HTTP-level localhost SSR 仍无法在当前 sandbox 闭环，状态保持 `[/]`。
+  - 2026-03-26：新增 `scripts/qa/run-qa12-qa14-runtime-validation.mjs`，并执行 `node scripts/qa/run-qa12-qa14-runtime-validation.mjs --artifact-dir docs/artifacts/2026-03-26/runtime-wave2-localhost` 生成统一证据包 `qa-12-qa-14-runtime-validation.json`。
   - 同日 blocker probe 已从“只能证明 listen 失败”收紧为“同时证明 listen + connect 都失败”：`runtime-wave2-localhost/runtime-blockers.json` 中 `127.0.0.1:3911`、`0.0.0.0:3912`、`::1:3913` 全部 `listen EPERM`，且对 `127.0.0.1:3000/3001/3100/3101/5432/6379/9000/9001` 的 connect probe 也全部 `EPERM`，Docker socket 继续 `permission denied while trying to connect to the docker API`；因此不是“服务没起来”，而是当前 sandbox 连“启动 localhost runtime”与“连接已启动 localhost 服务”都做不到。
-  - 同日统一证据包内复跑 compiled SSR：`docs/growthpilot/artifacts/2026-03-26/runtime-wave2-localhost/compiled-ssr-smoke.json` 结果仍为 `31/31` routes = `29 ok + 2 redirect + 0 server_error`。因此可确认 compiled page runtime 继续稳定，但本次仍无法诚实改成 `[x]`，因为真实 localhost HTTP SSR 在当前环境不可执行。
+  - 同日统一证据包内复跑 compiled SSR：`docs/artifacts/2026-03-26/runtime-wave2-localhost/compiled-ssr-smoke.json` 结果仍为 `31/31` routes = `29 ok + 2 redirect + 0 server_error`。因此可确认 compiled page runtime 继续稳定，但本次仍无法诚实改成 `[x]`，因为真实 localhost HTTP SSR 在当前环境不可执行。
 - [/] `QA-13` 权限验证：teacher 角色不能访问 billing 页面
   - 2026-03-25：已复跑 `npm run test --workspace @growthpilot/web`；其中 `apps/web/e2e/wave2-qa.test.ts` 现改为执行 compiled permission smoke，而不再只测导航静态面。
-  - 同日执行 `node scripts/qa/run-billing-permission-smoke.mjs --report-file docs/growthpilot/artifacts/2026-03-25/compiled-billing-permission.json`，teacher persona 对 `/analytics/billing`、`/billing/products`、`/billing/contracts`、`/billing/invoices`、`/billing/renewals` 的 compiled page runtime 结果为 `5/5 forbidden`、`0 server_error`；页面内容级 forbidden surface 已可在 host 上直接验证。
+  - 同日执行 `node scripts/qa/run-billing-permission-smoke.mjs --report-file docs/artifacts/2026-03-25/compiled-billing-permission.json`，teacher persona 对 `/analytics/billing`、`/billing/products`、`/billing/contracts`、`/billing/invoices`、`/billing/renewals` 的 compiled page runtime 结果为 `5/5 forbidden`、`0 server_error`；页面内容级 forbidden surface 已可在 host 上直接验证。
   - 但完整浏览器/AppShell HTTP forbidden smoke 仍受 `runtime-blockers.json` 中的 localhost listen / Docker socket 阻塞，故保持 `[/]` 而不写成完全 green。
-  - 2026-03-26：统一证据包内复跑 `docs/growthpilot/artifacts/2026-03-26/runtime-wave2-localhost/compiled-billing-permission.json`，teacher persona 对 5 个 billing surfaces 仍为 `5/5 forbidden`、`0 server_error`；同时 `npm run test --workspace @growthpilot/web` PASS，当前 e2e QA 测试继续直接断言 compiled permission smoke 结果。
+  - 2026-03-26：统一证据包内复跑 `docs/artifacts/2026-03-26/runtime-wave2-localhost/compiled-billing-permission.json`，teacher persona 对 5 个 billing surfaces 仍为 `5/5 forbidden`、`0 server_error`；同时 `npm run test --workspace @growthpilot/web` PASS，当前 e2e QA 测试继续直接断言 compiled permission smoke 结果。
   - 但同日 `runtime-wave2-localhost/runtime-blockers.json` 已进一步证明 localhost connect 也全部 `EPERM`，所以不仅无法新启动 AppShell，连访问任何已启动的 `127.0.0.1:*` 服务都不成立；浏览器/AppShell 级 forbidden smoke 依旧无法诚实执行，状态继续保持 `[/]`。
 - [/] `QA-14` 响应式检查：主要页面在 1280/1440/1920 宽度下无溢出
-  - 2026-03-25：`node scripts/qa/run-responsive-audit.mjs --assert-route-count 31 --viewport-widths 1280,1440,1920 --report-file docs/growthpilot/artifacts/2026-03-25/compiled-responsive-audit.json` 现同时执行两层校验：
+  - 2026-03-25：`node scripts/qa/run-responsive-audit.mjs --assert-route-count 31 --viewport-widths 1280,1440,1920 --report-file docs/artifacts/2026-03-25/compiled-responsive-audit.json` 现同时执行两层校验：
     1. 静态 CSS breakpoint / fixed-width 审计；
     2. compiled page runtime inline-style width 审计（31 个页面均执行成功）。
   - 本轮结果为 `runtime-static-pass`：31 routes compiled runtime `0 failures`、inline width 风险 `0`、CSS 大固定宽度声明 `0`，且仍存在 `1280/1100/720` breakpoint。
   - 但真实浏览器 viewport 下的 overflow / clipping / sticky / scroll 行为仍需 localhost-capable runtime；当前 sandbox 的 `runtime-blockers.json` 已精确记录阻塞，因此继续保持 `[/]`。
-  - 2026-03-26：统一证据包内复跑 `docs/growthpilot/artifacts/2026-03-26/runtime-wave2-localhost/compiled-responsive-audit.json`，结果仍为 `runtime-static-pass`：`31` routes compiled runtime `0 failures`、runtime inline width 风险 `0`、CSS 大固定宽度声明 `0`、breakpoints 仍为 `1280/1100/720`。
+  - 2026-03-26：统一证据包内复跑 `docs/artifacts/2026-03-26/runtime-wave2-localhost/compiled-responsive-audit.json`，结果仍为 `runtime-static-pass`：`31` routes compiled runtime `0 failures`、runtime inline width 风险 `0`、CSS 大固定宽度声明 `0`、breakpoints 仍为 `1280/1100/720`。
   - 但同日 `runtime-wave2-localhost/runtime-blockers.json` 证明浏览器所依赖的 localhost bind / connect 全部被 `EPERM` 拦住；因此当前最强、最诚实的边界仍是 compiled-runtime + static 证据，而不是伪造一个并不存在的浏览器 viewport 验证，状态继续保持 `[/]`。
 
 #### 发布准备
@@ -1018,7 +1018,7 @@ QA       │  blocked  │  │    blocked    │  │QA-01 ~ 17  │  │ QA-20
 ```
 请阅读 docs/growthpilot/35_merged_agent_execution_todos.md 中 "Wave 1 → Agent BACKEND" 部分。
 当前后端所有 Repository 使用 FileJsonStore（JSON 文件），你的任务是引入 Drizzle + PostgreSQL 逐模块替换。
-从 BE-01 开始按依赖顺序执行。DDL 参考 docs/growthpilot/05_数据库DDL.sql。
+从 BE-01 开始按依赖顺序执行。DDL 参考 eng/db/ddl_schema.sql。
 当前仓库位于 /Users/Ljc_1/Downloads/growth-pilot/。
 ```
 
