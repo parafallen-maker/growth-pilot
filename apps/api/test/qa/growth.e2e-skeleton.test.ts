@@ -138,6 +138,10 @@ test('QA-03 成长目标链：rubric -> observation -> goal -> check-in -> repor
     assert.equal(updatedGoal.currentValue, 4);
     assert.equal(updatedGoal.checkins[0]?.progressValue, 4);
   });
+
+  await t.test('case-growth-pages-ui', { todo: '接 /growth/rubrics|observations|goals|reports 页面动作与状态块' }, () => {});
+  await t.test('case-report-publish-separation', { todo: '补 draft 与 publish 分离、family 可见态与回滚断言' }, () => {});
+  await t.test('case-material-traceability', { todo: '补报告素材池来源追溯与 observation/goal 链接校验' }, () => {});
 });
 
 test('E2E-04 成长管理闭环：rubric -> observation -> goal -> report draft smoke', () => {

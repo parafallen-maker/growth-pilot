@@ -118,6 +118,10 @@ test('QA-02 作业复核链：upload -> analyze -> review -> submit -> status ex
       publishToFamily: false,
     }), /published review can not be overwritten/i);
   });
+
+  await t.test('case-review-workbench-ui', { todo: '接 /homework/review/[submissionId] 三栏工作台与 draft store' }, () => {});
+  await t.test('case-analysis-dedupe-and-retry', { todo: '补重复触发 analyze 拦截、失败重试与 job center 断言' }, () => {});
+  await t.test('case-error-taxonomy-maintenance', { todo: '补错因词典页启停/排序/引用关系校验' }, () => {});
 });
 
 test('E2E-03 作业闭环：upload -> submission -> analyze -> review smoke', async () => {

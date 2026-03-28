@@ -120,4 +120,8 @@ test('QA-01 学生建档链：login -> family -> guardian -> student -> enrollme
     assert.equal(detail360.currentEnrollment?.termId, 'term-2026-spring');
     assert.equal(detail360.recentTimeline.filter((item) => item.type === 'enrollment').length, 1);
   });
+
+  await t.test('case-student-360-tabs', { todo: '接 students/[studentId] 页面顶部摘要、timeline 与 tab 独立请求' }, () => {});
+  await t.test('case-cross-term-uniqueness', { todo: '补同一学生跨学期唯一主档与 enrollment 去重校验' }, () => {});
+  await t.test('case-import-entry', { todo: '补 import 中心建档后 student360 可追溯断言' }, () => {});
 });

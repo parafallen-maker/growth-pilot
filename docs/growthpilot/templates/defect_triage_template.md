@@ -18,6 +18,26 @@
 | `P2 / minor` | 局部交互、边界、提示或非关键流程问题 | 筛选状态回显异常、提示文案错误 | 允许放行，但必须有修复排期 |
 | `P3 / suggestion` | 优化项、体验项、文案/布局微问题 | 排版不齐、文案不统一 | 记录即可，不阻塞上线 |
 
+### 分级细化说明
+
+#### P0
+- 主流程断裂：登录、建档、homework、growth、billing 无法完成
+- 数据错乱：状态机错写、金额错误、重复主档、不可逆脏数据
+- 权限失控：越权查看/编辑/支付
+- 发布阻断：无法上线或无法回滚
+
+#### P1
+- 核心功能可绕过但不可接受
+- 大面积用户受影响
+- 关键页面错误提示/状态错误，显著影响业务连续性
+
+#### P2
+- 局部交互、边界、样式、提示问题
+- 有 workaround，不阻断主流程
+
+#### P3
+- 优化项、体验项、文案/布局微问题
+
 ## 3. 缺陷状态流
 
 标准状态：
@@ -37,7 +57,13 @@ new -> triaged -> in_progress -> fixed -> retest -> closed
 - `fixed` 只代表开发完成，不代表已关闭。
 - `closed` 必须有 QA 回归证据。
 
-## 4. Triage 会议流程
+## 4. 缺陷清单
+
+| defect_id | title | level | module | env | steps | expected | actual | owner | status | target_fix | regression_case |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| DEF-001 | 示例：payment status 未回写 | P0 | billing | preprod | ... | ... | ... | A7 | open | 2026-03-26 | billing.e2e |
+
+## 5. Triage 会议流程
 
 每轮 triage 固定 10 分钟内完成：
 
@@ -54,7 +80,7 @@ new -> triaged -> in_progress -> fixed -> retest -> closed
 - 不建单只在群里口头分配
 - 未定级就承诺上线
 
-## 5. 修复 SLA
+## 6. 修复 SLA
 
 | 级别 | 修复要求 | 回归要求 |
 |---|---|---|
@@ -63,7 +89,7 @@ new -> triaged -> in_progress -> fixed -> retest -> closed
 | `P2` | 写入 backlog 并给出明确日期 | 可合并回归 |
 | `P3` | 记录并排期 | 可不在本轮回归 |
 
-## 6. 缺陷日志最少字段
+## 7. 缺陷日志最少字段
 
 建议搭配 `docs/growthpilot/templates/uat_defect_log_template.md` 使用。
 
@@ -86,17 +112,18 @@ new -> triaged -> in_progress -> fixed -> retest -> closed
 - `retest_result`
 - `evidence`
 
-## 7. 放行规则
+## 8. 放行规则
 
 - [ ] `P0 = 0`
 - [ ] `P1 = 0` 或 owner 已书面接受条件放行
 - [ ] 所有 `fail` case 都已绑定 defect id
 - [ ] 所有 `blocked` case 都有解决计划或明确不纳入本轮范围
 - [ ] `P2` 已登记并有明确修复排期
+- [ ] `P3` 不阻塞上线
 - [ ] 回归覆盖本次 release 受影响模块
 - [ ] 回滚方案、备份记录、负责人齐全
 
-## 8. 条件放行模板
+## 9. 条件放行模板
 
 ```markdown
 结论：conditional-pass
@@ -105,6 +132,7 @@ new -> triaged -> in_progress -> fixed -> retest -> closed
 - 无 P0 未关闭项
 - P1/P2 已评估影响范围，不阻断本次核心主流程
 - owner 已接受已知限制和 workaround
+- P2/P3 若干已知问题不阻断主流程
 
 上线前要求：
 - 已完成备份
@@ -113,7 +141,7 @@ new -> triaged -> in_progress -> fixed -> retest -> closed
 - 已把已知问题同步到发布验收报告
 ```
 
-## 9. 不放行模板
+## 10. 不放行模板
 
 ```markdown
 结论：fail / no-go
@@ -125,7 +153,7 @@ new -> triaged -> in_progress -> fixed -> retest -> closed
 - 回滚路径未验证，或发布后不可恢复
 ```
 
-## 10. 回归关闭模板
+## 11. 回归关闭模板
 
 ```markdown
 回归结论：closed

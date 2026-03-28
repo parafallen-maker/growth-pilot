@@ -1047,9 +1047,11 @@ agents:
         priority: P0
         status: done
         notes:
+          - 已在 apps/api/test/qa 交付 5 条主流程 skeleton：auth、enrollment、homework、growth、billing，并补统一 fixture，runner 可直接识别。
           - 已在 apps/api/test/qa 将 homework / growth 两条主流程从 skeleton 升级为真实 smoke，补 fixture 数据、成功断言、重复触发失败断言与素材追溯断言。
           - 已新增 `docs/growthpilot/templates/qa_smoke_failure_template.md`，用于真联调阶段沉淀失败输出与 triage 证据。
-        completion_note: QA / E2E 不再只是 runner 级骨架；当前 homework / growth 已具备可执行 smoke 回归，剩余 auth/enrollment/billing 与浏览器页面联调待预发阶段继续推进。
+          - 当前 smoke 覆盖后端骨架主链路，前端页面动作、真实环境联调、缺陷清零仍待预发联调阶段补齐。
+        completion_note: QA / E2E 首波基础资产已完成，测试骨架可被 node:test runner 识别并通过；homework / growth 已具备可执行 smoke 回归，剩余 auth/enrollment/billing 与浏览器页面联调待预发阶段继续推进。
         wbs: [WBS-049]
         depends_on: [T-F1-1, T-M1-2, T-M1-4, T-H1-6, T-G1-5, T-B1-FE]
         input_docs:

@@ -174,4 +174,7 @@ test('QA-04 账单收款链：product -> contract -> invoice -> payment -> refun
       status: 'success',
     }), /refund exceeds payment amount/i);
   });
+
+  await t.test('case-billing-pages-ui', { todo: '接 /billing/products|contracts|invoices|renewals 页面动作链路' }, () => {});
+  await t.test('case-cents-vs-yuan', { todo: '补前端显示元、接口传输 cents 与 rounding 边界断言' }, () => {});
 });

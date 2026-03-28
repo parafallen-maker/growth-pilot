@@ -1,5 +1,5 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import test from 'node:test';
 import { createQaFixture } from './e2e-main-flow.fixture';
 
 test('qa auth e2e skeleton', async (t) => {
@@ -45,4 +45,9 @@ test('qa auth e2e skeleton', async (t) => {
     await authService.logout(undefined, loginResult.refreshToken);
     await assert.rejects(() => authService.refresh(loginResult.refreshToken), /invalid/i);
   });
+
+  await t.test('case-admin-menu-scope', { todo: '接 apps/web AppShell 菜单裁剪与 403 页面断言' }, () => {});
+  await t.test('case-teacher-role-scope', { todo: '补教师角色登录态、按钮权限与 homework/growth 权限矩阵' }, () => {});
+  await t.test('case-finance-role-scope', { todo: '补财务角色 billing/communication 权限断言与越权校验' }, () => {});
+  await t.test('case-token-expired-redirect', { todo: '补 token 失效后的前端回登录与 toast 提示' }, () => {});
 });
