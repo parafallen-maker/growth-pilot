@@ -6,13 +6,10 @@ import { ApiError, apiRequest } from '@/lib/api-client';
 import { clearAuth, persistAuth } from '@/lib/auth-storage';
 import { ErrorState } from '@/components/business/page-states';
 
-const DEFAULT_USERNAME = 'super_admin@growthpilot.local';
-const DEFAULT_PASSWORD = 'admin123';
-
 export function LoginForm() {
   const router = useRouter();
-  const [username, setUsername] = useState(DEFAULT_USERNAME);
-  const [password, setPassword] = useState(DEFAULT_PASSWORD);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 

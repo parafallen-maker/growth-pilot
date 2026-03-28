@@ -20,18 +20,18 @@ export default async function HomeworkReviewWorkbenchPage({
   const currentUser = await requireCurrentUser();
   const { submissionId } = await params;
   const query = await searchParams;
-  
+
   // Data Fetching
   const detail = await homeworkService.detail(submissionId);
   const taxonomies = await homeworkService.taxonomyQuery();
   const draft = detail.reviewDraft;
-  
+
   // Logic & Defaults
   const selectedErrorIds = new Set(
-    draft?.finalErrorItems?.map((item) => item.errorTaxonomyId) ?? 
+    draft?.finalErrorItems?.map((item) => item.errorTaxonomyId) ??
     taxonomies.list.slice(0, 2).map((item) => item.id)
   );
-  
+
   const formDefaults = {
     reviewResult: draft?.reviewResult ?? ((detail.review?.reviewResult as string) ?? 'adjusted'),
     finalAccuracyPct: draft?.finalAccuracyPct ?? detail.review?.finalAccuracyPct ?? 0,
@@ -44,7 +44,7 @@ export default async function HomeworkReviewWorkbenchPage({
     <PermissionGuard allowed={currentUser.permissions.includes(homeworkPermissions.review)}>
       <div className="stack">
         {/* P1 Refactored: Structured Header */}
-        <ReviewHeader 
+        <ReviewHeader
           submissionNo={detail.submissionNo}
           aiStatus={detail.aiJob.status}
           navigation={detail.navigation}
@@ -58,13 +58,13 @@ export default async function HomeworkReviewWorkbenchPage({
 
         <div className="review-layout">
           {/* P1 Refactored: Attachment Review with Image Preview */}
-          <AttachmentGallery 
+          <AttachmentGallery
             attachments={detail.attachments}
             navigation={detail.navigation}
           />
 
           {/* P1 Refactored: AI Analysis result display */}
-          <AIAnalysisResult 
+          <AIAnalysisResult
             status={detail.aiJob.status}
             rawMarkdown={detail.rawMarkdown}
             structuredResult={detail.structuredResult}
@@ -73,7 +73,7 @@ export default async function HomeworkReviewWorkbenchPage({
           />
 
           {/* P1 Refactored: Localized teacher review form with keyboard nav */}
-          <TeacherReviewForm 
+          <TeacherReviewForm
             submissionId={submissionId}
             studentName={detail.studentName}
             subject={detail.subject}

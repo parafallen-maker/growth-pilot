@@ -2,11 +2,11 @@ import { MetricGrid, PageHeader, SummaryPanel, TimelinePanel } from '@/component
 import { analyticsService } from '@/services/analytics-service';
 import { requireCurrentUser } from '@/lib/current-user';
 import { roleLabels, type AppRole } from '@/lib/navigation';
-import { 
-  TASK_PRIORITY_LABELS, 
-  TASK_STATUS_LABELS, 
+import {
+  TASK_PRIORITY_LABELS,
+  TASK_STATUS_LABELS,
   TASK_TYPE_LABELS,
-  getPriorityStyle 
+  getPriorityStyle
 } from '@/lib/business-logic';
 import Link from 'next/link';
 
@@ -14,8 +14,8 @@ export default async function DashboardPage() {
   const currentUser = await requireCurrentUser();
   const campusId = 'campus-guiyang';
   const termId = '2026-spring';
-  
-  // 角色判断：班主任和科任老师看到的是“今日工作台”
+
+  // 角色判断：班主任和科任老师看到的是"今日工作台"
   const isTeacher = currentUser.role === 'growth_advisor' || currentUser.role === 'subject_teacher';
 
   if (isTeacher) {
@@ -37,7 +37,7 @@ async function TeacherDashboard({ currentUser }: { currentUser: any }) {
   const urgentActions = [
     { id: 'u1', title: '张小明 数学正确率连续 3 次 < 60%', type: 'academic_risk', priority: 'high', link: '/alerts' },
     { id: 'u2', title: '李小红 语文练习册 3/25 待复核', type: 'homework_followup', priority: 'medium', link: '/homework/submissions' },
-    { id: 'u3', title: '赵小飞 成长目标“阅读 30min”已超线', type: 'goal_overdue', priority: 'low', link: '/growth/goals' },
+    { id: 'u3', title: '赵小飞 成长目标"阅读 30min"已超线', type: 'goal_overdue', priority: 'low', link: '/growth/goals' },
   ];
 
   const weeklyStats = [
@@ -76,20 +76,20 @@ async function TeacherDashboard({ currentUser }: { currentUser: any }) {
       </div>
 
       <div className="grid-2">
-        <SummaryPanel 
-          title="📝 待复核队列" 
+        <SummaryPanel
+          title="📝 待复核队列"
           items={[
             { name: '王小华 语文 3/25', detail: 'AI 已分析，待审核' },
             { name: '李小明 数学 3/25', detail: 'AI 已分析，待审核' },
             { name: '张小飞 英语 3/24', detail: '由助教上传' },
-          ]} 
+          ]}
         />
-        <SummaryPanel 
-          title="📞 沟通提醒" 
+        <SummaryPanel
+          title="📞 沟通提醒"
           items={[
             { name: '李小红家庭', detail: '超过 12 天未沟通' },
             { name: '王小华家庭', detail: '超过 8 天未沟通' },
-          ]} 
+          ]}
         />
       </div>
     </div>

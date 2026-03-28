@@ -6,7 +6,6 @@ export class UploadFileDto {
     mimeType: trimmedString(1, 128),
     sizeBytes: integerNumber(0),
     checksum: optionalTrimmedString(255),
-    bucketName: optionalTrimmedString(64),
     uploadedBy: optionalIdString(),
     purpose: optionalTrimmedString(64),
     sourceType: optionalTrimmedString(32),
@@ -18,7 +17,6 @@ export class UploadFileDto {
   mimeType!: string;
   sizeBytes!: number;
   checksum?: string;
-  bucketName?: string;
   uploadedBy?: string;
   purpose?: string;
   sourceType?: string;

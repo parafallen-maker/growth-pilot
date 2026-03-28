@@ -25,8 +25,8 @@ const RESPONSE_SENSITIVE_FIELDS_METADATA_KEY = 'security:response_sensitive_fiel
 const BCRYPT_COST_FACTOR = 12;
 
 interface BcryptModule {
-  compareSync(plainText: string, storedHash: string): boolean;
-  hashSync(plainText: string, rounds: number): string;
+  compare(plainText: string, storedHash: string): Promise<boolean>;
+  hash(plainText: string, rounds: number): Promise<string>;
 }
 
 const bcrypt = require('bcrypt') as BcryptModule;
@@ -174,17 +174,17 @@ export function getAuthCookieOptions() {
 export class PasswordService {
   private readonly rounds = BCRYPT_COST_FACTOR;
 
-  hash(plainText: string) {
-    return bcrypt.hashSync(plainText, this.rounds);
+  async hash(plainText: string) {
+    return bcrypt.hash(plainText, this.rounds);
   }
 
-  verify(plainText: string, storedHash: string) {
+  async verify(plainText: string, storedHash: string) {
     if (!/^\$2[aby]\$\d{2}\$/.test(storedHash)) {
       return false;
     }
 
     try {
-      return bcrypt.compareSync(plainText, storedHash);
+      return await bcrypt.compare(plainText, storedHash);
     } catch {
       return false;
     }

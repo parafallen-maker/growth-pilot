@@ -6,11 +6,13 @@ const ACCESS_TOKEN_STORAGE_KEY = 'growthpilot.accessToken';
 const REFRESH_TOKEN_STORAGE_KEY = 'growthpilot.refreshToken';
 
 function setCookie(name: string, value: string, maxAgeSeconds = 60 * 60 * 24 * 30) {
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; samesite=lax`;
+  const secure = window.location.protocol === 'https:' ? '; secure' : '';
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; samesite=lax${secure}`;
 }
 
 function clearCookie(name: string) {
-  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax`;
+  const secure = window.location.protocol === 'https:' ? '; secure' : '';
+  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax${secure}`;
 }
 
 export function persistAuth(auth: { accessToken: string; refreshToken: string }) {

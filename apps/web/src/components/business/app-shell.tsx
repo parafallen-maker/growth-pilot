@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { pruneNavSections } from '@/components/business/permission-guard';
@@ -15,7 +15,7 @@ function getRoleLabel(role: string): string {
 
 export function AppShell({ children, currentUser }: { children: ReactNode; currentUser: CurrentUser }) {
   const pathname = usePathname();
-  const sections = pruneNavSections(navSections, currentUser.permissions);
+  const sections = useMemo(() => pruneNavSections(navSections, currentUser.permissions), [currentUser.permissions]);
 
   return (
     <div className="dashboard-shell shell">

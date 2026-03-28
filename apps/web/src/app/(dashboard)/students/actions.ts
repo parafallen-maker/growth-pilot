@@ -1,10 +1,11 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { redirect } from 'next/navigation';
 import { studentService } from '@/services/students-service';
 
-function bounce(params: Record<string, string>) {
+function bounce(params: Record<string, string>): never {
   redirect(`/students?${new URLSearchParams(params).toString()}`);
 }
 
@@ -38,6 +39,7 @@ export async function createStudent(formData: FormData) {
     revalidatePath('/students');
     bounce({ created: created.studentNo ?? created.id });
   } catch (error) {
+    if (isRedirectError(error)) throw error;
     bounce({ error: error instanceof Error ? error.message : '新建学生失败' });
   }
 }

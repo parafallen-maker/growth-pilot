@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { PageHeader, MetricGrid, SummaryPanel, TimelinePanel } from '@/components/business/page-blocks';
 import { requireCurrentUser } from '@/lib/current-user';
 
-import { 
-  ALERT_LEVEL_LABELS as levelLabel, 
+import {
+  ALERT_LEVEL_LABELS as levelLabel,
   ALERT_TYPE_LABELS as typeLabel,
   getPriorityStyle
 } from '@/lib/business-logic';

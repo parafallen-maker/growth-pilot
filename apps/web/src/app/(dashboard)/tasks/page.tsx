@@ -3,9 +3,9 @@ import { PageHeader, MetricGrid, SummaryPanel, TimelinePanel } from '@/component
 import { requireCurrentUser } from '@/lib/current-user';
 import { roleLabels, type AppRole } from '@/lib/navigation';
 
-import { 
-  TASK_PRIORITY_LABELS as priorityLabel, 
-  TASK_STATUS_LABELS as statusLabel, 
+import {
+  TASK_PRIORITY_LABELS as priorityLabel,
+  TASK_STATUS_LABELS as statusLabel,
   TASK_TYPE_LABELS as typeLabel,
   getPriorityStyle
 } from '@/lib/business-logic';

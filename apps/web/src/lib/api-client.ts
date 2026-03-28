@@ -30,8 +30,7 @@ export class ApiError extends Error {
   }
 }
 
-export const ACCESS_TOKEN_COOKIE = 'gp_access_token';
-export const REFRESH_TOKEN_COOKIE = 'gp_refresh_token';
+export { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from '@/lib/auth-constants';
 const DEFAULT_API_BASE_URL = 'http://127.0.0.1:3001/api/v1';
 
 function joinUrl(baseUrl: string, path: string) {
