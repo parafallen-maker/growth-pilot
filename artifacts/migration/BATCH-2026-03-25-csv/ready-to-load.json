@@ -1,0 +1,74 @@
+[
+  {
+    "sourceRowRef": "2026上半学年学生信息表#2",
+    "businessKey": "S-201",
+    "targetDomain": "students",
+    "normalizedPayload": {
+      "targetDomain": "students",
+      "businessKey": "S-201",
+      "studentNo": "S-201",
+      "studentName": "周周",
+      "gradeLabel": "一年级",
+      "primaryTeacherName": "胡忠芸",
+      "familyPhone": "13800000021",
+      "familyStructure": "nuclear_or_other",
+      "enrollDate": "2026-03-02",
+      "homeworkDate": null,
+      "subject": null,
+      "accuracyPct": null,
+      "errorTaxonomyCode": null,
+      "amounts": null
+    }
+  },
+  {
+    "sourceRowRef": "2026上半学年每日作业完成质量表#3",
+    "businessKey": "S-201",
+    "targetDomain": "homework",
+    "normalizedPayload": {
+      "targetDomain": "homework",
+      "businessKey": "S-201",
+      "studentNo": "S-201",
+      "studentName": "周周",
+      "gradeLabel": "",
+      "primaryTeacherName": "",
+      "familyPhone": null,
+      "familyStructure": null,
+      "enrollDate": null,
+      "homeworkDate": "2026-03-23",
+      "subject": "math",
+      "accuracyPct": 95,
+      "errorTaxonomyCode": "NO_ERROR",
+      "amounts": null
+    }
+  },
+  {
+    "sourceRowRef": "历史账单表#5",
+    "businessKey": "",
+    "targetDomain": "billing",
+    "normalizedPayload": {
+      "targetDomain": "billing",
+      "businessKey": "",
+      "studentNo": "",
+      "studentName": "",
+      "gradeLabel": "",
+      "primaryTeacherName": "",
+      "familyPhone": null,
+      "familyStructure": null,
+      "enrollDate": null,
+      "homeworkDate": null,
+      "subject": null,
+      "accuracyPct": null,
+      "errorTaxonomyCode": null,
+      "amounts": {
+        "contractNo": "C-201",
+        "invoiceNo": "I-201",
+        "totalAmountCents": 15000,
+        "discountAmountCents": 1000,
+        "payableAmountCents": 14000,
+        "invoiceItemsAmountCents": 15000,
+        "paymentsAmountCents": 14000,
+        "refundsAmountCents": 0
+      }
+    }
+  }
+]

@@ -57,7 +57,10 @@ const sourceFile = args.sourceFile ?? inferSourceFile(args);
 const dbUrl = args['db-url'] ?? process.env.DATABASE_URL ?? null;
 const dbSchema = args['db-schema'] ?? process.env.GP_STAGING_SCHEMA ?? 'qa_staging';
 const pgModule = args['pg-module'] ?? process.env.GP_STAGING_IMPORT_PG_MODULE ?? 'pg';
-const artifactsDir = args['artifacts-dir'] ? resolve(process.cwd(), args['artifacts-dir']) : null;
+const artifactsDir = args['artifacts-dir']
+  ? resolve(process.cwd(), args['artifacts-dir'])
+  : (args.artifactDir ? resolve(process.cwd(), String(args.artifactDir)) : null);
+const inputPath = args.input ? resolve(process.cwd(), String(args.input)) : null;
 
 const sourceRows = loadSourceRows(args, { batchId, sourceSystem, sourceFile });
 const rawRows = sourceRows.map((row, index) => toRawRow(row, index + 2, batchId, sourceSystem, sourceFile));
@@ -71,6 +74,7 @@ const summary = buildSummary({
   batchId,
   sourceSystem,
   sourceFile,
+  inputPath,
   dryRun,
   dbApply,
   rawRows,
@@ -94,11 +98,12 @@ if (dbApply) {
   summary.dbPlan.execution = execution;
 }
 
+let artifacts = null;
 if (artifactsDir) {
-  summary.artifacts = writeArtifacts(artifactsDir, summary, rawRows, normalizedRows, rejects, dbPlan);
+  artifacts = writeArtifacts(artifactsDir, summary, rawRows, normalizedRows, rejects, dbPlan);
 }
 
-console.log(JSON.stringify(summary, null, 2));
+console.log(JSON.stringify({ ...summary, artifacts }, null, 2));
 
 function parseArgs(argv) {
   const parsed = {};
@@ -122,24 +127,28 @@ function parseArgs(argv) {
 }
 
 function inferSourceSystem(parsedArgs) {
-  if (parsedArgs.json || parsedArgs.csv || parsedArgs.input) {
+  const inputValue = parsedArgs.input ?? parsedArgs.json ?? parsedArgs.csv;
+  if (inputValue) {
+    const ext = extname(String(inputValue)).toLowerCase();
+    if (ext === '.json') return 'json';
+    if (ext === '.csv') return 'csv';
     return 'file';
   }
   return 'excel';
 }
 
 function inferSourceFile(parsedArgs) {
-  const inputPath = parsedArgs.json ?? parsedArgs.csv ?? parsedArgs.input;
-  return inputPath ? basename(inputPath) : 'mock-history.xlsx';
+  const inputValue = parsedArgs.input ?? parsedArgs.json ?? parsedArgs.csv;
+  return inputValue ? basename(String(inputValue)) : 'mock-history.xlsx';
 }
 
 function loadSourceRows(parsedArgs, context) {
-  const inputPath = parsedArgs.json ?? parsedArgs.csv ?? parsedArgs.input;
-  if (!inputPath) {
+  const inputValue = parsedArgs.input ?? parsedArgs.json ?? parsedArgs.csv;
+  if (!inputValue) {
     return buildMockSourceRows();
   }
 
-  const absolutePath = resolve(process.cwd(), inputPath);
+  const absolutePath = resolve(process.cwd(), String(inputValue));
   const content = readFileSync(absolutePath, 'utf8');
   const format = determineFormat(absolutePath, parsedArgs.format);
   const parsedRows = format === 'json' ? parseJsonRows(content, absolutePath) : parseCsvRows(content);
@@ -153,20 +162,20 @@ function loadSourceRows(parsedArgs, context) {
   }));
 }
 
-function determineFormat(inputPath, explicitFormat) {
+function determineFormat(inputPathValue, explicitFormat) {
   if (explicitFormat) {
     return explicitFormat.toLowerCase();
   }
-  const extension = extname(inputPath).toLowerCase();
+  const extension = extname(inputPathValue).toLowerCase();
   if (extension === '.json') return 'json';
   if (extension === '.csv' || extension === '.txt') return 'csv';
   throw new Error(`unsupported input format: ${extension || 'unknown'}; use --format csv|json`);
 }
 
-function parseJsonRows(content, inputPath) {
+function parseJsonRows(content, inputPathValue) {
   const parsed = JSON.parse(content);
   if (!Array.isArray(parsed)) {
-    throw new Error(`JSON input must be an array: ${inputPath}`);
+    throw new Error(`JSON input must be an array: ${inputPathValue}`);
   }
   return parsed;
 }
@@ -243,7 +252,7 @@ function normalizeScalar(value) {
 
 function sanitizeSourceRow(sourceRow, context) {
   const row = { ...sourceRow };
-  row.targetDomain = row.targetDomain ?? row.domain ?? row.entity ?? row.table ?? 'unknown';
+  row.targetDomain = row.targetDomain ?? row.domain ?? row.entity ?? row.table ?? inferTargetDomain(row);
   row.sourceSheet = row.sourceSheet ?? row.sheet ?? basename(context.absolutePath);
   row.sourcePk = row.sourcePk ?? row.pk ?? `${row.targetDomain}-row-${String(context.index + 1).padStart(3, '0')}`;
 
@@ -281,6 +290,12 @@ function sanitizeSourceRow(sourceRow, context) {
   }
 
   return row;
+}
+
+function inferTargetDomain(payload) {
+  if (payload.invoiceNo || payload.contractNo) return 'billing';
+  if (payload.subjectRaw || payload.homeworkDateRaw || payload.errorTaxonomyRaw) return 'homework';
+  return 'students';
 }
 
 function centsValue(rawValue) {
@@ -392,12 +407,12 @@ function normalizeRow(rawRow) {
       ? {
           contractNo: payload.contractNo,
           invoiceNo: payload.invoiceNo,
-          totalAmountCents: payload.totalAmountCents,
-          discountAmountCents: payload.discountAmountCents,
-          payableAmountCents: payload.payableAmountCents,
-          invoiceItemsAmountCents: payload.invoiceItemsAmountCents,
-          paymentsAmountCents: payload.paymentsAmountCents,
-          refundsAmountCents: payload.refundsAmountCents,
+          totalAmountCents: normalizeInt(payload.totalAmountCents),
+          discountAmountCents: normalizeInt(payload.discountAmountCents),
+          payableAmountCents: normalizeInt(payload.payableAmountCents),
+          invoiceItemsAmountCents: normalizeInt(payload.invoiceItemsAmountCents),
+          paymentsAmountCents: normalizeInt(payload.paymentsAmountCents),
+          refundsAmountCents: normalizeInt(payload.refundsAmountCents),
         }
       : null,
   };
@@ -556,7 +571,8 @@ function buildSummary(context) {
     batchId: context.batchId,
     sourceSystem: context.sourceSystem,
     sourceFile: context.sourceFile,
-    mode: context.dbApply ? 'db-apply' : (context.dryRun ? 'dry-run' : 'plan-only'),
+    inputPath: context.inputPath,
+    mode: context.dbApply ? 'db-apply' : (context.dryRun ? 'dry-run' : 'validation-artifact'),
     plan: {
       strategy: ['raw staging', 'normalized staging', 'final load'],
       rawRows: context.rawRows.length,
@@ -573,23 +589,27 @@ function buildSummary(context) {
   };
 }
 
-function writeArtifacts(artifactsDir, summary, rawRows, normalizedRows, rejects, dbPlan) {
-  mkdirSync(artifactsDir, { recursive: true });
+function writeArtifacts(artifactsDirPath, summary, rawRows, normalizedRows, rejects, dbPlan) {
+  mkdirSync(artifactsDirPath, { recursive: true });
 
   const safeBatchId = summary.batchId.replace(/[^a-zA-Z0-9._-]+/g, '-');
-  const summaryPath = join(artifactsDir, `${safeBatchId}.summary.json`);
-  const rawPath = join(artifactsDir, `${safeBatchId}.raw.ndjson`);
-  const normalizedPath = join(artifactsDir, `${safeBatchId}.normalized.ndjson`);
-  const rejectPath = join(artifactsDir, `${safeBatchId}.reject-report.csv`);
-  const sqlPath = join(artifactsDir, `${safeBatchId}.db-plan.sql`);
+  const summaryPath = join(artifactsDirPath, `${safeBatchId}.summary.json`);
+  const rawPath = join(artifactsDirPath, `${safeBatchId}.raw.ndjson`);
+  const normalizedPath = join(artifactsDirPath, `${safeBatchId}.normalized.ndjson`);
+  const rejectPath = join(artifactsDirPath, `${safeBatchId}.reject-report.csv`);
+  const sqlPath = join(artifactsDirPath, `${safeBatchId}.db-plan.sql`);
+  const validationReportPath = join(artifactsDirPath, `${safeBatchId}.validation-report.md`);
+  const readyRowsPath = join(artifactsDirPath, `${safeBatchId}.ready-to-load.json`);
 
   const artifacts = {
-    directory: artifactsDir,
+    directory: artifactsDirPath,
     summaryJson: summaryPath,
     rawNdjson: rawPath,
     normalizedNdjson: normalizedPath,
     rejectReportCsv: rejectPath,
     dbPlanSql: sqlPath,
+    validationReportMd: validationReportPath,
+    readyToLoadJson: readyRowsPath,
   };
 
   summary.artifacts = artifacts;
@@ -599,6 +619,22 @@ function writeArtifacts(artifactsDir, summary, rawRows, normalizedRows, rejects,
   writeFileSync(normalizedPath, normalizedRows.map((row) => JSON.stringify(row)).join('\n') + (normalizedRows.length ? '\n' : ''));
   writeFileSync(rejectPath, toCsv(rejects, rejectReportColumns));
   writeFileSync(sqlPath, dbPlan.sqlPreview);
+  writeFileSync(validationReportPath, renderValidationMarkdown(summary));
+  writeFileSync(
+    readyRowsPath,
+    JSON.stringify(
+      normalizedRows
+        .filter((row) => row.importStatus === 'ready_to_load')
+        .map((row) => ({
+          sourceRowRef: `${row.sourceSheet}#${row.sourceRowNo}`,
+          businessKey: row.normalizedPayload.businessKey,
+          targetDomain: row.normalizedPayload.targetDomain,
+          normalizedPayload: row.normalizedPayload,
+        })),
+      null,
+      2,
+    ),
+  );
 
   return artifacts;
 }
@@ -902,6 +938,14 @@ function normalizePercent(rawValue) {
   return Number.isFinite(value) ? Number(value.toFixed(2)) : null;
 }
 
+function normalizeInt(rawValue) {
+  if (rawValue === undefined || rawValue === null || rawValue === '') {
+    return 0;
+  }
+  const value = Number(rawValue);
+  return Number.isFinite(value) ? Math.trunc(value) : 0;
+}
+
 function excelSerialToIso(rawValue) {
   if (rawValue === undefined || rawValue === null || rawValue === '') {
     return null;
@@ -955,4 +999,97 @@ function csvCell(value) {
     return text;
   }
   return `"${text.replace(/"/g, '""')}"`;
+}
+
+function csvEscape(value) {
+  const text = value === undefined || value === null ? '' : String(value);
+  if (!/[",\n]/.test(text)) return text;
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function renderRejectCsv(rejects) {
+  const headers = [
+    'batch_id',
+    'source_file',
+    'source_sheet',
+    'source_row_no',
+    'target_domain',
+    'reject_code',
+    'reject_reason',
+    'source_pk',
+    'business_key',
+    'field_name',
+    'raw_value',
+    'expected_rule',
+    'suggested_action',
+    'owner',
+    'status',
+  ];
+  const rows = rejects.map((item) => [
+    item.batchId,
+    item.sourceFile,
+    item.sourceSheet,
+    item.sourceRowNo,
+    item.targetDomain,
+    item.rejectCode,
+    item.rejectReason,
+    item.sourcePk,
+    item.businessKey,
+    item.fieldName,
+    item.rawValue,
+    item.expectedRule,
+    item.suggestedAction,
+    item.owner,
+    item.status,
+  ]);
+  return [headers, ...rows].map((row) => row.map(csvEscape).join(',')).join('\n');
+}
+
+function renderValidationMarkdown(summary) {
+  const rejectLines = Object.entries(summary.rejectsByCode)
+    .map(([code, count]) => `- ${code}: ${count}`)
+    .join('\n') || '- 无 reject';
+  const readyKeys = summary.finalLoadPlan.readyBusinessKeys.map((key) => `- ${key}`).join('\n') || '- 无';
+  const samples = summary.rejectSamples.slice(0, 5).map((item) => [
+    `### ${item.rejectCode}`,
+    `- 来源：${item.sourceSheet}#${item.sourceRowNo}`,
+    `- 业务键：${item.businessKey}`,
+    `- 字段：${item.fieldName}`,
+    `- 原因：${item.rejectReason}`,
+    `- 建议：${item.suggestedAction}`,
+    `- Owner：${item.owner}`,
+  ].join('\n')).join('\n\n') || '### 无\n- 本批次无 reject';
+
+  return [
+    '# Migration Validation Report',
+    '',
+    `- batchId: ${summary.batchId}`,
+    `- sourceSystem: ${summary.sourceSystem}`,
+    `- sourceFile: ${summary.sourceFile}`,
+    `- mode: ${summary.mode}`,
+    `- inputPath: ${summary.inputPath ?? '(built-in mock batch)'}`,
+    '',
+    '## Plan 摘要',
+    `- rawRows: ${summary.plan.rawRows}`,
+    `- normalizedRows: ${summary.plan.normalizedRows}`,
+    `- readyToLoadRows: ${summary.plan.readyToLoadRows}`,
+    `- rejectedRows: ${summary.plan.rejectedRows}`,
+    '',
+    '## Ready To Load Business Keys',
+    readyKeys,
+    '',
+    '## Reject 分类统计',
+    rejectLines,
+    '',
+    '## Reject 样例',
+    samples,
+    '',
+    '## Final Load Order',
+    ...summary.finalLoadPlan.loadOrder.map((item, index) => `${index + 1}. ${item}`),
+    '',
+    '## 结论',
+    summary.plan.rejectedRows > 0
+      ? '- 本批次存在 reject，建议先修源数据/映射，再回放 final load。'
+      : '- 本批次已满足 ready_to_load，可进入 final load/upsert 对接阶段。',
+  ].join('\n');
 }

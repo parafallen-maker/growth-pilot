@@ -1036,18 +1036,18 @@ agents:
           - 首批样本入库通过
           - 异常可追溯到源表与字段
         notes:
-          - 本轮先交付样本导入报告骨架与 reject 模板，真实首批样本尚待接入 CSV/Excel 与 PostgreSQL staging schema。
-          - dry-run 已可输出批次摘要、rejectSamples、rejectsByCode，后续可直接沉淀为 import_validation_report / data_exception_list。
-        completion_note: 已产出 docs/growthpilot/27_首批样本迁移校验报告.md，基于首批 dry-run sample batch 输出 batch summary / rejectsByCode / rejectSamples / final load plan。
+          - 已补 `scripts/migration/run-staging-import.mjs --input <json|csv>`，可直接消费 repo 示例样本，并输出 `summary.json / reject-report.csv / validation-report.md / ready-to-load.json` 正式工件。
+          - PostgreSQL staging schema 与 final upsert 仍未接入，本轮先把真实输入、规则校验、artifact 沉淀打通。
+        completion_note: 已产出 docs/growthpilot/27_首批样本迁移校验报告.md，并将 dry-run skeleton 升级为可消费 JSON/CSV 样本、可落 validation artifact 的 migration runner。
         handoff_to: [A1, A2]
       - task_id: T-QA1-1
         title: 主流程 E2E、集成测试、回归测试
         priority: P0
         status: done
         notes:
-          - 已在 apps/api/test/qa 交付 5 条主流程 skeleton：auth、enrollment、homework、growth、billing，并补统一 fixture，runner 可直接识别。
-          - 当前 smoke 覆盖后端骨架主链路，前端页面动作、真实环境联调、缺陷清零仍待预发联调阶段补齐。
-        completion_note: 已完成 QA / E2E 首波基础资产，测试骨架可被 node:test runner 识别并通过；后续直接在同目录补真实接口与 UI 断言即可。
+          - 已在 apps/api/test/qa 将 homework / growth 两条主流程从 skeleton 升级为真实 smoke，补 fixture 数据、成功断言、重复触发失败断言与素材追溯断言。
+          - 已新增 `docs/growthpilot/templates/qa_smoke_failure_template.md`，用于真联调阶段沉淀失败输出与 triage 证据。
+        completion_note: QA / E2E 不再只是 runner 级骨架；当前 homework / growth 已具备可执行 smoke 回归，剩余 auth/enrollment/billing 与浏览器页面联调待预发阶段继续推进。
         wbs: [WBS-049]
         depends_on: [T-F1-1, T-M1-2, T-M1-4, T-H1-6, T-G1-5, T-B1-FE]
         input_docs:

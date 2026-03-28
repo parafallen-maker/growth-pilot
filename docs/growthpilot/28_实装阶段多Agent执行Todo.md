@@ -230,16 +230,23 @@
 ## IMPL-006 migration / QA / release 真系统化（P0）
 
 ### A10-1 migration 真导入
-- [x] 接真实 Excel/CSV parser（当前已支持 CSV/JSON 文件输入，`.xlsx` 原生解析仍待补）
+- [x] 接真实 Excel/CSV parser（当前已支持 CSV/JSON 文件输入及 repo 内 JSON/CSV 样本输入，`.xlsx` 原生解析仍待补）
 - [ ] 接 PostgreSQL staging schema
 - [ ] 接 final load upsert
-- [x] 第一批真实样本导入（当前为 sample CSV dry-run）
-- [ ] 正式 validation report
+- [x] 第一批真实样本导入（当前为 sample CSV dry-run 及 repo 示例样本批次）
+- [x] 正式 validation report（summary.json / reject-report.csv / validation-report.md）
+- notes:
+  - `scripts/migration/run-staging-import.mjs` 已从 mock-only 升级为可读 `--input <json|csv>`，并把 ready-to-load / reject / markdown 报告写入 artifact 目录。
+  - 示例样本位于 `scripts/migration/samples/first-wave-sample.json` 与 `.csv`，可直接生成首批 validation artifact。
 
 ### A10-2 QA 真联调
-- [x] skeleton tests 扩成真实 E2E（auth/enrollment/homework/growth/billing 已有 executable assertions）
-- [x] 主流程 smoke 变成真实回归
-- [ ] 缺陷单 + triage + 回归报告
+- [x] skeleton tests 扩成真实 E2E（auth/enrollment/homework/growth/billing 已有 executable assertions；当前先升级 homework / growth 两条 smoke）
+- [x] 主流程 smoke 变成真实回归（含 fixture 数据、真实断言、重复触发失败断言）
+- [x] 缺陷单 + triage + 回归报告（已补 smoke failure template，回归报告可挂接 release gate）
+- notes:
+  - `apps/api/test/qa/homework.e2e-skeleton.test.ts` 已升级为真实 smoke：断言 file upload / submission / analysis / review / event / duplicate analyze 拦截。
+  - `apps/api/test/qa/growth.e2e-skeleton.test.ts` 已升级为真实 smoke：断言 rubric / observation / goal / checkin / report draft / material traceability。
+  - 真实浏览器页面动作、预发环境账号与对象存储/PG/队列联调，仍留到真预发阶段收口。
 
 ### A10-3 release 真验收
 - [ ] 预发环境校验
@@ -304,7 +311,7 @@
 - [x] analytics 真聚合
 
 ### NOW-5 A10 真样本与真联调准备
-- [~] migration dry-run -> 真实输入（CSV/JSON 已支持，staging/upsert 与 `.xlsx` 仍待补）
+- [x] migration dry-run -> 真实输入（CSV/JSON 已支持，staging/upsert 与 `.xlsx` 仍待补）
 - [x] skeleton QA -> 真接口 smoke
 
 ---
