@@ -15,7 +15,7 @@ import { HomeworkService } from './service/homework.service';
 @Module({
   imports: [AuthModule, JobsModule, FilesModule],
   controllers: [HomeworkController],
-  providers: [ApiAuthGuard, PermissionGuard, 
+  providers: [ApiAuthGuard, PermissionGuard,
     HomeworkRepository,
     HomeworkService,
     HomeworkAnalysisQueue,
