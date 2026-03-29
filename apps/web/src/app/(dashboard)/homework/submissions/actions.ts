@@ -65,6 +65,54 @@ export async function createHomeworkSubmission(formData: FormData) {
   }
 }
 
+export async function bulkTriggerHomeworkAnalysis(formData: FormData) {
+  const submissionIds = formData.getAll('submissionIds').map((item) => String(item).trim()).filter(Boolean);
+  if (!submissionIds.length) {
+    bounce({ error: '至少选择 1 条作业记录' });
+  }
+
+  try {
+    const result = await homeworkService.bulkTriggerAnalysis({
+      submissionIds,
+      force: ['on', 'true', '1'].includes(String(formData.get('force') ?? '')),
+    });
+
+    revalidatePath('/homework/submissions');
+    submissionIds.forEach((submissionId) => revalidatePath(`/homework/review/${submissionId}`));
+    bounce({ created: `已批量触发 AI：${result.count} 条` });
+  } catch (error) {
+    bounce({ error: error instanceof Error ? error.message : '批量触发 AI 失败' });
+  }
+}
+
+export async function bulkApplyHomeworkTags(formData: FormData) {
+  const submissionIds = formData.getAll('submissionIds').map((item) => String(item).trim()).filter(Boolean);
+  const errorTaxonomyIds = formData.getAll('errorTaxonomyId').map((item) => String(item).trim()).filter(Boolean);
+  if (!submissionIds.length) {
+    bounce({ error: '至少选择 1 条作业记录' });
+  }
+  if (!errorTaxonomyIds.length) {
+    bounce({ error: '至少选择 1 个错因标签' });
+  }
+
+  try {
+    const currentUser = await requireCurrentUser();
+    const result = await homeworkService.bulkApplyReviewTags({
+      submissionIds,
+      reviewerTeacherId: currentUser.id,
+      finalErrorSummary: String(formData.get('finalErrorSummary') ?? '').trim() || undefined,
+      mode: (String(formData.get('mode') ?? 'merge').trim() || 'merge') as 'merge' | 'replace',
+      finalErrorItems: errorTaxonomyIds.map((errorTaxonomyId) => ({ errorTaxonomyId, weight: 1 })),
+    });
+
+    revalidatePath('/homework/submissions');
+    submissionIds.forEach((submissionId) => revalidatePath(`/homework/review/${submissionId}`));
+    bounce({ reviewed: `已批量打标签：${result.count} 条` });
+  } catch (error) {
+    bounce({ error: error instanceof Error ? error.message : '批量打错因标签失败' });
+  }
+}
+
 export async function submitHomeworkReviewFromList(formData: FormData) {
   const submissionId = String(formData.get('submissionId') ?? '').trim();
   if (!submissionId) {

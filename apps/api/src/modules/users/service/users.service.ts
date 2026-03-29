@@ -9,7 +9,7 @@ import { CurrentUserProfile, Permission, Role, UserRecord } from '../users.types
 export class UsersService {
   constructor(
     private readonly usersRepository: UsersRepository,
-    private readonly passwordService: PasswordService = new PasswordService(),
+    private readonly passwordService: PasswordService,
   ) {}
 
   async listUsers(keyword?: string, pageNo = 1, pageSize = 20) {

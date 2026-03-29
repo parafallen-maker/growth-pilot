@@ -3,6 +3,7 @@
 import { useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { SummaryPanel } from '@/components/business/page-blocks';
+import { SubmitButton } from '@/components/business/submit-button';
 
 interface Taxonomy {
   id: string;
@@ -123,8 +124,8 @@ export function TeacherReviewForm({
       </div>
       
       <div className="button-row" style={{ marginTop: 16 }}>
-        <button className="btn" formAction={(formData) => saveAction(submissionId, formData)}>💾 保存草稿</button>
-        <button className="btn primary" formAction={(formData) => submitAction(submissionId, formData)}>🚀 提交正式复核</button>
+        <SubmitButton className="btn" pendingLabel="保存中..." formAction={(formData) => saveAction(submissionId, formData)}>💾 保存草稿</SubmitButton>
+        <SubmitButton className="btn primary" pendingLabel="提交中..." formAction={(formData) => submitAction(submissionId, formData)}>🚀 提交正式复核</SubmitButton>
       </div>
 
       <SummaryPanel title="复核元信息" items={reviewMeta} />

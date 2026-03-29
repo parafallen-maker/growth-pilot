@@ -16,7 +16,7 @@ interface TeacherDetail {
 
 @Injectable()
 export class TeachersService {
-  constructor(private readonly teachersRepository: TeachersRepository = new TeachersRepository()) {}
+  constructor(private readonly teachersRepository: TeachersRepository) {}
 
   async list(query: TeacherQueryDto): Promise<PageResult<Teacher>> {
     const { pageNo, pageSize } = normalizePage(query);

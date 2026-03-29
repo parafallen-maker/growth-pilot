@@ -1,10 +1,11 @@
+import { type ZodTypeAny } from 'zod';
 import { baseListQuerySchema } from './validation';
 
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 100;
 
 export class BaseListQueryDto {
-  static schema = baseListQuerySchema;
+  static schema: ZodTypeAny = baseListQuerySchema;
 
   pageNo?: number;
   pageSize?: number;

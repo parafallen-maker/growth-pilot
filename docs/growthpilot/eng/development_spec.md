@@ -336,10 +336,15 @@ S3_REGION=
 S3_BUCKET=
 S3_ACCESS_KEY=
 S3_SECRET_KEY=
-AI_PROVIDER=
-AI_MODEL_HOMEWORK=
-AI_MODEL_REPORT=
+AI_PROVIDER=mock | openai | doubao | deepseek | siliconflow | openrouter
+AI_MODEL_HOMEWORK=gpt-4o-mini
+AI_MODEL_REPORT=gpt-4o-mini
+AI_PROMPT_VERSION_HOMEWORK=homework-review-v3
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_API_KEY=
 ```
+
+说明：作业分析已按 `AI_PROVIDER` 选择 adapter。`mock` 走本地假数据；`openai/doubao/deepseek/siliconflow/openrouter` 走 OpenAI-compatible `chat/completions` 协议，默认读取 `OPENAI_API_KEY`（或 `AI_API_KEY`）与 `OPENAI_BASE_URL`（或 `AI_BASE_URL`）。
 
 ## 14. Definition of Done
 一个模块开发完成，至少满足：

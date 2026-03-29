@@ -22,6 +22,17 @@ type TeacherDetail = {
   developmentRecords: Array<{ id: string; recordType: string; title: string; status: string; occurredAt: string }>;
 };
 
+export type CreateTeacherPayload = {
+  campusId: string;
+  employeeNo: string;
+  name: string;
+  mobile?: string;
+  email?: string;
+  hireDate?: string;
+  leadSubject?: string;
+  status?: string;
+};
+
 function buildQuery(params: Record<string, string | number | undefined>) {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -69,5 +80,15 @@ export const teacherService = {
   async detail(id: string): Promise<TeacherDetail> {
     const auth = await getAuthTokens();
     return apiRequest<TeacherDetail>(`/teachers/${id}`, { auth, retryOn401: Boolean(auth.refreshToken) });
+  },
+
+  async create(payload: CreateTeacherPayload): Promise<Teacher> {
+    const auth = await getAuthTokens();
+    return apiRequest<Teacher>('/teachers', {
+      method: 'POST',
+      body: payload,
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
   },
 };

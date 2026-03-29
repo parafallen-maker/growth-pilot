@@ -10,9 +10,17 @@ interface ReviewHeaderProps {
   };
 }
 
+const statusLabelMap: Record<string, string> = {
+  pending: '等待分析',
+  running: '分析中',
+  ready: '分析完成',
+  failed: '分析失败',
+  skipped: '已跳过',
+};
+
 export function ReviewHeader({ submissionNo, aiStatus, navigation }: ReviewHeaderProps) {
-  const statusLabel = aiStatus === 'completed' ? '分析完成' : aiStatus === 'pending' ? '分析中' : aiStatus;
-  
+  const statusLabel = statusLabelMap[aiStatus] ?? aiStatus;
+
   return (
     <PageHeader
       title={`作业复核工作台 / ${submissionNo}`}

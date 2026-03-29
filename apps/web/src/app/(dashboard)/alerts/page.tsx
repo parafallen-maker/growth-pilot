@@ -1,142 +1,142 @@
 import Link from 'next/link';
-import { PageHeader, MetricGrid, SummaryPanel, TimelinePanel } from '@/components/business/page-blocks';
+import { FilterBar, MetricGrid, PageHeader, PaginationBar, SummaryPanel, TimelinePanel } from '@/components/business/page-blocks';
+import { SubmitButton } from '@/components/business/submit-button';
 import { requireCurrentUser } from '@/lib/current-user';
-
+import { alertsService, type AlertQuery } from '@/services/alerts-service';
+import { advanceAlert } from './actions';
 import {
   ALERT_LEVEL_LABELS as levelLabel,
   ALERT_TYPE_LABELS as typeLabel,
-  getPriorityStyle
+  getPriorityStyle,
 } from '@/lib/business-logic';
 
-// Stub data until backend /alerts endpoint is available
-function getStubAlerts() {
-  return [
-    {
-      id: 'a1',
-      type: 'overdue_payment',
-      level: 'high',
-      status: 'open',
-      title: '张小明 · 账单 INV-202603-001 逾期 12 天',
-      detail: '应收 ¥3,800 · 已收 ¥0',
-      studentName: '张小明',
-      studentId: 'stub-s1',
-      triggeredAt: '2026-03-14',
-      rule: '账单逾期 ≥ 7 天自动触发',
-    },
-    {
-      id: 'a2',
-      type: 'academic_risk',
-      level: 'medium',
-      status: 'open',
-      title: '李小红 · 数学正确率连续 3 次低于 60%',
-      detail: '最近 3 次：52% → 48% → 55%',
-      studentName: '李小红',
-      studentId: 'stub-s2',
-      triggeredAt: '2026-03-24',
-      rule: '连续 3 次作业正确率 < 60% 自动触发',
-    },
-    {
-      id: 'a3',
-      type: 'absent_streak',
-      level: 'medium',
-      status: 'open',
-      title: '王小华 · 连续 3 个工作日未签到',
-      detail: '最后签到：2026-03-21',
-      studentName: '王小华',
-      studentId: 'stub-s3',
-      triggeredAt: '2026-03-25',
-      rule: '连续 3 天未签到自动触发',
-    },
-    {
-      id: 'a4',
-      type: 'goal_overdue',
-      level: 'low',
-      status: 'open',
-      title: '赵小飞 · 成长目标"课堂主动举手"超期 10 天',
-      detail: '目标截止 2026-03-15，至今未 check-in',
-      studentName: '赵小飞',
-      studentId: 'stub-s4',
-      triggeredAt: '2026-03-22',
-      rule: '成长目标超期 7 天未跟进自动触发',
-    },
-    {
-      id: 'a5',
-      type: 'overdue_payment',
-      level: 'high',
-      status: 'resolved',
-      title: '陈小芳 · 账单 INV-202602-015 逾期 已处理',
-      detail: '已收款 ¥2,400 · 2026-03-20 标记处理',
-      studentName: '陈小芳',
-      studentId: 'stub-s5',
-      triggeredAt: '2026-03-10',
-      rule: '账单逾期 ≥ 7 天自动触发',
-    },
-  ];
+const statusLabel: Record<string, string> = {
+  open: '未处理',
+  acknowledged: '已确认',
+  resolved: '已解决',
+};
+
+function normalizeParam(value: string | string[] | undefined) {
+  return typeof value === 'string' ? value : undefined;
 }
 
-export default async function AlertsPage() {
-  await requireCurrentUser();
-  const alerts = getStubAlerts();
+function alertActionLink(type: string) {
+  if (type === 'overdue_payment') return '/billing/invoices';
+  if (type === 'academic_risk') return '/homework/submissions';
+  if (type === 'absent_streak') return '/attendance/board';
+  if (type === 'goal_overdue') return '/growth/goals';
+  return null;
+}
 
-  const openAlerts = alerts.filter((a) => a.status === 'open');
-  const resolvedAlerts = alerts.filter((a) => a.status === 'resolved');
+export default async function AlertsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  await requireCurrentUser();
+  const query = await searchParams;
+  const alertQuery: AlertQuery = {
+    pageNo: Number(normalizeParam(query?.pageNo) ?? 1) || 1,
+    pageSize: Number(normalizeParam(query?.pageSize) ?? 10) || 10,
+    keyword: normalizeParam(query?.keyword),
+    alertType: normalizeParam(query?.alertType),
+    alertLevel: (normalizeParam(query?.alertLevel) as AlertQuery['alertLevel']) ?? 'all',
+    status: (normalizeParam(query?.status) as AlertQuery['status']) ?? 'all',
+    dateFrom: normalizeParam(query?.dateFrom),
+    dateTo: normalizeParam(query?.dateTo),
+    sortBy: normalizeParam(query?.sortBy) ?? 'createdAt',
+    sortOrder: normalizeParam(query?.sortOrder) === 'asc' ? 'asc' : 'desc',
+  };
+
+  const result = await alertsService.query(alertQuery);
+  const alerts = result.list;
+  const summarySource = await alertsService.query({ pageNo: 1, pageSize: 100, sortBy: 'createdAt', sortOrder: 'desc' });
+  const openAlerts = summarySource.list.filter((a) => a.status === 'open');
+  const resolvedAlerts = summarySource.list.filter((a) => a.status === 'resolved');
   const highCount = openAlerts.filter((a) => a.level === 'high').length;
 
   return (
     <div className="stack">
       <PageHeader
         title="预警中心"
-        description="系统自动检测异常情况并生成预警，及时跟进处理"
-        actions={<><button className="btn">筛选</button><button className="btn">导出</button></>}
+        description="系统自动检测异常情况并生成预警，已切到真实 /alerts API"
+        actions={<span className="badge success">真实 /alerts API</span>}
       />
 
       <MetricGrid items={[
         { label: '未处理预警', value: String(openAlerts.length), hint: '需要跟进' },
         { label: '严重预警', value: String(highCount), hint: '需优先处理' },
         { label: '已处理', value: String(resolvedAlerts.length), hint: '本月已处理' },
-        { label: '预警规则', value: '4 条', hint: '欠费/学业/缺勤/目标' },
+        { label: '总量', value: String(summarySource.page.total), hint: '当前预警池' },
       ]} />
 
+      <FilterBar
+        baseUrl="/alerts"
+        fields={[
+          { name: 'keyword', label: '关键词', placeholder: '标题 / 内容 / 处理人' },
+          { name: 'alertType', label: '类型', kind: 'select', options: [{ label: '全部类型', value: 'all' }, ...Object.entries(typeLabel).map(([value, label]) => ({ value, label }))] },
+          { name: 'alertLevel', label: '级别', kind: 'select', options: [{ label: '全部级别', value: 'all' }, { label: '高', value: 'high' }, { label: '中', value: 'medium' }, { label: '低', value: 'low' }] },
+          { name: 'status', label: '状态', kind: 'select', options: [{ label: '全部状态', value: 'all' }, { label: '未处理', value: 'open' }, { label: '已确认', value: 'acknowledged' }, { label: '已解决', value: 'resolved' }] },
+          { name: 'dateFrom', label: '起始日期', inputType: 'date' },
+          { name: 'dateTo', label: '结束日期', inputType: 'date' },
+        ]}
+      />
+
       <section className="panel stack">
-        <h3>⚡ 未处理预警</h3>
+        <h3>⚡ 预警列表</h3>
         <div className="summary-list">
-          {openAlerts.map((alert) => (
-            <div className="summary-item" key={alert.id} style={{ ...getPriorityStyle(alert.level), paddingLeft: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <strong>{levelLabel[alert.level]} {alert.title}</strong>
-                <span className="badge">{typeLabel[alert.type]}</span>
+          {alerts.map((alert) => {
+            const actionLink = alertActionLink(alert.type);
+            return (
+              <div className="summary-item" key={alert.id} style={{ ...getPriorityStyle(alert.level), paddingLeft: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                  <strong>{levelLabel[alert.level]} {alert.title}</strong>
+                  <span className="badge">{statusLabel[alert.status] ?? alert.status}</span>
+                </div>
+                <div className="subtle">{typeLabel[alert.type] ?? alert.type} · 触发时间：{alert.triggeredAt}</div>
+                <div className="subtle">{alert.detail}</div>
+                <div className="button-row" style={{ marginTop: 8 }}>
+                  {alert.studentId ? <Link className="btn" href={`/students/${alert.studentId}`}>查看学生</Link> : null}
+                  {actionLink ? <Link className="btn" href={actionLink}>关联页面</Link> : null}
+                  {alert.status === 'open' ? (
+                    <form action={advanceAlert}>
+                      <input type="hidden" name="alertId" value={alert.id} />
+                      <input type="hidden" name="nextStatus" value="acknowledged" />
+                      <SubmitButton pendingLabel="提交中...">确认接收</SubmitButton>
+                    </form>
+                  ) : null}
+                  {alert.status === 'acknowledged' ? (
+                    <form action={advanceAlert}>
+                      <input type="hidden" name="alertId" value={alert.id} />
+                      <input type="hidden" name="nextStatus" value="resolved" />
+                      <SubmitButton pendingLabel="提交中...">标记已解决</SubmitButton>
+                    </form>
+                  ) : null}
+                </div>
               </div>
-              <div className="subtle">{alert.detail}</div>
-              <div className="subtle">触发时间：{alert.triggeredAt} · 规则：{alert.rule}</div>
-              <div className="button-row" style={{ marginTop: 8 }}>
-                <Link className="btn" href={`/students/${alert.studentId}`}>查看学生</Link>
-                {alert.type === 'overdue_payment' ? <Link className="btn primary" href="/billing/invoices">处理欠费</Link> : null}
-                {alert.type === 'academic_risk' ? <Link className="btn primary" href="/homework/submissions">查看作业</Link> : null}
-                {alert.type === 'absent_streak' ? <Link className="btn primary" href="/attendance/board">查看考勤</Link> : null}
-                {alert.type === 'goal_overdue' ? <Link className="btn primary" href="/growth/goals">跟进目标</Link> : null}
-                <button className="btn">标记已处理</button>
-              </div>
-            </div>
-          ))}
-          {openAlerts.length === 0 ? <div className="subtle" style={{ padding: 16, textAlign: 'center' }}>🎉 暂无未处理预警</div> : null}
+            );
+          })}
+          {alerts.length === 0 ? <div className="subtle" style={{ padding: 16, textAlign: 'center' }}>当前筛选条件下暂无预警</div> : null}
         </div>
       </section>
+
+      <PaginationBar pageNo={result.page.pageNo} pageSize={result.page.pageSize} total={result.page.total} baseUrl="/alerts" />
 
       <div className="grid-2">
         <SummaryPanel
           title="预警规则说明"
           items={[
-            { name: '欠费预警', detail: '账单逾期 ≥ 7 天 → 自动创建，通知财务 + 班主任' },
-            { name: '学业预警', detail: '连续 3 次作业正确率 < 60% → 通知班主任' },
-            { name: '缺勤预警', detail: '连续 3 个工作日未签到 → 通知前台 + 班主任' },
-            { name: '目标逾期', detail: '成长目标超期 7 天未 check-in → 通知班主任' },
+            { name: '欠费预警', detail: '逾期账单会进入财务/班主任跟进视图。' },
+            { name: '学业预警', detail: '连续低正确率或待复核积压会进入教学面板。' },
+            { name: '缺勤预警', detail: '签到异常会提示前台和班主任联动。' },
+            { name: '目标逾期', detail: '成长目标超期未 check-in 会进入跟进队列。' },
           ]}
         />
         <TimelinePanel
           title="✅ 已处理预警"
-          items={resolvedAlerts.map((a) => ({
-            title: `${typeLabel[a.type]} · ${a.studentName}`,
-            detail: `${a.detail} · 触发 ${a.triggeredAt}`,
+          items={resolvedAlerts.slice(0, 10).map((alert) => ({
+            title: `${typeLabel[alert.type] ?? alert.type}`,
+            detail: `${alert.title} · 触发 ${alert.triggeredAt}`,
           }))}
         />
       </div>

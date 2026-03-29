@@ -14,6 +14,7 @@ const authMigrationSnapshot = JSON.parse(
   >;
 };
 const paginationMigrationSql = readFileSync(new URL('../drizzle/0003_married_tinkerer.sql', import.meta.url), 'utf8');
+const workflowMigrationSql = readFileSync(new URL('../drizzle/0004_tasks-alerts-db-cutover.sql', import.meta.url), 'utf8');
 const paginationMigrationSnapshot = JSON.parse(
   readFileSync(new URL('../drizzle/meta/0003_snapshot.json', import.meta.url), 'utf8'),
 ) as {
@@ -51,6 +52,17 @@ test('pagination index migration lands high-frequency student, homework, and gro
     'rubric_templates_campus_term_status_idx',
   ]) {
     assert.match(paginationMigrationSql, new RegExp(`CREATE INDEX "${indexName}"`));
+  }
+});
+
+test('workflow cutover migration creates tasks + alerts tables and indexes', () => {
+  for (const statement of [
+    'CREATE TABLE "tasks"',
+    'CREATE TABLE "alerts"',
+    'CREATE INDEX "tasks_owner_status_due_idx"',
+    'CREATE INDEX "alerts_status_level_created_idx"',
+  ]) {
+    assert.match(workflowMigrationSql, new RegExp(statement.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
 });
 

@@ -35,7 +35,13 @@ async function bootstrap() {
   app.use(applySecurityHeaders);
   app.useGlobalPipes(new ZodValidationPipe());
   app.useGlobalFilters(new ApiHttpExceptionFilter());
-  await app.listen(process.env.PORT ? Number(process.env.PORT) : 3001);
+
+  const port = process.env.PORT ? Number(process.env.PORT) : 3001;
+  const host = process.env.HOST || '127.0.0.1';
+  await app.listen(port, host);
 }
 
-void bootstrap();
+void bootstrap().catch((error) => {
+  console.error('[bootstrap] failed to start api', error);
+  process.exitCode = 1;
+});

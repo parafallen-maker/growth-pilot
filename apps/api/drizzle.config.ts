@@ -9,6 +9,7 @@ export default defineConfig({
     './src/db/schema/teachers.ts',
     './src/db/schema/students.ts',
     './src/db/schema/jobs.ts',
+    './src/db/schema/workflow.ts',
     './src/db/schema/homework.ts',
     './src/db/schema/growth.ts',
     './src/db/schema/attendance.ts',

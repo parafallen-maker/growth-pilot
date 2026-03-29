@@ -6,6 +6,7 @@ export {
   FilterBar,
   MetricGrid,
   PageHeader,
+  PaginationBar,
   SummaryPanel,
   TabStrip,
   TimelinePanel,

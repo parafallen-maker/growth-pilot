@@ -13,7 +13,7 @@ export class ReportDraftJob {
     private readonly growthRepository: GrowthRepository,
     private readonly materialAssembler: ReportMaterialAssembler,
     private readonly jobsService: JobsService,
-    private readonly bullmqJobBroker: BullmqJobBroker = new BullmqJobBroker(),
+    private readonly bullmqJobBroker: BullmqJobBroker,
   ) {}
 
   async queue(request: GrowthReportDraftDispatchInput) {

@@ -19,6 +19,10 @@ tags:
   description: 学生主档与在读档
 - name: families
   description: 家庭与监护人
+- name: tasks
+  description: 任务中心
+- name: alerts
+  description: 预警中心
 - name: files
   description: 文件上传与元数据
 - name: homework
@@ -35,6 +39,7 @@ tags:
   description: 看板分析
 - name: jobs
   description: 异步任务
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1416,6 +1421,409 @@ components:
 security:
 - bearerAuth: []
 paths:
+
+  /homework/submissions/{submissionId}/analysis-status:
+    get:
+      tags:
+      - homework
+      summary: 作业分析状态查询
+      parameters:
+      - $ref: '#/components/parameters/submissionId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        submissionId:
+                          type: string
+                          format: uuid
+                        aiStatus:
+                          type: string
+                        reviewStatus:
+                          type: string
+                        latestJob:
+                          type: object
+                          additionalProperties: true
+                        latestAnalysis:
+                          type: object
+                          additionalProperties: true
+  /tasks:
+    get:
+      tags:
+      - tasks
+      summary: 任务列表
+      parameters:
+      - $ref: '#/components/parameters/keyword'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      - $ref: '#/components/parameters/sortBy'
+      - $ref: '#/components/parameters/sortOrder'
+      - name: ownerUserId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: studentId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: familyId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: teacherId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: taskType
+        in: query
+        schema:
+          type: string
+      - name: priority
+        in: query
+        schema:
+          type: string
+      - name: status
+        in: query
+        schema:
+          type: string
+      - name: dateFrom
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: dateTo
+        in: query
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            type: object
+                            additionalProperties: true
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - tasks
+      summary: 创建任务
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - taskType
+              - ownerUserId
+              - title
+              properties:
+                taskType:
+                  type: string
+                ownerUserId:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                description:
+                  type: string
+                priority:
+                  type: string
+                dueAt:
+                  type: string
+                  format: date-time
+                sourceType:
+                  type: string
+                sourceId:
+                  type: string
+                  format: uuid
+                studentId:
+                  type: string
+                  format: uuid
+                familyId:
+                  type: string
+                  format: uuid
+                teacherId:
+                  type: string
+                  format: uuid
+                resultNote:
+                  type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /tasks/{taskId}:
+    patch:
+      tags:
+      - tasks
+      summary: 更新任务状态
+      parameters:
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                resultNote:
+                  type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /alerts:
+    get:
+      tags:
+      - alerts
+      summary: 预警列表
+      parameters:
+      - $ref: '#/components/parameters/keyword'
+      - $ref: '#/components/parameters/pageNo'
+      - $ref: '#/components/parameters/pageSize'
+      - $ref: '#/components/parameters/sortBy'
+      - $ref: '#/components/parameters/sortOrder'
+      - name: studentId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: familyId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: invoiceId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: alertType
+        in: query
+        schema:
+          type: string
+      - name: alertLevel
+        in: query
+        schema:
+          type: string
+      - name: status
+        in: query
+        schema:
+          type: string
+      - name: dateFrom
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: dateTo
+        in: query
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        list:
+                          type: array
+                          items:
+                            type: object
+                            additionalProperties: true
+                        page:
+                          $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - alerts
+      summary: 创建预警
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - alertType
+              - title
+              - content
+              properties:
+                alertType:
+                  type: string
+                alertLevel:
+                  type: string
+                title:
+                  type: string
+                content:
+                  type: string
+                sourceType:
+                  type: string
+                sourceId:
+                  type: string
+                  format: uuid
+                studentId:
+                  type: string
+                  format: uuid
+                familyId:
+                  type: string
+                  format: uuid
+                invoiceId:
+                  type: string
+                  format: uuid
+                resolverUserId:
+                  type: string
+                  format: uuid
+                resolvedAt:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /alerts/{alertId}:
+    patch:
+      tags:
+      - alerts
+      summary: 更新预警状态
+      parameters:
+      - name: alertId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                resolverUserId:
+                  type: string
+                  format: uuid
+                resolvedAt:
+                  type: string
+                  format: date-time
+                content:
+                  type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /analytics/teacher-workbench:
+    get:
+      tags:
+      - analytics
+      summary: 教师工作台聚合
+      parameters:
+      - $ref: '#/components/parameters/campusId'
+      - $ref: '#/components/parameters/termId'
+      - name: teacherId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: dateFrom
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: dateTo
+        in: query
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
   /auth/login:
     post:
       tags:
@@ -2402,6 +2810,56 @@ paths:
                           format: uuid
                         status:
                           type: string
+  /homework/submissions/bulk-analyze:
+    post:
+      tags:
+      - homework
+      summary: 批量触发作业 AI 分析
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
+  /homework/submissions/bulk-review-tags:
+    post:
+      tags:
+      - homework
+      summary: 批量写入作业错因标签
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
   /homework/submissions/{submissionId}/review:
     post:
       tags:
@@ -2998,6 +3456,31 @@ paths:
                           format: uuid
                         status:
                           type: string
+  /growth/reports/bulk-publish:
+    post:
+      tags:
+      - growth
+      summary: 批量发布成长报告
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: true
   /growth/reports/{reportId}:
     get:
       tags:

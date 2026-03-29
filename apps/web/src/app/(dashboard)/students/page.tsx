@@ -4,6 +4,8 @@ import { familyService } from '@/services/families-service';
 import { queryKeys } from '@/features/shared/query-keys';
 import { studentService, type StudentQuery } from '@/services/students-service';
 import { createStudent } from './actions';
+import { SubmitButton } from '@/components/business/submit-button';
+import { CsvExportButton } from '../_components/csv-export-button';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
 const SORT_OPTIONS = [
@@ -61,7 +63,7 @@ export default async function StudentsPage({
       <PageHeader
         title="学生列表"
         description="学生档案管理与状态查看"
-        actions={<><a className="btn primary" href="#new-student-form">新建学生</a><Link className="btn" href="/students/import">导入学生</Link><button className="btn">批量打标签</button><button className="btn">导出</button></>}
+        actions={<><a className="btn primary" href="#new-student-form">新建学生</a><Link className="btn" href="/students/import">导入学生</Link><a className="btn" href="#student-bulk-hint">批量打标签说明</a><CsvExportButton filename="students.csv" headers={['学号', '姓名', '年级', '校区', '当前老师', '家庭主联系人', '最近作业正确率', '本周成长观察', '当前未收余额', '状态']} rows={result.list.map((item) => [item.studentNo, item.name, item.grade, item.campus, item.teacher, item.family, item.accuracy, item.observation, item.balance, item.status])} /></>}
       />
       {query?.created ? <section className="panel"><div className="badge success">学生已创建：{query.created}</div></section> : null}
       {query?.error ? <section className="panel"><div className="badge warning">{decodeURIComponent(query.error)}</div></section> : null}
@@ -84,7 +86,7 @@ export default async function StudentsPage({
           <div className="field"><label>家庭</label><select className="select" name="familyId" defaultValue=""><option value="">暂不绑定</option>{families.list.map((family) => <option key={family.id} value={family.id}>{family.name} / {family.code}</option>)}</select></div>
           <div className="field form-span-2"><label>标签</label><input className="input" name="tags" placeholder="逗号分隔，例如：重点关注, 数学强项" /></div>
           <div className="field form-span-2"><label>档案备注</label><textarea className="textarea" name="profileNotes" placeholder="补充说明学生特点、健康情况、家长期待等" /></div>
-          <div className="button-row form-span-2"><button className="btn primary" type="submit">提交创建</button><a className="btn" href="#">清空</a></div>
+          <div className="button-row form-span-2"><SubmitButton pendingLabel="创建中...">提交创建</SubmitButton><Link className="btn" href="/students">清空表单</Link></div>
         </form>
       </section>
 
@@ -122,14 +124,14 @@ export default async function StudentsPage({
           item.status,
           <Link key={`${item.id}-detail`} className="btn" href={item.detailHref}>查看 360</Link>,
         ])}
-        actions={<div className="button-row"><span className="badge">page {result.page.pageNo}/{totalPages}</span><button className="btn">导出</button></div>}
+        actions={<div className="button-row"><span className="badge">page {result.page.pageNo}/{totalPages}</span><a className="btn" href="#student-bulk-hint">批量动作说明</a></div>}
       />
 
-      <section className="panel">
+      <section className="panel" id="student-bulk-hint">
         <div className="page-header">
           <div>
-            <h3>分页导航</h3>
-            <p>当前页码、每页条数、排序字段都会透传回列表查询。</p>
+            <h3>分页导航 / 批量动作说明</h3>
+            <p>当前页码、每页条数、排序字段都会透传回列表查询；批量标签仍等待后端 bulk API，因此页面明确展示说明而不保留假按钮。</p>
           </div>
           <div className="button-row">
             <Link className="btn" aria-disabled={result.page.pageNo <= 1} href={buildStudentsHref(filters, { pageNo: prevPage })}>上一页</Link>

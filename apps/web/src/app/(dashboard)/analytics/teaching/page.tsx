@@ -4,6 +4,7 @@ import { analyticsChartExportHint, analyticsPermissions } from '@/features/analy
 import { queryKeys } from '@/features/shared/query-keys';
 import { requireCurrentUser } from '@/lib/current-user';
 import { analyticsService } from '@/services/analytics-service';
+import { CsvExportButton } from '../../_components/csv-export-button';
 
 export default async function AnalyticsTeachingPage() {
   const currentUser = await requireCurrentUser();
@@ -19,7 +20,7 @@ export default async function AnalyticsTeachingPage() {
         <PageHeader
           title="教学分析"
           description="教师工作量与教学质量分析"
-          actions={<><button className="btn primary">导出教学分析</button><button className="btn">查看老师维度</button></>}
+          actions={<><CsvExportButton className="btn primary" label="导出教学分析 CSV" filename="analytics-teaching.csv" headers={['指标', '值', '说明']} rows={(result?.metrics ?? []).map((item) => [item.label, item.value, item.hint])} /><a className="btn" href="#teaching-ranking">查看老师维度</a></>}
         />
         <MetricGrid items={result?.metrics ?? []} />
         <FilterBar fields={[{ label: '校区', value: '贵阳主校区', kind: 'select' }, { label: '学期', value: '2026 春季', kind: 'select' }, { label: '日期', value: '2026-03-01 ~ 2026-03-24' }]} />
@@ -28,7 +29,7 @@ export default async function AnalyticsTeachingPage() {
             <ChartPanel key={chart.title} title={chart.title} description={chart.description} items={chart.items} />
           )) : <ChartPanel title="教学图表" description="teaching 聚合结果暂不可用。" items={[]} />}
         </div>
-        <div className="grid-2">
+        <div className="grid-2" id="teaching-ranking">
           {result?.charts[2] ? <ChartPanel title={result.charts[2].title} description={result.charts[2].description} items={result.charts[2].items} /> : <ChartPanel title="高频错因 TopN" description="teaching 聚合结果暂不可用。" items={[]} />}
           <SummaryPanel title="排行 / 摘要" items={result?.tableCards ?? [{ name: '数据说明', detail: '当前未取到 teaching 聚合结果，可稍后刷新重试。' }]} />
         </div>

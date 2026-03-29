@@ -7,6 +7,8 @@ import { AttendanceRepository } from '../../attendance/repository/attendance.rep
 import { BillingRepository } from '../../billing/repository/billing.repository';
 import { CommunicationRepository } from '../../communication/repository/communication.repository';
 import { HomeworkRepository } from '../../homework/repository/homework.repository';
+import { TasksRepository } from '../../tasks/repository/tasks.repository';
+import { AlertsRepository } from '../../alerts/repository/alerts.repository';
 
 type RenewalStatus = 'todo' | 'contacting' | 'won' | 'lost' | 'closed';
 
@@ -64,6 +66,8 @@ export class AnalyticsRepository {
     private readonly communicationRepository: CommunicationRepository,
     private readonly attendanceRepository: AttendanceRepository,
     private readonly homeworkRepository: HomeworkRepository,
+    private readonly tasksRepository: TasksRepository,
+    private readonly alertsRepository: AlertsRepository,
   ) {}
 
   supportsSqlAggregation() {
@@ -80,6 +84,8 @@ export class AnalyticsRepository {
   listAttendanceEvents() { return this.attendanceRepository.listEvents(); }
   listHomeworkDailyStats() { return this.attendanceRepository.listDailyStats(); }
   listHomeworkSubmissions() { return this.homeworkRepository.listSubmissions(); }
+  listTasks() { return this.tasksRepository.listTasks(); }
+  listAlerts() { return this.alertsRepository.listAlerts(); }
 
   async getOverviewAggregate(query: AnalyticsQueryDto): Promise<OverviewAggregate> {
     const contractScope = await this.getContractScope(query);

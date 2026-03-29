@@ -402,8 +402,8 @@ class DbFamiliesRepository implements FamiliesRepositoryPort {
 export class FamiliesRepository {
   private readonly adapter: FamiliesRepositoryPort;
 
-  constructor(store?: MasterDataStore) {
-    this.adapter = isDbPersistenceEnabled() ? new DbFamiliesRepository() : new FileFamiliesRepository(store);
+  constructor() {
+    this.adapter = isDbPersistenceEnabled() ? new DbFamiliesRepository() : new FileFamiliesRepository();
   }
 
   listFamilies() {

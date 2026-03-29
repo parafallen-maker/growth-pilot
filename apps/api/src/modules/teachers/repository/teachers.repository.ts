@@ -293,8 +293,8 @@ class DbTeachersRepository implements TeachersRepositoryPort {
 export class TeachersRepository {
   private readonly adapter: TeachersRepositoryPort;
 
-  constructor(store?: MasterDataStore) {
-    this.adapter = isDbPersistenceEnabled() ? new DbTeachersRepository() : new FileTeachersRepository(store);
+  constructor() {
+    this.adapter = isDbPersistenceEnabled() ? new DbTeachersRepository() : new FileTeachersRepository();
   }
 
   list() {

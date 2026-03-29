@@ -26,7 +26,7 @@ function createHomeworkFixture() {
   const homeworkRepository = new HomeworkRepository();
   const eventPublisher = new HomeworkEventPublisher(homeworkRepository);
   const queue = new HomeworkAnalysisQueue(jobsService, homeworkRepository, filesService, new MockHomeworkAnalysisAdapter());
-  const service = new HomeworkService(homeworkRepository, queue, eventPublisher, filesService);
+  const service = new HomeworkService(homeworkRepository, queue, eventPublisher, filesService, jobsService);
 
   return { jobsService, homeworkRepository, eventPublisher, filesService, service };
 }
@@ -72,6 +72,10 @@ test('homework submission -> draft -> analyze -> review persists across reposito
   assert.equal(jobsService.getJob(job.jobId).status, 'success');
   assert.equal((await homeworkRepository.getSubmissionOrThrow(submission.id)).aiStatus, 'ready');
   assert.equal((await homeworkRepository.getLatestAnalysis(submission.id))?.provider, 'doubao');
+
+  const analysisStatus = await service.getAnalysisStatus(submission.id);
+  assert.equal(analysisStatus.aiStatus, 'ready');
+  assert.equal(analysisStatus.latestJob?.status, 'success');
 
   const review = await service.submitReview(submission.id, {
     reviewResult: 'adjusted',
@@ -146,6 +150,33 @@ test('homework error taxonomy CRUD enforces uniqueness and reference guard', asy
   });
 
   await assert.rejects(() => service.deleteErrorTaxonomy('taxonomy-001'));
+});
+
+test('homework bulk analysis and bulk review tags update selected submissions', async () => {
+  resetDataDir();
+  const { service, filesService, homeworkRepository } = createHomeworkFixture();
+
+  const uploadedA = await filesService.uploadOne({ fileName: 'bulk-a.jpg', mimeType: 'image/jpeg', sizeBytes: 1024, purpose: 'homework', uploadedBy: 'teacher-001' });
+  const uploadedB = await filesService.uploadOne({ fileName: 'bulk-b.jpg', mimeType: 'image/jpeg', sizeBytes: 1024, purpose: 'homework', uploadedBy: 'teacher-001' });
+  const submissionA = await service.createSubmission({ studentId: 'student-001', teacherId: 'teacher-001', subject: 'math', homeworkDate: '2026-03-26', fileIds: [uploadedA.fileId] });
+  const submissionB = await service.createSubmission({ studentId: 'student-002', teacherId: 'teacher-001', subject: 'math', homeworkDate: '2026-03-26', fileIds: [uploadedB.fileId] });
+
+  const bulkAnalysis = await service.bulkTriggerAnalysis({ submissionIds: [submissionA.id, submissionB.id], force: true });
+  assert.equal(bulkAnalysis.count, 2);
+  assert.equal((await homeworkRepository.getSubmissionOrThrow(submissionA.id)).aiStatus, 'ready');
+  assert.equal((await homeworkRepository.getSubmissionOrThrow(submissionB.id)).aiStatus, 'ready');
+
+  const bulkTags = await service.bulkApplyReviewTags({
+    submissionIds: [submissionA.id, submissionB.id],
+    reviewerTeacherId: 'teacher-001',
+    finalErrorSummary: '本批次共性：审题偏差',
+    finalErrorItems: [{ errorTaxonomyId: 'taxonomy-001', weight: 1 }],
+    mode: 'merge',
+  });
+  assert.equal(bulkTags.count, 2);
+  assert.equal((await homeworkRepository.getReviewDraft(submissionA.id))?.finalErrorItems.length, 1);
+  assert.equal((await homeworkRepository.getReviewDraft(submissionB.id))?.finalErrorSummary, '本批次共性：审题偏差');
+  assert.equal((await homeworkRepository.getSubmissionOrThrow(submissionA.id)).reviewStatus, 'reviewing');
 });
 
 test('homework analysis dedupe blocks duplicate active job', async () => {

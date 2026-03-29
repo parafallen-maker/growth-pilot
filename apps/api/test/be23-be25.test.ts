@@ -425,6 +425,7 @@ test('BE-24 BullMQ broker drives homework analysis and growth report jobs throug
       homeworkAnalysisQueue,
       homeworkEventPublisher,
       filesService,
+      jobsService,
     );
 
     const growthRepository = new GrowthRepository();

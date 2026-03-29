@@ -43,7 +43,7 @@ class DbCommunicationRepository implements CommunicationRepositoryPort {
 @Injectable()
 export class CommunicationRepository {
   private readonly adapter: CommunicationRepositoryPort;
-  constructor(filePath?: string) { this.adapter = isDbPersistenceEnabled() ? new DbCommunicationRepository() : new FileCommunicationRepository(filePath); }
+  constructor() { this.adapter = isDbPersistenceEnabled() ? new DbCommunicationRepository() : new FileCommunicationRepository(); }
   listRecords() { return this.adapter.listRecords(); }
   findRecordById(recordId: string) { return this.adapter.findRecordById(recordId); }
   createRecord(input: Omit<CommunicationRecord, 'id' | 'createdAt' | 'updatedAt'>) { return this.adapter.createRecord(input); }

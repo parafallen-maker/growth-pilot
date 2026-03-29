@@ -35,6 +35,18 @@ export type ErrorTaxonomyItem = {
   actions: string;
 };
 
+export type ErrorTaxonomyStatus = 'draft' | 'active' | 'inactive';
+
+export type ErrorTaxonomyFormPayload = {
+  code: string;
+  name: string;
+  category?: string;
+  subjectScope?: string;
+  stageScope?: string;
+  status?: ErrorTaxonomyStatus;
+  sortOrder?: number;
+};
+
 export type CreateHomeworkSubmissionPayload = {
   studentId: string;
   campusId?: string;
@@ -64,6 +76,33 @@ export type TriggerHomeworkAnalysisPayload = {
   provider?: string;
   modelName?: string;
   promptVersion?: string;
+};
+
+export type BulkHomeworkReviewTagsPayload = {
+  submissionIds: string[];
+  reviewerTeacherId?: string;
+  finalErrorItems: Array<{ errorTaxonomyId: string; weight?: number; note?: string }>;
+  finalErrorSummary?: string;
+  mode?: 'merge' | 'replace';
+};
+
+export type HomeworkAnalysisStatusDetail = {
+  submissionId: string;
+  aiStatus: 'pending' | 'running' | 'ready' | 'failed' | 'skipped';
+  reviewStatus: string;
+  latestJob: {
+    jobId?: string;
+    status?: string | null;
+  } | null;
+  latestAnalysis: {
+    jobId?: string | null;
+    status?: string | null;
+    provider?: string | null;
+    modelName?: string | null;
+    promptVersion?: string | null;
+    rawMarkdown?: string | null;
+    structuredOutput?: unknown;
+  } | null;
 };
 
 const formatAccuracy = (value?: number | null) => (typeof value === 'number' ? `${value}%` : '--');
@@ -142,8 +181,9 @@ export const homeworkService = {
           modelName?: string;
           promptVersion?: string;
           rawMarkdown?: string;
-          structuredResult?: unknown;
+          structuredOutput?: unknown;
         } | null;
+        analysisStatus?: HomeworkAnalysisStatusDetail | null;
         review: {
           reviewResult?: string | null;
           finalErrorSummary?: string | null;
@@ -212,20 +252,20 @@ export const homeworkService = {
       subject: detail.submission.subject,
       teacherName: detail.submission.teacherId ? teacherNameById.get(detail.submission.teacherId) ?? detail.submission.teacherId : '--',
       aiJob: {
-        jobId: detail.latestAiAnalysis?.jobId ?? 'job_pending',
-        status: detail.latestAiAnalysis?.status ?? detail.submission.reviewStatus ?? 'pending',
-        provider: detail.latestAiAnalysis?.provider ?? '--',
-        model: detail.latestAiAnalysis?.modelName ?? '--',
-        promptVersion: detail.latestAiAnalysis?.promptVersion ?? '--',
+        jobId: detail.analysisStatus?.latestJob?.jobId ?? detail.latestAiAnalysis?.jobId ?? 'job_pending',
+        status: detail.analysisStatus?.aiStatus ?? 'pending',
+        provider: detail.analysisStatus?.latestAnalysis?.provider ?? detail.latestAiAnalysis?.provider ?? '--',
+        model: detail.analysisStatus?.latestAnalysis?.modelName ?? detail.latestAiAnalysis?.modelName ?? '--',
+        promptVersion: detail.analysisStatus?.latestAnalysis?.promptVersion ?? detail.latestAiAnalysis?.promptVersion ?? '--',
       },
       attachments,
-      rawMarkdown: detail.latestAiAnalysis?.rawMarkdown ?? [
+      rawMarkdown: detail.analysisStatus?.latestAnalysis?.rawMarkdown ?? detail.latestAiAnalysis?.rawMarkdown ?? [
         '# AI 批改摘要',
         '',
         `- 正确率建议：${formatAccuracy(detail.review?.finalAccuracyPct ?? detail.submission.finalAccuracyPct)}`,
         `- 复核结论：${detail.review?.reviewResult ?? detail.reviewDraft?.reviewResult ?? '待复核'}`,
       ].join('\n'),
-      structuredResult: detail.latestAiAnalysis?.structuredResult ?? {
+      structuredResult: detail.analysisStatus?.latestAnalysis?.structuredOutput ?? detail.latestAiAnalysis?.structuredOutput ?? {
         accuracyPct: detail.review?.finalAccuracyPct ?? detail.reviewDraft?.finalAccuracyPct ?? detail.submission.finalAccuracyPct ?? null,
         finalErrorSummary: detail.review?.finalErrorSummary ?? detail.reviewDraft?.finalErrorSummary ?? null,
         finalSuggestion: detail.review?.finalSuggestion ?? detail.reviewDraft?.finalSuggestion ?? null,
@@ -276,6 +316,20 @@ export const homeworkService = {
     });
   },
 
+  async bulkTriggerAnalysis(payload: TriggerHomeworkAnalysisPayload & { submissionIds: string[] }) {
+    return serverApiRequest<{ count: number; submissionIds: string[]; results: Array<{ submissionId: string; jobId: string; status: string }> }>(`/homework/submissions/bulk-analyze`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  async bulkApplyReviewTags(payload: BulkHomeworkReviewTagsPayload) {
+    return serverApiRequest<{ count: number; submissionIds: string[]; results: Array<{ submissionId: string; reviewStatus: string; tagCount: number }>; mode: 'merge' | 'replace' }>(`/homework/submissions/bulk-review-tags`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
   action(submissionId: string) {
     return {
       submissionId,
@@ -289,9 +343,11 @@ export const homeworkService = {
       id: string;
       code: string;
       name: string;
+      category?: string;
       subject?: string;
+      subjectScope?: string;
       stageScope?: string;
-      status: 'draft' | 'active' | 'inactive';
+      status: ErrorTaxonomyStatus;
       sortOrder: number;
     }>>(`/homework/error-taxonomies${buildQuery(params)}`);
 
@@ -300,8 +356,8 @@ export const homeworkService = {
         id: item.id,
         code: item.code,
         name: item.name,
-        category: item.stageScope ?? '--',
-        subjects: item.subject ?? '--',
+        category: item.category ?? item.stageScope ?? '--',
+        subjects: item.subjectScope ?? item.subject ?? '--',
         enabled: item.status,
         sort: String(item.sortOrder),
         actions: '编辑 / 停用 / 排序',
@@ -312,5 +368,19 @@ export const homeworkService = {
         total: result.length,
       },
     };
+  },
+
+  async createTaxonomy(payload: ErrorTaxonomyFormPayload) {
+    return serverApiRequest<{ id: string; code: string; name: string }>(`/homework/error-taxonomies`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  async updateTaxonomy(taxonomyId: string, payload: Partial<ErrorTaxonomyFormPayload>) {
+    return serverApiRequest<{ id: string; code: string; name: string }>(`/homework/error-taxonomies/${taxonomyId}`, {
+      method: 'PATCH',
+      body: payload,
+    });
   },
 };

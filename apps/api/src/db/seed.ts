@@ -3,8 +3,10 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { redactSensitiveForLogs } from '../common/security';
 import { settingsRepositorySeed } from '../modules/settings/repository/settings.repository';
+import { alertsRepositorySeed } from '../modules/alerts/repository/alerts.repository';
+import { tasksRepositorySeed } from '../modules/tasks/repository/tasks.repository';
 import { usersRepositorySeed } from '../modules/users/repository/users.repository';
-import { authSessions, campuses, permissions, roles, schoolTerms, systemDictionaries, userRoles, users } from './schema';
+import { alerts, authSessions, campuses, permissions, roles, schoolTerms, systemDictionaries, tasks, userRoles, users } from './schema';
 
 const now = new Date();
 const currentYear = now.getUTCFullYear();
@@ -124,6 +126,41 @@ export function buildSeedPlan() {
       })),
     ],
     authSessions: [] as typeof authSessions.$inferInsert[],
+    tasks: tasksRepositorySeed.map((task) => ({
+      id: task.id,
+      taskType: task.taskType,
+      sourceType: task.sourceType ?? null,
+      sourceId: task.sourceId ?? null,
+      studentId: task.studentId ?? null,
+      familyId: task.familyId ?? null,
+      teacherId: task.teacherId ?? null,
+      ownerUserId: task.ownerUserId,
+      title: task.title,
+      description: task.description ?? null,
+      priority: task.priority,
+      dueAt: task.dueAt ? new Date(task.dueAt) : null,
+      status: task.status,
+      resultNote: task.resultNote ?? null,
+      createdAt: new Date(task.createdAt),
+      updatedAt: new Date(task.updatedAt),
+    })),
+    alerts: alertsRepositorySeed.map((alert) => ({
+      id: alert.id,
+      alertType: alert.alertType,
+      alertLevel: alert.alertLevel,
+      sourceType: alert.sourceType ?? null,
+      sourceId: alert.sourceId ?? null,
+      studentId: alert.studentId ?? null,
+      familyId: alert.familyId ?? null,
+      invoiceId: alert.invoiceId ?? null,
+      title: alert.title,
+      content: alert.content,
+      status: alert.status,
+      resolverUserId: alert.resolverUserId ?? null,
+      resolvedAt: alert.resolvedAt ? new Date(alert.resolvedAt) : null,
+      createdAt: new Date(alert.createdAt),
+      updatedAt: new Date(alert.updatedAt),
+    })),
   };
 }
 
@@ -144,6 +181,8 @@ export async function seedDatabase(databaseUrl = process.env.DATABASE_URL) {
     await db.insert(userRoles).values(plan.userRoles).onConflictDoNothing();
     await db.insert(schoolTerms).values(plan.schoolTerms).onConflictDoNothing();
     await db.insert(systemDictionaries).values(plan.systemDictionaries).onConflictDoNothing();
+    await db.insert(tasks).values(plan.tasks).onConflictDoNothing();
+    await db.insert(alerts).values(plan.alerts).onConflictDoNothing();
   } finally {
     await pool.end();
   }
@@ -156,6 +195,8 @@ export async function seedDatabase(databaseUrl = process.env.DATABASE_URL) {
     userRoles: plan.userRoles.length,
     schoolTerms: plan.schoolTerms.length,
     systemDictionaries: plan.systemDictionaries.length,
+    tasks: plan.tasks.length,
+    alerts: plan.alerts.length,
   };
 }
 

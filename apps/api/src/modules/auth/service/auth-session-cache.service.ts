@@ -12,7 +12,7 @@ export class AuthSessionCacheService {
   private readonly accessSessionCache = new Map<string, CachedSessionEntry>();
   private readonly refreshSessionCache = new Map<string, CachedSessionEntry>();
 
-  constructor(private readonly redisKvService: RedisKvService = new RedisKvService()) {}
+  constructor(private readonly redisKvService: RedisKvService) {}
 
   async cache(session: SessionRecord) {
     await Promise.all([

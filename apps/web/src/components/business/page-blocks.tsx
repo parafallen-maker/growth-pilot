@@ -1,11 +1,13 @@
 import type { AsyncState } from '@/features/shared/types';
 import { EmptyState, ErrorState, ForbiddenState, LoadingState } from '@/components/business/page-states';
+
 export {
   ChartPanel,
   DataTable,
   FilterBar,
   MetricGrid,
   PageHeader,
+  PaginationBar,
   SummaryPanel,
   TabStrip,
   TimelinePanel,
@@ -17,7 +19,7 @@ export function StateBlock({ state, title, actionLabel = '重试' }: { state: As
   }
 
   if (state === 'empty') {
-    return <EmptyState title={title} actionLabel="创建首条数据" actionHref="#" />;
+    return <EmptyState title={title} />;
   }
 
   if (state === 'error') {

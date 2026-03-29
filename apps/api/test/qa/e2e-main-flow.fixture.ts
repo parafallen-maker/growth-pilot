@@ -22,6 +22,8 @@ import { MockHomeworkAnalysisAdapter } from '../../src/modules/homework/adapter/
 import { HomeworkEventPublisher } from '../../src/modules/homework/event/homework-event.publisher';
 import { HomeworkAnalysisQueue } from '../../src/modules/homework/job/homework-analysis.queue';
 import { HomeworkRepository } from '../../src/modules/homework/repository/homework.repository';
+import { TasksRepository } from '../../src/modules/tasks/repository/tasks.repository';
+import { AlertsRepository } from '../../src/modules/alerts/repository/alerts.repository';
 import { HomeworkService } from '../../src/modules/homework/service/homework.service';
 import { JobsRepository } from '../../src/modules/jobs/repository/jobs.repository';
 import { JobsService } from '../../src/modules/jobs/service/jobs.service';
@@ -67,6 +69,7 @@ export function createQaFixture() {
     homeworkAnalysisQueue,
     homeworkEventPublisher,
     filesService,
+    jobsService,
   );
 
   const growthRepository = new GrowthRepository();
@@ -89,6 +92,8 @@ export function createQaFixture() {
     communicationRepository,
     attendanceRepository,
     homeworkRepository,
+    new TasksRepository(),
+    new AlertsRepository(),
   );
 
   const familiesService = new FamiliesService(familiesRepository);

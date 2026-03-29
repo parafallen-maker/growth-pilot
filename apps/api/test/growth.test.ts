@@ -25,6 +25,27 @@ function createFixture() {
   return { repository, assembler, reportDraftJob, jobsService, service };
 }
 
+test('growth bulk publish publishes reviewed reports together', async () => {
+  resetDataDir();
+  const { service } = createFixture();
+
+  await service.generateReportDraft({ reportType: 'weekly', periodKey: '2026-W14', studentIds: ['student-001', 'student-002'], termId: 'term-2026-spring' });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  await service.reviewReport('report-student-001-2026-W14', { reviewerUserId: 'advisor-001', draftMarkdown: 'ok' });
+  await service.reviewReport('report-student-002-2026-W14', { reviewerUserId: 'advisor-001', draftMarkdown: 'ok' });
+
+  const published = await service.bulkPublishReports({
+    reportIds: ['report-student-001-2026-W14', 'report-student-002-2026-W14'],
+    publisherUserId: 'teacher-001',
+    publishNote: '统一发布',
+    channels: ['app'],
+  });
+
+  assert.equal(published.count, 2);
+  assert.equal((await service.getReportDetail('report-student-001-2026-W14')).report.status, 'published');
+  assert.equal((await service.getReportDetail('report-student-002-2026-W14')).report.status, 'published');
+});
+
 test('growth rubric / observation / goal / report workflows persist to disk', async () => {
   resetDataDir();
   const { service, jobsService } = createFixture();

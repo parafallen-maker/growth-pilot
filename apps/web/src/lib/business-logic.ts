@@ -1,6 +1,6 @@
 /**
  * Business Logic Constants & Helpers
- * Centralized source of truth for labels, priorities, and status mapping.
+ * Centralized source of truth for labels, priorities, status mapping, and query helpers.
  */
 
 export const TASK_PRIORITY_LABELS: Record<string, string> = {
@@ -37,8 +37,41 @@ export const ALERT_TYPE_LABELS: Record<string, string> = {
   goal_overdue: '目标逾期',
 };
 
+export type QueryPrimitive = string | number | boolean | null | undefined;
+
+export function compactQueryParams(params: Record<string, QueryPrimitive>) {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') {
+      return;
+    }
+
+    searchParams.set(key, String(value));
+  });
+
+  const query = searchParams.toString();
+  return query ? `?${query}` : '';
+}
+
+export function mergeQueryParams(baseUrl: string, currentSearch: string | URLSearchParams | undefined, updates: Record<string, QueryPrimitive>) {
+  const searchParams = new URLSearchParams(currentSearch ? currentSearch.toString() : '');
+
+  Object.entries(updates).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') {
+      searchParams.delete(key);
+      return;
+    }
+
+    searchParams.set(key, String(value));
+  });
+
+  const query = searchParams.toString();
+  return query ? `${baseUrl}?${query}` : baseUrl;
+}
+
 /**
- * Returns a color or style object for a given priority/level
+ * Returns a color or style object for a given priority/level.
  */
 export function getPriorityStyle(level: string) {
   switch (level) {

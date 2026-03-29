@@ -1,4 +1,5 @@
 import { TabStrip, TimelinePanel } from '@/components/business/page-blocks';
+import { SubmitButton } from '@/components/business/submit-button';
 
 interface AIAnalysisResultProps {
   status: string;
@@ -19,7 +20,7 @@ export function AIAnalysisResult({ status, rawMarkdown, structuredResult, sugges
         <div className="button-row">
           <span className="badge">{status}</span>
           <form action={triggerAction}>
-            <button className="btn" type="submit">重新触发 AI 分析</button>
+            <SubmitButton className="btn" pendingLabel="触发中...">重新触发 AI 分析</SubmitButton>
           </form>
         </div>
       </div>
@@ -49,7 +50,7 @@ export function AIAnalysisResult({ status, rawMarkdown, structuredResult, sugges
       <TabStrip tabs={['Markdown 视图', '原始 JSON数据']} active="Markdown 视图" />
       
       <div className="code-view" style={{ maxHeight: 300, overflow: 'auto', background: 'var(--bg-code)', padding: 16, borderRadius: 8 }}>
-        {status === 'completed' ? (
+        {status === 'ready' ? (
           <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '0.9em' }}>
             {rawMarkdown}
           </pre>

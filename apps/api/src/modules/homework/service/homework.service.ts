@@ -1,12 +1,20 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import type { HomeworkSubmission } from '@growthpilot/schema/index';
+import type { HomeworkAnalysisStatus, HomeworkSubmission } from '@growthpilot/schema/index';
 import { normalizePage } from '../../../common/base-list-query.dto';
 import type { PageResult } from '../../../common/api-response';
 import { FilesService } from '../../files/service/files.service';
+import { JobsService } from '../../jobs/service/jobs.service';
 import { HomeworkErrorTaxonomyQueryDto, CreateHomeworkErrorTaxonomyDto, UpdateHomeworkErrorTaxonomyDto } from '../dto/homework-error-taxonomy.dto';
+import { BulkApplyHomeworkReviewTagsDto, BulkTriggerHomeworkAnalysisDto } from '../dto/bulk-homework-actions.dto';
 import { HomeworkEventPublisher } from '../event/homework-event.publisher';
 import { HomeworkAnalysisQueue } from '../job/homework-analysis.queue';
 import { CreateHomeworkSubmissionDto } from '../dto/create-homework-submission.dto';
+import {
+  resolveHomeworkAiProvider,
+  resolveHomeworkModelName,
+  resolveHomeworkPromptVersion,
+  resolveHomeworkProviderLabel,
+} from '../adapter/homework-analysis-config';
 import { HomeworkReviewDraftDto } from '../dto/homework-review-draft.dto';
 import { HomeworkReviewDto } from '../dto/homework-review.dto';
 import { HomeworkSubmissionQueryDto } from '../dto/homework-submission-query.dto';
@@ -20,6 +28,7 @@ export class HomeworkService {
     private readonly homeworkAnalysisQueue: HomeworkAnalysisQueue,
     private readonly homeworkEventPublisher: HomeworkEventPublisher,
     private readonly filesService: FilesService,
+    private readonly jobsService: JobsService,
   ) {}
 
   async listSubmissions(query: HomeworkSubmissionQueryDto): Promise<PageResult<HomeworkSubmission>> {
@@ -54,6 +63,22 @@ export class HomeworkService {
       latestAiAnalysis: (await this.homeworkRepository.getLatestAnalysis(submissionId)) ?? null,
       review: (await this.homeworkRepository.getReviewBySubmissionId(submissionId)) ?? null,
       reviewDraft: await this.homeworkRepository.getReviewDraft(submissionId),
+      analysisStatus: await this.getAnalysisStatus(submissionId),
+    };
+  }
+
+  async getAnalysisStatus(submissionId: string): Promise<HomeworkAnalysisStatus> {
+    const submission = await this.homeworkRepository.getSubmissionOrThrow(submissionId);
+    const latestAnalysis = (await this.homeworkRepository.getLatestAnalysis(submissionId)) ?? null;
+    const jobPage = await this.jobsService.listJobs({ jobType: 'homework_analysis', bizType: 'homework_submission' });
+    const latestJob = jobPage.list.find((item) => item.bizId === submissionId) ?? null;
+
+    return {
+      submissionId,
+      aiStatus: submission.aiStatus,
+      reviewStatus: submission.reviewStatus,
+      latestJob,
+      latestAnalysis,
     };
   }
 
@@ -84,16 +109,74 @@ export class HomeworkService {
   }
 
   async triggerAnalysis(submissionId: string, payload: TriggerHomeworkAnalysisDto, idempotencyKey?: string) {
+    const resolvedProvider = payload.provider?.trim() || resolveHomeworkProviderLabel();
+    const resolvedModelName = payload.modelName?.trim() || resolveHomeworkModelName();
+    const resolvedPromptVersion = payload.promptVersion?.trim() || resolveHomeworkPromptVersion();
+
     const job = await this.homeworkAnalysisQueue.enqueueAndProcess({
       submissionId,
       force: payload.force,
       idempotencyKey,
-      provider: payload.provider ?? 'mock-provider',
-      modelName: payload.modelName ?? 'mock-vision-v1',
-      promptVersion: payload.promptVersion ?? 'homework-review-v3',
+      provider: resolvedProvider,
+      modelName: resolvedModelName,
+      promptVersion: resolvedPromptVersion,
     });
 
     return { jobId: job.jobId, status: job.status };
+  }
+
+  async bulkTriggerAnalysis(payload: BulkTriggerHomeworkAnalysisDto) {
+    const submissionIds = Array.from(new Set(payload.submissionIds.map((item) => item.trim()).filter(Boolean)));
+    const results = [] as Array<{ submissionId: string; jobId: string; status: string }>;
+
+    for (const submissionId of submissionIds) {
+      const job = await this.triggerAnalysis(submissionId, payload, `bulk-analysis:${submissionId}`);
+      results.push({ submissionId, jobId: job.jobId, status: job.status });
+    }
+
+    return { count: results.length, submissionIds, results };
+  }
+
+  async bulkApplyReviewTags(payload: BulkApplyHomeworkReviewTagsDto) {
+    const submissionIds = Array.from(new Set(payload.submissionIds.map((item) => item.trim()).filter(Boolean)));
+    const mode = payload.mode ?? 'merge';
+    const finalErrorItems = payload.finalErrorItems.map((item) => ({
+      errorTaxonomyId: item.errorTaxonomyId,
+      weight: item.weight ?? 1,
+      note: item.note,
+    }));
+    const results = [] as Array<{ submissionId: string; reviewStatus: string; tagCount: number }>;
+
+    for (const submissionId of submissionIds) {
+      const currentDraft = await this.homeworkRepository.getReviewDraft(submissionId);
+      const mergedItems = mode === 'replace'
+        ? finalErrorItems
+        : Array.from(new Map<string, { errorTaxonomyId: string; weight: number; note?: string }>([
+          ...((currentDraft?.finalErrorItems ?? []).map((item): [string, { errorTaxonomyId: string; weight: number; note?: string }] => [
+            item.errorTaxonomyId,
+            { errorTaxonomyId: item.errorTaxonomyId, weight: item.weight ?? 1, note: item.note },
+          ])),
+          ...(finalErrorItems.map((item): [string, { errorTaxonomyId: string; weight: number; note?: string }] => [item.errorTaxonomyId, item])),
+        ]).values());
+
+      await this.homeworkRepository.runInTransaction(async () => {
+        await this.homeworkRepository.saveReviewDraft(submissionId, {
+          reviewerTeacherId: payload.reviewerTeacherId ?? currentDraft?.reviewerTeacherId ?? undefined,
+          reviewResult: currentDraft?.reviewResult,
+          finalAccuracyPct: currentDraft?.finalAccuracyPct,
+          finalErrorSummary: payload.finalErrorSummary ?? currentDraft?.finalErrorSummary,
+          finalSuggestion: currentDraft?.finalSuggestion,
+          publishToFamily: currentDraft?.publishToFamily ?? false,
+          finalErrorItems: mergedItems,
+        });
+        await this.homeworkRepository.updateSubmission(submissionId, { reviewStatus: 'reviewing' });
+      });
+
+      const updatedSubmission = await this.homeworkRepository.getSubmissionOrThrow(submissionId);
+      results.push({ submissionId, reviewStatus: updatedSubmission.reviewStatus ?? 'reviewing', tagCount: mergedItems.length });
+    }
+
+    return { count: results.length, submissionIds, results, mode };
   }
 
   async getReviewDraft(submissionId: string) {

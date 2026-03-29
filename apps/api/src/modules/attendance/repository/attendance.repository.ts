@@ -66,7 +66,7 @@ class DbAttendanceRepository implements AttendanceRepositoryPort {
 @Injectable()
 export class AttendanceRepository {
   private readonly adapter: AttendanceRepositoryPort;
-  constructor(filePath?: string) { this.adapter = isDbPersistenceEnabled() ? new DbAttendanceRepository() : new FileAttendanceRepository(filePath); }
+  constructor() { this.adapter = isDbPersistenceEnabled() ? new DbAttendanceRepository() : new FileAttendanceRepository(); }
   listDevices() { return this.adapter.listDevices(); } listBindings() { return this.adapter.listBindings(); } listEvents() { return this.adapter.listEvents(); } listSessions() { return this.adapter.listSessions(); } listDailyStats() { return this.adapter.listDailyStats(); }
   getDeviceOrThrow(deviceId: string) { return this.adapter.getDeviceOrThrow(deviceId); } getBindingOrThrow(bindingId: string) { return this.adapter.getBindingOrThrow(bindingId); }
   createDevice(input: Omit<AttendanceDevice, 'id' | 'createdAt' | 'updatedAt'>) { return this.adapter.createDevice(input); } createBinding(input: Omit<StudentDeviceBinding, 'id' | 'createdAt' | 'updatedAt'>) { return this.adapter.createBinding(input); } updateBinding(bindingId: string, patch: Partial<StudentDeviceBinding>) { return this.adapter.updateBinding(bindingId, patch); }

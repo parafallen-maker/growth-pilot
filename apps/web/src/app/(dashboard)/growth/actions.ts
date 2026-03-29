@@ -142,6 +142,28 @@ export async function generateGrowthReport(formData: FormData) {
   }
 }
 
+export async function bulkPublishGrowthReports(formData: FormData) {
+  const reportIds = formData.getAll('reportIds').map((item) => String(item).trim()).filter(Boolean);
+  if (!reportIds.length) {
+    bounce('/growth/reports', { error: '至少选择 1 份报告' });
+  }
+
+  try {
+    const currentUser = await requireCurrentUser();
+    const result = await growthService.bulkPublishReports({
+      reportIds,
+      publisherUserId: currentUser.id,
+      publishNote: String(formData.get('publishNote') ?? '').trim() || undefined,
+      channels: parseChannels(formData),
+    });
+
+    revalidatePath('/growth/reports');
+    bounce('/growth/reports', { published: String(result.count) });
+  } catch (error) {
+    bounce('/growth/reports', { error: error instanceof Error ? error.message : '批量发布报告失败' });
+  }
+}
+
 export async function reviewGrowthReport(formData: FormData) {
   const reportId = String(formData.get('reportId') ?? '').trim();
   if (!reportId) {
@@ -150,13 +172,34 @@ export async function reviewGrowthReport(formData: FormData) {
 
   try {
     const currentUser = await requireCurrentUser();
+    const sections = {
+      headline: String(formData.get('headline') ?? '').trim(),
+      strengths: String(formData.get('strengths') ?? '').trim(),
+      progress: String(formData.get('progress') ?? '').trim(),
+      supportNeeded: String(formData.get('supportNeeded') ?? '').trim(),
+      nextSteps: String(formData.get('nextSteps') ?? '').trim(),
+      parentSync: String(formData.get('parentSync') ?? '').trim(),
+      appendix: String(formData.get('appendix') ?? '').trim(),
+    };
+    const draftMarkdown = [
+      sections.headline ? `## 本期结论\n${sections.headline}` : '',
+      sections.strengths ? `## 亮点表现\n${sections.strengths}` : '',
+      sections.progress ? `## 进步观察\n${sections.progress}` : '',
+      sections.supportNeeded ? `## 待支持点\n${sections.supportNeeded}` : '',
+      sections.nextSteps ? `## 下阶段计划\n${sections.nextSteps}` : '',
+      sections.parentSync ? `## 家长同步话术\n${sections.parentSync}` : '',
+      sections.appendix ? `## 附加正文\n${sections.appendix}` : '',
+    ].filter(Boolean).join('\n\n');
+
     await growthService.reviewReport(reportId, {
       reviewerUserId: currentUser.id,
       reviewNote: String(formData.get('reviewNote') ?? '').trim() || undefined,
       title: String(formData.get('title') ?? '').trim() || undefined,
-      draftMarkdown: String(formData.get('draftMarkdown') ?? '').trim() || undefined,
+      draftMarkdown: draftMarkdown || undefined,
       summaryJson: {
         source: 'web-growth-reports-page',
+        editorMode: 'structured-form',
+        sections,
       },
     });
 

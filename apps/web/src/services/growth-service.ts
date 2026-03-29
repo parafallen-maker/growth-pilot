@@ -88,6 +88,10 @@ export type PublishReportPayload = {
   channels?: string[];
 };
 
+type BulkPublishReportPayload = PublishReportPayload & {
+  reportIds: string[];
+};
+
 export type ObservationItem = {
   observationId: string;
   observedAt: string;
@@ -351,6 +355,13 @@ export const growthService = {
 
   async publishReport(reportId: string, payload: PublishReportPayload) {
     return serverApiRequest<{ id: string; status?: string }>(`/growth/reports/${reportId}/publish`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  async bulkPublishReports(payload: BulkPublishReportPayload) {
+    return serverApiRequest<{ count: number; reportIds: string[]; results: Array<{ reportId: string; status: string; publishedAt: string }> }>(`/growth/reports/bulk-publish`, {
       method: 'POST',
       body: payload,
     });

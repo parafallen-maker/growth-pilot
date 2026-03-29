@@ -109,6 +109,81 @@ export interface FamilyTask {
   updatedAt: string;
 }
 
+export type TaskStatus = 'open' | 'in_progress' | 'done';
+export type TaskPriority = 'low' | 'medium' | 'high';
+
+export interface Task {
+  id: string;
+  taskType: string;
+  sourceType?: string;
+  sourceId?: string | null;
+  studentId?: string | null;
+  familyId?: string | null;
+  teacherId?: string | null;
+  ownerUserId: string;
+  title: string;
+  description?: string | null;
+  priority: TaskPriority;
+  dueAt?: string | null;
+  status: TaskStatus;
+  resultNote?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AlertStatus = 'open' | 'acknowledged' | 'resolved';
+export type AlertLevel = 'low' | 'medium' | 'high';
+
+export interface Alert {
+  id: string;
+  alertType: string;
+  alertLevel: AlertLevel;
+  sourceType?: string;
+  sourceId?: string | null;
+  studentId?: string | null;
+  familyId?: string | null;
+  invoiceId?: string | null;
+  title: string;
+  content: string;
+  status: AlertStatus;
+  resolverUserId?: string | null;
+  resolvedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeacherWorkbenchHomeworkItem {
+  submissionId: string;
+  submissionNo: string;
+  studentId: string;
+  subject: string;
+  homeworkDate: string;
+  aiStatus: HomeworkAiStatus;
+  reviewStatus: HomeworkReviewStatus;
+  finalAccuracyPct?: number | null;
+  latestAnalysisStatus?: string | null;
+}
+
+export interface TeacherWorkbench {
+  teacherId?: string | null;
+  teacherName?: string | null;
+  scope: {
+    campusId?: string | null;
+    termId?: string | null;
+    dateFrom?: string | null;
+    dateTo?: string | null;
+  };
+  summary: {
+    pendingHomeworkCount: number;
+    openTaskCount: number;
+    openAlertCount: number;
+    communicationTouchCount: number;
+  };
+  homeworkQueue: TeacherWorkbenchHomeworkItem[];
+  tasks: Task[];
+  alerts: Alert[];
+}
+
 export interface Student360HomeworkSummary {
   latestSubmissionId?: string | null;
   latestHomeworkDate?: string | null;
@@ -305,6 +380,14 @@ export interface HomeworkAiAnalysis {
   createdAt: string;
 }
 
+export interface HomeworkAnalysisStatus {
+  submissionId: string;
+  aiStatus: HomeworkAiStatus;
+  reviewStatus: HomeworkReviewStatus;
+  latestJob: JobStatus | null;
+  latestAnalysis: HomeworkAiAnalysis | null;
+}
+
 export interface HomeworkReview {
   id: string;
   submissionId: string;
@@ -334,6 +417,8 @@ export interface HomeworkAnalysisAdapterInput {
   subject: string;
   gradeLabel?: string;
   imageUrls: string[];
+  provider: string;
+  modelName: string;
   promptVersion: string;
 }
 

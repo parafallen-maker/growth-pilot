@@ -4,7 +4,7 @@ import { PermissionGuard } from '../../common/permission.guard';
 import { AuthModule } from '../auth/auth.module';
 import { LocalObjectStorageAdapter } from './adapter/local-object-storage.adapter';
 import { MockObjectStorageAdapter } from './adapter/mock-object-storage.adapter';
-import { OBJECT_STORAGE_ADAPTER } from './adapter/object-storage.adapter';
+import { OBJECT_STORAGE_ADAPTER, ObjectStorageAdapter } from './adapter/object-storage.adapter';
 import { S3ObjectStorageAdapter } from './adapter/s3-object-storage.adapter';
 import { FilesController } from './controller/files.controller';
 import { FileAssetRepository } from './repository/file-asset.repository';
@@ -13,9 +13,8 @@ import { FilesService } from './service/files.service';
 @Module({
   imports: [AuthModule],
   controllers: [FilesController],
-  providers: [ApiAuthGuard, PermissionGuard, 
+  providers: [ApiAuthGuard, PermissionGuard,
     FileAssetRepository,
-    FilesService,
     MockObjectStorageAdapter,
     LocalObjectStorageAdapter,
     S3ObjectStorageAdapter,
@@ -35,6 +34,13 @@ import { FilesService } from './service/files.service';
         return localAdapter;
       },
       inject: [LocalObjectStorageAdapter, MockObjectStorageAdapter, S3ObjectStorageAdapter],
+    },
+    {
+      provide: FilesService,
+      useFactory: (fileAssetRepository: FileAssetRepository, objectStorageAdapter: ObjectStorageAdapter) => (
+        new FilesService(fileAssetRepository, objectStorageAdapter)
+      ),
+      inject: [FileAssetRepository, OBJECT_STORAGE_ADAPTER],
     },
   ],
   exports: [FilesService, FileAssetRepository, OBJECT_STORAGE_ADAPTER],

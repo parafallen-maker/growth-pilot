@@ -1,8 +1,16 @@
+'use client';
+
 import Link from 'next/link';
 
-export function LoadingState({ title = '加载中', description = '正在拉取最新数据，请稍候。' }: { title?: string; description?: string }) {
+type ActionProps = {
+  actionLabel?: string;
+  actionHref?: string;
+  onAction?: () => void;
+};
+
+export function LoadingState({ title = '正在加载', description = '正在获取最新数据，请稍候。' }: { title?: string; description?: string }) {
   return (
-    <section className="state-card stack">
+    <section className="state-card stack" aria-busy="true" aria-live="polite">
       <div className="badge">Loading</div>
       <h3>{title}</h3>
       <p>{description}</p>
@@ -17,36 +25,87 @@ export function LoadingState({ title = '加载中', description = '正在拉取�
   );
 }
 
-export function EmptyState({ title = '暂无数据', description = '当前筛选条件下还没有结果。', actionLabel, actionHref }: { title?: string; description?: string; actionLabel?: string; actionHref?: string }) {
+export function EmptyState({
+  title = '暂无结果',
+  description = '当前筛选条件没有匹配数据。',
+  actionLabel,
+  actionHref,
+  onAction,
+}: { title?: string; description?: string } & ActionProps) {
   return (
     <section className="state-card">
-      <div className="empty-illustration">🗂️</div>
+      <div className="empty-illustration" aria-hidden="true">
+        🗂️
+      </div>
       <h3>{title}</h3>
       <p>{description}</p>
-      {actionLabel && actionHref ? <div className="button-row"><Link className="btn primary" href={actionHref}>{actionLabel}</Link></div> : null}
+      {actionLabel ? (
+        <div className="button-row">
+          {actionHref ? (
+            <Link className="btn primary" href={actionHref}>
+              {actionLabel}
+            </Link>
+          ) : onAction ? (
+            <button className="btn primary" type="button" onClick={onAction}>
+              {actionLabel}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 }
 
-export function ErrorState({ title = '请求失败', description = '接口没给面子，但重试按钮还在。', actionLabel = '重试', traceId, code }: { title?: string; description?: string; actionLabel?: string; traceId?: string; code?: string }) {
+export function ErrorState({
+  title = '加载失败',
+  description = '网络或服务暂时不可用，请稍后重试。',
+  actionLabel = '重试',
+  actionHref,
+  onAction,
+  traceId,
+  code,
+}: { title?: string; description?: string; traceId?: string; code?: string } & ActionProps) {
+  const handleRetry = onAction ?? (() => window.location.reload());
+
   return (
     <section className="state-card">
       <div className="badge danger">Error</div>
-      <h3 style={{ marginTop: 12 }}>{title}</h3>
+      <h3 className="state-title">{title}</h3>
       <p>{description}</p>
-      {(code || traceId) ? <div className="code">{`code: ${code ?? 'UNKNOWN'}\ntraceId: ${traceId ?? 'n/a'}`}</div> : null}
-      <div className="button-row"><button className="btn danger" type="button">{actionLabel}</button></div>
+      {code || traceId ? <div className="code">{`code: ${code ?? 'UNKNOWN'}\ntraceId: ${traceId ?? 'n/a'}`}</div> : null}
+      {actionLabel ? (
+        <div className="button-row">
+          {actionHref ? (
+            <Link className="btn danger" href={actionHref}>
+              {actionLabel}
+            </Link>
+          ) : handleRetry ? (
+            <button className="btn danger" type="button" onClick={handleRetry}>
+              {actionLabel}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 }
 
-export function ForbiddenState({ title = '无权限访问', description, actionHref = '/dashboard' }: { title?: string; description?: string; actionHref?: string }) {
+export function ForbiddenState({
+  title = '无权限访问',
+  description = '当前账号没有访问该页面的权限。',
+  actionLabel = '返回工作台',
+  actionHref = '/dashboard',
+}: { title?: string; description?: string; actionLabel?: string; actionHref?: string }) {
   return (
     <section className="state-card">
       <div className="badge danger">403 Forbidden</div>
-      <h3 style={{ marginTop: 12 }}>{title}</h3>
-      <p>{description ?? '你能看见入口，不代表你能进门。缺权限就别硬撞。'}</p>
-      <div className="button-row"><Link className="btn" href={actionHref}>返回工作台</Link></div>
+      <h3 className="state-title">{title}</h3>
+      <p>{description}</p>
+      <div className="button-row">
+        <Link className="btn" href={actionHref}>
+          {actionLabel}
+        </Link>
+      </div>
     </section>
   );
 }

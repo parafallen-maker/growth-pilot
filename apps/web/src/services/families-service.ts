@@ -14,6 +14,18 @@ type FamilyDetail = {
   communications: unknown[];
 };
 
+export type CreateFamilyPayload = {
+  familyCode?: string;
+  familyName?: string;
+  primaryContactName?: string;
+  primaryMobile?: string;
+  secondaryMobile?: string;
+  familyStructure?: string;
+  address?: string;
+  communicationPreference?: string;
+  notes?: string;
+};
+
 function buildQuery(params: Record<string, string | number | undefined>) {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -52,5 +64,15 @@ export const familyService = {
   async detail(id: string): Promise<FamilyDetail> {
     const auth = await getAuthTokens();
     return apiRequest<FamilyDetail>(`/families/${id}`, { auth, retryOn401: Boolean(auth.refreshToken) });
+  },
+
+  async create(payload: CreateFamilyPayload): Promise<Family> {
+    const auth = await getAuthTokens();
+    return apiRequest<Family>('/families', {
+      method: 'POST',
+      body: payload,
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
   },
 };

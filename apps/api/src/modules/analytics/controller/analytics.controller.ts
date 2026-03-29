@@ -23,6 +23,12 @@ export class AnalyticsController {
     return ok(await this.analyticsService.getTeaching(query));
   }
 
+  @Get('teacher-workbench')
+  @RequirePermission('analytics:teaching:view')
+  async getTeacherWorkbench(@Query() query: AnalyticsQueryDto) {
+    return ok(await this.analyticsService.getTeacherWorkbench(query));
+  }
+
   @Get('billing')
   @RequirePermission('analytics:billing:view')
   async getBilling(@Query() query: AnalyticsQueryDto) {

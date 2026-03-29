@@ -22,8 +22,7 @@ export interface RedisKvServiceOptions {
 @Injectable()
 export class RedisKvService implements OnModuleDestroy {
   private clientPromise?: Promise<RedisClientLike | null>;
-
-  constructor(private readonly options: RedisKvServiceOptions = {}) {}
+  private readonly options: RedisKvServiceOptions = {};
 
   async getClient(): Promise<RedisClientLike | null> {
     if (!this.clientPromise) {

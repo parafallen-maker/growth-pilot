@@ -109,6 +109,42 @@ export class AnalyticsService {
     };
   }
 
+  async getTeacherWorkbench(query: AnalyticsQueryDto) {
+    const homework = await this.filterHomeworkSubmissionsByScope(query);
+    const tasks = await this.filterTasksByScope(query);
+    const alerts = await this.filterAlertsByScope(query);
+    const communicationRecords = await this.filterCommunicationRecordsByScope(query);
+
+    const pendingHomework = homework.filter((item) => item.reviewStatus === 'unreviewed' || item.reviewStatus === 'reviewing');
+    const openTasks = tasks.filter((item) => item.status !== 'done');
+    const openAlerts = alerts.filter((item) => item.status !== 'resolved');
+
+    return {
+      teacherId: query.teacherId ?? null,
+      teacherName: query.teacherId ?? null,
+      scope: this.scope(query),
+      summary: {
+        pendingHomeworkCount: pendingHomework.length,
+        openTaskCount: openTasks.length,
+        openAlertCount: openAlerts.length,
+        communicationTouchCount: communicationRecords.length,
+      },
+      homeworkQueue: pendingHomework.slice(0, 20).map((item) => ({
+        submissionId: item.id,
+        submissionNo: item.submissionNo,
+        studentId: item.studentId,
+        subject: item.subject,
+        homeworkDate: item.homeworkDate,
+        aiStatus: item.aiStatus,
+        reviewStatus: item.reviewStatus,
+        finalAccuracyPct: item.finalAccuracyPct ?? null,
+        latestAnalysisStatus: item.aiStatus,
+      })),
+      tasks: openTasks.slice(0, 20),
+      alerts: openAlerts.slice(0, 20),
+    };
+  }
+
   async getBilling(query: AnalyticsQueryDto) {
     if (this.analyticsRepository.supportsSqlAggregation()) {
       return {
@@ -219,6 +255,24 @@ export class AnalyticsService {
   private async filterMessageTasksByScope(query: AnalyticsQueryDto) {
     const contractStudents = new Set((await this.filterContractsByScope(query)).map((item) => item.studentId));
     return (await this.analyticsRepository.listMessageTasks()).filter((item) => (!item.studentId || !contractStudents.size || contractStudents.has(item.studentId)) && this.matchDate((item.sentAt ?? item.scheduledAt ?? item.createdAt).slice(0, 10), query.dateFrom, query.dateTo));
+  }
+
+  private async filterTasksByScope(query: AnalyticsQueryDto) {
+    const contractStudents = new Set((await this.filterContractsByScope(query)).map((item) => item.studentId));
+    return (await this.analyticsRepository.listTasks()).filter((item) => {
+      if (query.teacherId && item.teacherId !== query.teacherId) return false;
+      if (contractStudents.size && item.studentId && !contractStudents.has(item.studentId)) return false;
+      return this.matchDate((item.dueAt ?? item.createdAt).slice(0, 10), query.dateFrom, query.dateTo);
+    });
+  }
+
+  private async filterAlertsByScope(query: AnalyticsQueryDto) {
+    const contractStudents = new Set((await this.filterContractsByScope(query)).map((item) => item.studentId));
+    return (await this.analyticsRepository.listAlerts()).filter((item) => {
+      if (contractStudents.size && item.studentId && !contractStudents.has(item.studentId)) return false;
+      if (query.dateFrom || query.dateTo) return this.matchDate(item.createdAt.slice(0, 10), query.dateFrom, query.dateTo);
+      return true;
+    });
   }
 
   private countAttendanceAnomalies(events: Awaited<ReturnType<AnalyticsRepository['listAttendanceEvents']>>) {

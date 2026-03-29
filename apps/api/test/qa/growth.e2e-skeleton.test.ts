@@ -144,14 +144,14 @@ test('QA-03 成长目标链：rubric -> observation -> goal -> check-in -> repor
   await t.test('case-material-traceability', { todo: '补报告素材池来源追溯与 observation/goal 链接校验' }, () => {});
 });
 
-test('E2E-04 成长管理闭环：rubric -> observation -> goal -> report draft smoke', () => {
+test('E2E-04 成长管理闭环：rubric -> observation -> goal -> report draft smoke', async () => {
   const { growthService } = createQaFixture();
 
-  const rubric = growthService.createRubric(growthSmokeFixture.rubric);
-  assert.equal(growthService.listRubrics({ termId: growthSmokeFixture.rubric.termId, pageNo: 1, pageSize: 20 }).list[0]?.id, rubric.id);
+  const rubric = await growthService.createRubric(growthSmokeFixture.rubric);
+  assert.equal((await growthService.listRubrics({ termId: growthSmokeFixture.rubric.termId, pageNo: 1, pageSize: 20 })).list[0]?.id, rubric.id);
   assert.equal(rubric.dimensions.length, 2);
 
-  const observation = growthService.createObservation({
+  const observation = await growthService.createObservation({
     ...growthSmokeFixture.observation,
     templateId: rubric.id,
     scores: [
@@ -162,18 +162,19 @@ test('E2E-04 成长管理闭环：rubric -> observation -> goal -> report draft 
   });
   assert.equal(observation.templateId, rubric.id);
   assert.equal(observation.scores.length, 2);
-  assert.equal(observation.totalScore, 10);
+  assert.equal(observation.totalScore, 9);
 
-  const goal = growthService.createGoal(growthSmokeFixture.goal);
-  const checkin = growthService.createCheckin(goal.id, growthSmokeFixture.checkin);
+  const goal = await growthService.createGoal(growthSmokeFixture.goal);
+  const checkin = await growthService.createCheckin(goal.id, growthSmokeFixture.checkin);
   assert.equal(checkin.goalId, goal.id);
-  assert.equal(growthService.listGoals({ studentId: growthSmokeFixture.goal.studentId, pageNo: 1, pageSize: 20 }).list[0]?.checkins[0]?.id, checkin.id);
+  assert.equal((await growthService.listGoals({ studentId: growthSmokeFixture.goal.studentId, pageNo: 1, pageSize: 20 })).list[0]?.checkins[0]?.id, checkin.id);
 
-  const reportJob = growthService.generateReportDraft(growthSmokeFixture.report);
-  const reports = growthService.listReports({ studentId: growthSmokeFixture.goal.studentId, pageNo: 1, pageSize: 20 });
+  const reportJob = await growthService.generateReportDraft(growthSmokeFixture.report);
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  const reports = await growthService.listReports({ studentId: growthSmokeFixture.goal.studentId, pageNo: 1, pageSize: 20 });
   const report = reports.list[0];
 
-  assert.ok(reportJob.jobId.startsWith('job-growth-report-'));
+  assert.ok(reportJob.jobId.startsWith('job-growth_report_generate-'));
   assert.equal(report?.status, 'draft');
   assert.equal(report?.generatedByJobId, reportJob.jobId);
   assert.match(report?.draftMarkdown ?? '', /观察数：2/);

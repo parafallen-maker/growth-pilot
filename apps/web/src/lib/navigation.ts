@@ -22,6 +22,14 @@ export type NavSection = {
   items: NavItem[];
 };
 
+export function getRoleLabel(role: string) {
+  return roleLabels[role as AppRole] ?? role;
+}
+
+export function isNavItemActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export const navSections: NavSection[] = [
   {
     title: '工作台',
@@ -121,4 +129,3 @@ export const rolePermissions: Record<AppRole, string[]> = {
   service_staff: ['tasks:view', 'alerts:view', 'families:view', 'billing:contracts:view', 'billing:renewals:view', 'attendance:board:view', 'attendance:devices:view', 'communication:records:view', 'communication:records:manage', 'communication:messages:view', 'communication:messages:manage', 'communication:templates:view'],
   finance: ['dashboard:view', 'tasks:view', 'alerts:view', 'families:view', 'billing:products:view', 'billing:products:manage', 'billing:contracts:view', 'billing:contracts:manage', 'billing:invoices:view', 'billing:payments:manage', 'billing:refunds:manage', 'billing:renewals:view', 'billing:renewals:manage', 'communication:messages:view', 'communication:messages:manage', 'communication:templates:view', 'analytics:billing:view'],
 };
-

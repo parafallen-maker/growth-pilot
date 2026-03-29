@@ -10,6 +10,8 @@ import { BillingRepository } from '../src/modules/billing/repository/billing.rep
 import { BillingService } from '../src/modules/billing/service/billing.service';
 import { CommunicationRepository } from '../src/modules/communication/repository/communication.repository';
 import { HomeworkRepository } from '../src/modules/homework/repository/homework.repository';
+import { TasksRepository } from '../src/modules/tasks/repository/tasks.repository';
+import { AlertsRepository } from '../src/modules/alerts/repository/alerts.repository';
 
 function createFixture() {
   const dir = mkdtempSync(join(tmpdir(), 'growthpilot-analytics-'));
@@ -17,8 +19,10 @@ function createFixture() {
   const communicationRepository = new CommunicationRepository(join(dir, 'communication.json'));
   const attendanceRepository = new AttendanceRepository(join(dir, 'attendance.json'));
   const homeworkRepository = new HomeworkRepository(join(dir, 'homework.json'));
+  const tasksRepository = new TasksRepository();
+  const alertsRepository = new AlertsRepository();
   const billingService = new BillingService(billingRepository);
-  const analyticsService = new AnalyticsService(new AnalyticsRepository(billingRepository, communicationRepository, attendanceRepository, homeworkRepository));
+  const analyticsService = new AnalyticsService(new AnalyticsRepository(billingRepository, communicationRepository, attendanceRepository, homeworkRepository, tasksRepository, alertsRepository));
   return { billingService, analyticsService };
 }
 
@@ -102,4 +106,11 @@ test('analytics aggregates billing + homework + communication + attendance from 
   assert.equal(teaching.teacherWorkloads[0]?.teacherId, 'teacher-001');
   assert.ok(teaching.subjectAccuracy.some((item) => item.subject === 'math'));
   assert.equal(teaching.dataSource.mode, 'repository-aggregated');
+
+  const workbench = await analyticsService.getTeacherWorkbench({ ...scope, teacherId: 'teacher-001' });
+  assert.equal(workbench.teacherId, 'teacher-001');
+  assert.equal(workbench.summary.openTaskCount, 2);
+  assert.equal(workbench.summary.openAlertCount, 1);
+  assert.ok(workbench.tasks.every((item) => item.status !== 'done'));
+  assert.ok(workbench.alerts.every((item) => item.status !== 'resolved'));
 });

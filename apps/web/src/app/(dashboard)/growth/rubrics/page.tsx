@@ -1,4 +1,5 @@
 import { PageHeader, SummaryPanel } from '@/components/business/page-blocks';
+import { SubmitButton } from '@/components/business/submit-button';
 import { PermissionDeniedState, PermissionGuard, hasPermission } from '@/components/business/permission-guard';
 import { queryKeys } from '@/features/shared/query-keys';
 import { growthPermissions } from '@/features/growth/constants';
@@ -26,7 +27,7 @@ export default async function GrowthRubricsPage({
         <PageHeader
           title="Rubric 模板"
           description="习惯观察评价维度模板管理"
-          actions={<><a className="btn primary" href="#rubric-create-form">新建模板</a><a className="btn" href="#rubric-detail-panel">查看详情</a><button className="btn">发布版本</button></>}
+          actions={<><a className="btn primary" href="#rubric-create-form">新建模板</a><a className="btn" href="#rubric-detail-panel">查看详情</a><a className="btn" href="#rubric-detail-panel">切换模板版本</a></>}
         />
         {query?.created ? <section className="panel"><div className="badge success">Rubric 模板已创建：{query.created}</div></section> : null}
         {query?.error ? <section className="panel"><div className="badge warning">{decodeURIComponent(query.error)}</div></section> : null}
@@ -99,7 +100,7 @@ export default async function GrowthRubricsPage({
                   ))}
                 </div>
               </div>
-              <div className="button-row form-span-2"><button className="btn primary" type="submit">创建模板</button></div>
+              <div className="button-row form-span-2"><SubmitButton pendingLabel="创建中...">创建模板</SubmitButton></div>
             </form>
             {detail ? (
               <>

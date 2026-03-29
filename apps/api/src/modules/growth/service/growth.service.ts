@@ -7,6 +7,7 @@ import { CreateGrowthGoalDto } from '../dto/create-growth-goal.dto';
 import { CreateGrowthObservationDto } from '../dto/create-growth-observation.dto';
 import { CreateRubricTemplateDto } from '../dto/create-rubric-template.dto';
 import { GenerateGrowthReportDto } from '../dto/generate-report.dto';
+import { BulkPublishGrowthReportsDto } from '../dto/bulk-publish-growth-reports.dto';
 import { GoalQueryDto } from '../dto/goal-query.dto';
 import { ObservationQueryDto } from '../dto/observation-query.dto';
 import { PublishGrowthReportDto } from '../dto/publish-growth-report.dto';
@@ -245,6 +246,18 @@ export class GrowthService {
     if (!updated) throw new NotFoundException(`Report ${reportId} not found`);
 
     return { reportId, status: updated.status, publishedAt: now };
+  }
+
+  async bulkPublishReports(payload: BulkPublishGrowthReportsDto) {
+    const reportIds = Array.from(new Set(payload.reportIds.map((item) => item.trim()).filter(Boolean)));
+    const results = [] as Array<{ reportId: string; status: string; publishedAt: string }>;
+
+    for (const reportId of reportIds) {
+      const result = await this.publishReport(reportId, payload);
+      results.push({ reportId: result.reportId, status: result.status, publishedAt: result.publishedAt });
+    }
+
+    return { count: results.length, reportIds, results };
   }
 
   private async listPublishedObservationIds() {

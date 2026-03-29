@@ -11,10 +11,12 @@ import { AttendanceController } from '../../src/modules/attendance/controller/at
 import { AuthController } from '../../src/modules/auth/controller/auth.controller';
 import { BillingController } from '../../src/modules/billing/controller/billing.controller';
 import { CommunicationController } from '../../src/modules/communication/controller/communication.controller';
+import { AlertsController } from '../../src/modules/alerts/controller/alerts.controller';
 import { FamiliesController } from '../../src/modules/families/families.controller';
 import { FilesController } from '../../src/modules/files/controller/files.controller';
 import { GrowthController } from '../../src/modules/growth/controller/growth.controller';
 import { HomeworkController } from '../../src/modules/homework/controller/homework.controller';
+import { TasksController } from '../../src/modules/tasks/controller/tasks.controller';
 import { JobsController } from '../../src/modules/jobs/controller/jobs.controller';
 import { JobsRepository } from '../../src/modules/jobs/repository/jobs.repository';
 import { JobsService } from '../../src/modules/jobs/service/jobs.service';
@@ -60,10 +62,12 @@ const controllerClasses = [
   AuthController,
   BillingController,
   CommunicationController,
+  AlertsController,
   FamiliesController,
   FilesController,
   GrowthController,
   HomeworkController,
+  TasksController,
   JobsController,
   SettingsController,
   StudentsController,

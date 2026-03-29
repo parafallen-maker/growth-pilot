@@ -15,8 +15,7 @@ export interface S3ObjectStorageAdapterOptions {
 @Injectable()
 export class S3ObjectStorageAdapter implements ObjectStorageAdapter {
   private clientPromise?: Promise<unknown>;
-
-  constructor(private readonly options: S3ObjectStorageAdapterOptions = {}) {}
+  private readonly options: S3ObjectStorageAdapterOptions = {};
 
   async putObject(input: PutObjectInput) {
     const { S3Client, PutObjectCommand } = await this.loadSdkOrThrow();

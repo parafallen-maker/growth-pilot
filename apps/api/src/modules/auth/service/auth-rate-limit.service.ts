@@ -16,7 +16,7 @@ export interface RateLimitDecision {
 export class AuthRateLimitService {
   private readonly state = new Map<string, RateLimitState>();
 
-  constructor(private readonly redisKvService: RedisKvService = new RedisKvService()) {}
+  constructor(private readonly redisKvService: RedisKvService) {}
 
   async consume(scope: string, actorKey: string, limit: number, windowSeconds: number): Promise<RateLimitDecision> {
     const key = this.buildKey(scope, actorKey);

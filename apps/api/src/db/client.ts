@@ -49,4 +49,10 @@ export function createDb(connectionString = process.env.DATABASE_URL) {
   return drizzle({ client: pool, schema });
 }
 
+export async function closeAllDbPools() {
+  const pools = [...poolCache.values()];
+  poolCache.clear();
+  await Promise.all(pools.map((pool) => pool.end().catch(() => undefined)));
+}
+
 export type GrowthPilotDb = ReturnType<typeof createDb>;

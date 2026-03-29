@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { MetricGrid, PageHeader, SummaryPanel, TimelinePanel } from '@/components/business/page-blocks';
 import { studentService } from '@/services/students-service';
+import { PageBreadcrumbs } from '../../_components/page-breadcrumbs';
 
 function currency(amountCents: number) {
   return `¥${(amountCents / 100).toLocaleString('zh-CN')}`;
@@ -25,10 +26,11 @@ export default async function Student360Page({ params }: { params: Promise<{ stu
 
   return (
     <div className="stack">
+      <PageBreadcrumbs items={[{ label: '学生列表', href: '/students' }, { label: aggregate.student.name }]} />
       <PageHeader
         title={`Student 360 · ${aggregate.student.name}`}
         description={`${aggregate.student.studentNo} / ${aggregate.student.gradeLabel} / ${aggregate.currentEnrollment?.campusId ?? '--'} / 状态 ${statusText(aggregate.student.status)}`}
-        actions={<><Link className="btn" href="/students">返回列表</Link><button className="btn primary">新建沟通</button></>}
+        actions={<><Link className="btn" href="/students">返回列表</Link><Link className="btn primary" href="/communication/records">查看沟通台账</Link></>}
       />
 
       <MetricGrid

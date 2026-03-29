@@ -1,5 +1,7 @@
 import { apiRequest } from '@/lib/api-client';
+import { getAuthTokens } from '@/lib/auth-session';
 import type { QueryBase } from '@/features/shared/types';
+import type { TeacherWorkbench } from '@growthpilot/schema';
 
 export type AnalyticsQuery = QueryBase & {
   dateFrom?: string;
@@ -44,6 +46,7 @@ function buildQuery(params: Record<string, string | number | undefined>) {
 
 export const analyticsService = {
   async queryOverview(params: AnalyticsQuery = {}): Promise<AnalyticsBoard> {
+    const auth = await getAuthTokens();
     const result = await apiRequest<{
       activeStudentCount: number;
       pendingHomeworkCount: number;
@@ -52,7 +55,10 @@ export const analyticsService = {
       receivedCents: number;
       todayAttendanceAnomalyCount: number;
       trend: { receivableCents: number; receivedCents: number; renewalTodoCount: number; communicationTouchCount: number; messageFailureCount: number };
-    }>(`/analytics/overview${buildQuery(params)}`);
+    }>(`/analytics/overview${buildQuery(params)}`, {
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
 
     return {
       filters: params,
@@ -102,13 +108,17 @@ export const analyticsService = {
   },
 
   async queryTeaching(params: AnalyticsQuery = {}): Promise<AnalyticsBoard> {
+    const auth = await getAuthTokens();
     const result = await apiRequest<{
       teacherWorkloads: Array<{ teacherId: string; teacherName: string; pendingReviewCount: number; activeStudentCount: number; communicationCount: number }>;
       subjectAccuracy: Array<{ subject: string; avgAccuracyPct: number; sampleCount: number }>;
       topErrors: Array<{ label: string; count: number }>;
       growthCoverage: Array<{ subject: string; totalMinutes: number; sessionCount: number }>;
       dataSource: { homeworkSubmissionCount: number; communicationRecordCount: number; homeworkDailyStatCount: number; mode: string };
-    }>(`/analytics/teaching${buildQuery(params)}`);
+    }>(`/analytics/teaching${buildQuery(params)}`, {
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
 
     return {
       filters: params,
@@ -167,7 +177,16 @@ export const analyticsService = {
     };
   },
 
+  async queryTeacherWorkbench(params: AnalyticsQuery & { teacherId?: string } = {}): Promise<TeacherWorkbench> {
+    const auth = await getAuthTokens();
+    return apiRequest<TeacherWorkbench>(`/analytics/teacher-workbench${buildQuery(params)}`, {
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
+  },
+
   async queryBilling(params: AnalyticsQuery = {}): Promise<AnalyticsBoard> {
+    const auth = await getAuthTokens();
     const result = await apiRequest<{
       receivableTrend: Array<{ date: string; amountCents: number }>;
       receivedTrend: Array<{ date: string; amountCents: number }>;
@@ -176,7 +195,10 @@ export const analyticsService = {
       contractCount: number;
       communicationTouchCount: number;
       messageTaskCount: number;
-    }>(`/analytics/billing${buildQuery(params)}`);
+    }>(`/analytics/billing${buildQuery(params)}`, {
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
 
     const receivableTotal = result.receivableTrend.reduce((sum, item) => sum + item.amountCents, 0);
     const receivedTotal = result.receivedTrend.reduce((sum, item) => sum + item.amountCents, 0);

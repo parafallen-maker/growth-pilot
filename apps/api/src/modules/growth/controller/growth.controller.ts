@@ -6,6 +6,7 @@ import { CreateGrowthGoalDto } from '../dto/create-growth-goal.dto';
 import { CreateGrowthObservationDto } from '../dto/create-growth-observation.dto';
 import { CreateRubricTemplateDto } from '../dto/create-rubric-template.dto';
 import { GenerateGrowthReportDto } from '../dto/generate-report.dto';
+import { BulkPublishGrowthReportsDto } from '../dto/bulk-publish-growth-reports.dto';
 import { GoalQueryDto } from '../dto/goal-query.dto';
 import { ObservationQueryDto } from '../dto/observation-query.dto';
 import { PublishGrowthReportDto } from '../dto/publish-growth-report.dto';
@@ -82,5 +83,10 @@ export class GrowthController {
   @Post('reports/:reportId/publish')
   async publishReport(@Param('reportId') reportId: string, @Body() payload: PublishGrowthReportDto) {
     return ok(await this.growthService.publishReport(reportId, payload));
+  }
+
+  @Post('reports/bulk-publish')
+  async bulkPublishReports(@Body() payload: BulkPublishGrowthReportsDto) {
+    return ok(await this.growthService.bulkPublishReports(payload));
   }
 }

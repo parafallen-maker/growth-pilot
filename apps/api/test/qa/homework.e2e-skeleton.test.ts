@@ -128,12 +128,12 @@ test('E2E-03 作业闭环：upload -> submission -> analyze -> review smoke', as
   const { filesService, homeworkService, homeworkRepository, homeworkEventPublisher, jobsService } = createQaFixture();
 
   const uploaded = await filesService.uploadOne(homeworkSmokeFixture.upload);
-  const submission = homeworkService.createSubmission({
+  const submission = await homeworkService.createSubmission({
     ...homeworkSmokeFixture.submission,
     fileIds: [uploaded.fileId],
   });
 
-  const beforeAnalysis = homeworkService.getSubmissionDetail(submission.id);
+  const beforeAnalysis = await homeworkService.getSubmissionDetail(submission.id);
   assert.equal(beforeAnalysis.files.length, 1);
   assert.equal(beforeAnalysis.files[0]?.fileId, uploaded.fileId);
   assert.match(beforeAnalysis.submission.submissionNo, /^HW20260325\d{4}$/);
@@ -146,7 +146,7 @@ test('E2E-03 作业闭环：upload -> submission -> analyze -> review smoke', as
     homeworkSmokeFixture.analysis.idempotencyKey,
   );
 
-  const detailAfterAnalysis = homeworkService.getSubmissionDetail(submission.id);
+  const detailAfterAnalysis = await homeworkService.getSubmissionDetail(submission.id);
   assert.ok(analysisJob.jobId.startsWith('job-'));
   assert.equal(jobsService.getJob(analysisJob.jobId).status, 'success');
   assert.equal(detailAfterAnalysis.latestAiAnalysis?.status, 'success');
@@ -155,8 +155,8 @@ test('E2E-03 作业闭环：upload -> submission -> analyze -> review smoke', as
   assert.match(detailAfterAnalysis.latestAiAnalysis?.rawMarkdown ?? '', /imageCount: 1/);
   assert.equal(detailAfterAnalysis.submission.aiStatus, 'ready');
 
-  const reviewResult = homeworkService.submitReview(submission.id, homeworkSmokeFixture.review);
-  const detailAfterReview = homeworkService.getSubmissionDetail(submission.id);
+  const reviewResult = await homeworkService.submitReview(submission.id, homeworkSmokeFixture.review);
+  const detailAfterReview = await homeworkService.getSubmissionDetail(submission.id);
 
   assert.equal(reviewResult.reviewStatus, 'published');
   assert.equal(detailAfterReview.submission.reviewStatus, 'published');
@@ -164,15 +164,15 @@ test('E2E-03 作业闭环：upload -> submission -> analyze -> review smoke', as
   assert.equal(detailAfterReview.submission.finalAccuracyPct, homeworkSmokeFixture.review.finalAccuracyPct);
   assert.equal(detailAfterReview.review?.reviewResult, homeworkSmokeFixture.review.reviewResult);
   assert.equal(
-    homeworkRepository.listReviewErrorItems(detailAfterReview.review?.id ?? '').length,
+    (await homeworkRepository.listReviewErrorItems(detailAfterReview.review?.id ?? '')).length,
     homeworkSmokeFixture.review.finalErrorItems.length,
   );
   assert.deepEqual(
-    homeworkEventPublisher.list().map((event) => event.eventName).sort(),
+    (await homeworkEventPublisher.list()).map((event) => event.eventName).sort(),
     ['HomeworkReviewed', 'HomeworkSubmitted'],
   );
 
-  assert.throws(
+  await assert.rejects(
     () => homeworkService.submitReview(submission.id, homeworkSmokeFixture.review),
     /published review can not be overwritten/,
   );

@@ -56,6 +56,8 @@ export class HomeworkAnalysisQueue {
           imageUrls: await this.filesService.resolveFileUrls(
             (await this.homeworkRepository.listSubmissionFiles(submission.id)).map((item) => item.fileId),
           ),
+          provider: input.provider,
+          modelName: input.modelName,
           promptVersion: input.promptVersion,
         });
 

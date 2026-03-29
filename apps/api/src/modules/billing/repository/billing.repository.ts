@@ -142,7 +142,7 @@ class DbBillingRepository implements BillingRepositoryPort {
 @Injectable()
 export class BillingRepository {
   private readonly adapter: BillingRepositoryPort;
-  constructor(filePath?: string) { this.adapter = isDbPersistenceEnabled() ? new DbBillingRepository() : new FileBillingRepository(filePath); }
+  constructor() { this.adapter = isDbPersistenceEnabled() ? new DbBillingRepository() : new FileBillingRepository(); }
   listProducts() { return this.adapter.listProducts(); }
   listContracts() { return this.adapter.listContracts(); }
   listInvoices() { return this.adapter.listInvoices(); }

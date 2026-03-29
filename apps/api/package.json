@@ -14,13 +14,15 @@
     "validate:live:be23-be25": "node --import tsx test/be23-be25.live.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.888.0",
+    "@aws-sdk/s3-request-presigner": "^3.888.0",
     "@nestjs/common": "^11.0.11",
     "@nestjs/core": "^11.0.11",
     "@nestjs/platform-express": "^11.1.17",
-    "@aws-sdk/client-s3": "^3.888.0",
-    "@aws-sdk/s3-request-presigner": "^3.888.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.58.5",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
     "drizzle-orm": "^0.45.1",
     "ioredis": "^5.7.0",
     "pg": "^8.20.0",

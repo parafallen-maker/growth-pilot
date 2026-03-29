@@ -13,7 +13,6 @@ import { BillingRepository } from '../billing/repository/billing.repository';
 import { FamiliesRepository } from '../families/repository/families.repository';
 import { GrowthRepository } from '../growth/repository/growth.repository';
 import { HomeworkRepository } from '../homework/repository/homework.repository';
-import { JobsRepository } from '../jobs/repository/jobs.repository';
 import { JobsService } from '../jobs/service/jobs.service';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { CreateStudentImportDto } from './dto/create-student-import.dto';
@@ -47,13 +46,13 @@ interface StudentImportError {
 @Injectable()
 export class StudentsService {
   constructor(
-    private readonly studentsRepository: StudentsRepository = new StudentsRepository(),
-    private readonly familiesRepository: FamiliesRepository = new FamiliesRepository(),
-    private readonly homeworkRepository: HomeworkRepository = new HomeworkRepository(),
-    private readonly growthRepository: GrowthRepository = new GrowthRepository(),
-    private readonly attendanceRepository: AttendanceRepository = new AttendanceRepository(),
-    private readonly billingRepository: BillingRepository = new BillingRepository(),
-    private readonly jobsService: JobsService = new JobsService(new JobsRepository()),
+    private readonly studentsRepository: StudentsRepository,
+    private readonly familiesRepository: FamiliesRepository,
+    private readonly homeworkRepository: HomeworkRepository,
+    private readonly growthRepository: GrowthRepository,
+    private readonly attendanceRepository: AttendanceRepository,
+    private readonly billingRepository: BillingRepository,
+    private readonly jobsService: JobsService,
   ) {}
 
   async list(query: StudentQueryDto): Promise<PageResult<Student>> {

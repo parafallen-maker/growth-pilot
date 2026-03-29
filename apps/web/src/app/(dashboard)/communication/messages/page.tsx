@@ -7,6 +7,7 @@ import { requireCurrentUser } from '@/lib/current-user';
 import { serverApiRequest } from '@/lib/server-api';
 import { communicationService } from '@/services/communication-service';
 import { createCommunicationMessageTask, createCommunicationTemplate, updateCommunicationMessageTaskStatus } from './actions';
+import { SubmitButton } from '@/components/business/submit-button';
 
 function MessageStatusTable({
   title,
@@ -51,7 +52,7 @@ export default async function CommunicationMessagesPage({
         <PageHeader
           title="消息中心"
           description="消息模板与任务管理"
-          actions={<><a className="btn primary" href="#communication-message-create-form">创建消息</a><a className="btn" href="#communication-template-create-form">创建模板</a><a className="btn" href="#communication-message-status-form">更新状态</a><button className="btn">查看回执</button></>}
+          actions={<><a className="btn primary" href="#communication-message-create-form">创建消息</a><a className="btn" href="#communication-template-create-form">创建模板</a><a className="btn" href="#communication-message-status-form">更新状态</a><a className="btn" href="#message-delivery-panels">查看回执 / 投递结果</a></>}
         />
         {query?.templateCreated ? <section className="panel"><div className="badge success">消息模板已创建：{query.templateCreated}{query.code ? ` / ${query.code}` : ''}</div></section> : null}
         {query?.taskCreated ? <section className="panel"><div className="badge success">消息任务已创建：{query.taskCreated}{query.status ? ` / status=${query.status}` : ''}</div></section> : null}
@@ -80,7 +81,7 @@ export default async function CommunicationMessagesPage({
               <div className="field form-span-2"><label>主题</label><input className="input" name="subject" placeholder="3 月账单提醒" /></div>
               <div className="field form-span-2"><label>模板内容</label><textarea className="textarea" name="bodyTemplate" placeholder="家长您好，{studentName} 的账单将于 {dueDate} 到期……" required /></div>
               <div className="field form-span-2"><label>变量（逗号分隔）</label><input className="input" name="variables" placeholder="studentName,dueDate,amount" /></div>
-              <div className="button-row form-span-2"><button className="btn primary" type="submit">创建模板</button></div>
+              <div className="button-row form-span-2"><SubmitButton pendingLabel="创建中...">创建模板</SubmitButton></div>
             </form>
           </section>
           <section className="panel stack" id="communication-message-create-form">
@@ -101,7 +102,7 @@ export default async function CommunicationMessagesPage({
               <div className="field form-span-2"><label>消息主题</label><input className="input" name="subject" placeholder="作业提醒 / 账单提醒 / 周报推送" /></div>
               <div className="field form-span-2"><label>消息正文</label><textarea className="textarea" name="body" placeholder="如果不使用模板，可直接填写消息正文。" required /></div>
               <div className="field form-span-2"><label>失败原因（仅 failed 状态使用）</label><input className="input" name="failureReason" placeholder="通道异常 / 黑名单 / 参数错误" /></div>
-              <div className="button-row form-span-2"><button className="btn primary" type="submit">创建消息任务</button></div>
+              <div className="button-row form-span-2"><SubmitButton pendingLabel="创建中...">创建消息任务</SubmitButton></div>
             </form>
           </section>
         </div>
@@ -118,7 +119,7 @@ export default async function CommunicationMessagesPage({
             <div className="field"><label>目标状态</label><select className="select" name="status" defaultValue="pending"><option value="draft">draft</option><option value="pending">pending</option><option value="sent">sent</option><option value="failed">failed</option><option value="read">read</option></select></div>
             <div className="field"><label>发送时间（sent 可选）</label><input className="input" type="datetime-local" name="sentAt" /></div>
             <div className="field form-span-2"><label>失败原因</label><input className="input" name="failureReason" placeholder="仅 failed 状态需要填写" /></div>
-            <div className="button-row form-span-2"><button className="btn primary" type="submit" disabled={!taskOptions.length}>更新状态</button></div>
+            <div className="button-row form-span-2"><SubmitButton pendingLabel="更新中..." disabled={!taskOptions.length}>更新状态</SubmitButton></div>
           </form>
         </section>
         <FilterBar fields={[
@@ -138,7 +139,7 @@ export default async function CommunicationMessagesPage({
           <MessageStatusTable title="草稿区块" columns={['类型', '家庭', '学生', '渠道', '计划发送时间', '状态', '动作']} rows={result.drafts.list.map((item) => [item.messageType, item.familyName, item.studentName, item.channel, item.scheduledAt, item.status, item.actions])} />
           <MessageStatusTable title="待发送区块" columns={['类型', '家庭', '学生', '渠道', '计划发送时间', '状态', '动作']} rows={result.queued.list.map((item) => [item.messageType, item.familyName, item.studentName, item.channel, item.scheduledAt, item.status, item.actions])} />
         </div>
-        <div className="grid-2">
+        <div className="grid-2" id="message-delivery-panels">
           <MessageStatusTable title="已发送 / 回执区块" columns={['类型', '家庭', '学生', '渠道', '发送时间', '状态', '动作']} rows={result.sent.list.map((item) => [item.messageType, item.familyName, item.studentName, item.channel, item.scheduledAt, item.status, item.actions])} />
           <MessageStatusTable title="失败区块" columns={['类型', '家庭', '学生', '渠道', '失败时间', '状态', '动作']} rows={result.failed.list.map((item) => [item.messageType, item.familyName, item.studentName, item.channel, item.scheduledAt, item.status, item.actions])} />
         </div>

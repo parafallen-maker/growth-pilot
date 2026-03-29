@@ -9,6 +9,7 @@ import { ReviewHeader } from './components/ReviewHeader';
 import { AttachmentGallery } from './components/AttachmentGallery';
 import { AIAnalysisResult } from './components/AIAnalysisResult';
 import { TeacherReviewForm } from './components/TeacherReviewForm';
+import { AnalysisStatusAutoRefresh } from './components/AnalysisStatusAutoRefresh';
 
 export default async function HomeworkReviewWorkbenchPage({
   params,
@@ -43,6 +44,8 @@ export default async function HomeworkReviewWorkbenchPage({
   return (
     <PermissionGuard allowed={currentUser.permissions.includes(homeworkPermissions.review)}>
       <div className="stack">
+        <AnalysisStatusAutoRefresh submissionId={submissionId} initialAiStatus={detail.aiJob.status} />
+
         {/* P1 Refactored: Structured Header */}
         <ReviewHeader
           submissionNo={detail.submissionNo}

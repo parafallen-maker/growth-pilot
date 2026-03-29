@@ -49,8 +49,7 @@ export class BullmqJobBroker implements OnModuleDestroy {
   private readonly workers: BullmqWorkerLike[] = [];
   private readonly connections: Array<{ quit(): Promise<'OK' | void> }> = [];
   private runtimePromise?: Promise<BullmqRuntime | null>;
-
-  constructor(private readonly options: BullmqJobBrokerOptions = {}) {}
+  private readonly options: BullmqJobBrokerOptions = {};
 
   async enqueue(queueName: string, jobName: string, jobId: string, data: object) {
     if ((process.env.JOB_QUEUE_DRIVER ?? 'inline') !== 'bullmq') {

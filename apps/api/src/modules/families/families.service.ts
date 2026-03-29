@@ -10,7 +10,7 @@ import { FamiliesRepository } from './repository/families.repository';
 
 @Injectable()
 export class FamiliesService {
-  constructor(private readonly familiesRepository: FamiliesRepository = new FamiliesRepository()) {}
+  constructor(private readonly familiesRepository: FamiliesRepository) {}
 
   async list(query: FamilyQueryDto): Promise<PageResult<Family>> {
     const { pageNo, pageSize } = normalizePage(query);

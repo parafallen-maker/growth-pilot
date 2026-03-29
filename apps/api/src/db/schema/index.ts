@@ -5,6 +5,7 @@ export * from './families';
 export * from './teachers';
 export * from './students';
 export * from './jobs';
+export * from './workflow';
 export * from './homework';
 export * from './growth';
 export * from './attendance';

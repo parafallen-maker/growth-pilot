@@ -7,6 +7,7 @@ import {
   HomeworkErrorTaxonomyQueryDto,
   UpdateHomeworkErrorTaxonomyDto,
 } from '../dto/homework-error-taxonomy.dto';
+import { BulkApplyHomeworkReviewTagsDto, BulkTriggerHomeworkAnalysisDto } from '../dto/bulk-homework-actions.dto';
 import { HomeworkReviewDraftDto } from '../dto/homework-review-draft.dto';
 import { HomeworkReviewDto } from '../dto/homework-review.dto';
 import { HomeworkSubmissionQueryDto } from '../dto/homework-submission-query.dto';
@@ -28,6 +29,11 @@ export class HomeworkController {
     return ok(await this.homeworkService.getSubmissionDetail(submissionId));
   }
 
+  @Get('submissions/:submissionId/analysis-status')
+  async getAnalysisStatus(@Param('submissionId') submissionId: string) {
+    return ok(await this.homeworkService.getAnalysisStatus(submissionId));
+  }
+
   @Post('submissions')
   async createSubmission(@Body() payload: CreateHomeworkSubmissionDto) {
     return ok(await this.homeworkService.createSubmission(payload));
@@ -40,6 +46,16 @@ export class HomeworkController {
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
     return ok(await this.homeworkService.triggerAnalysis(submissionId, payload, idempotencyKey));
+  }
+
+  @Post('submissions/bulk-analyze')
+  async bulkTriggerAnalysis(@Body() payload: BulkTriggerHomeworkAnalysisDto) {
+    return ok(await this.homeworkService.bulkTriggerAnalysis(payload));
+  }
+
+  @Post('submissions/bulk-review-tags')
+  async bulkApplyReviewTags(@Body() payload: BulkApplyHomeworkReviewTagsDto) {
+    return ok(await this.homeworkService.bulkApplyReviewTags(payload));
   }
 
   @Get('submissions/:submissionId/review-draft')

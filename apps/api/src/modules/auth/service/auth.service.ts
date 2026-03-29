@@ -28,9 +28,9 @@ export class AuthService {
 
   constructor(
     private readonly usersService: UsersService,
-    private readonly authSessionRepository: DefaultAuthSessionRepository = new DefaultAuthSessionRepository(),
-    private readonly authSessionCacheService: AuthSessionCacheService = new AuthSessionCacheService(),
-    private readonly authRateLimitService: AuthRateLimitService = new AuthRateLimitService(),
+    private readonly authSessionRepository: DefaultAuthSessionRepository,
+    private readonly authSessionCacheService: AuthSessionCacheService,
+    private readonly authRateLimitService: AuthRateLimitService,
   ) {}
 
   getCookieOptions() {
