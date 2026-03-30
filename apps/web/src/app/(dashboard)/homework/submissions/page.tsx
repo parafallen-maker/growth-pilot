@@ -103,9 +103,8 @@ export default async function HomeworkSubmissionsPage({
           <div className="page-header">
             <div>
               <h3>批量作业动作</h3>
-              <p>已接真实 bulk API，可按批次触发 AI 或把错因标签写入复核草稿。</p>
+              <p>按批次触发 AI 分析或将错因标签写入复核草稿。</p>
             </div>
-            <span className="badge success">bulk ready</span>
           </div>
           <form className="stack">
             <div className="summary-list">

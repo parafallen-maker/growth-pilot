@@ -84,9 +84,7 @@ export default async function TasksPage({
         <div className="page-header">
           <div>
             <h3>待办列表</h3>
-            <p>已切到真实 /tasks API，仅展示当前登录人的任务。</p>
           </div>
-          <span className="badge success">GET /tasks</span>
         </div>
         <div className="summary-list">
           {tasks.filter((t) => t.status !== 'done').map((task) => {

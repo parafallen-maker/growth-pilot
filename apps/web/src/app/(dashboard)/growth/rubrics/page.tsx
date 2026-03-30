@@ -71,7 +71,6 @@ export default async function GrowthRubricsPage({
                 <h3>新建模板</h3>
                 <p>创建新的评价模板，配置评分维度与权重。</p>
               </div>
-              <span className="badge success">POST /growth/rubrics</span>
             </div>
             <form className="form-grid" action={createGrowthRubric}>
               <div className="field"><label>模板名称</label><input className="input" name="name" placeholder="例如：课堂成长观察模板" required /></div>

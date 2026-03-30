@@ -29,7 +29,7 @@ interface BcryptModule {
   hash(plainText: string, rounds: number): Promise<string>;
 }
 
-const bcrypt = require('bcrypt') as BcryptModule;
+const bcrypt = require('bcryptjs') as BcryptModule;
 
 export function requireJwtSecret() {
   const secret = process.env.JWT_SECRET ?? (process.env.NODE_ENV === 'test' ? TEST_JWT_SECRET : undefined);

@@ -57,7 +57,6 @@ export default async function TaskListPage({
       <PageHeader
         title="任务中心"
         description={`全校任务管理，当前登录：${currentUser.name}`}
-        actions={<span className="badge success">真实 /tasks API</span>}
       />
 
       <MetricGrid items={[

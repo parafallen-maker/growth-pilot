@@ -69,9 +69,7 @@ export default async function CommunicationMessagesPage({
             <div className="page-header">
               <div>
                 <h3>新建模板</h3>
-                <p>当前表单直连 POST /communication/templates。</p>
-              </div>
-              <span className="badge success">POST /communication/templates</span>
+                </div>
             </div>
             <form className="form-grid" action={createCommunicationTemplate}>
               <div className="field"><label>模板编码</label><input className="input" name="code" placeholder="invoice-reminder-custom" required /></div>
@@ -90,7 +88,6 @@ export default async function CommunicationMessagesPage({
                 <h3>创建消息任务</h3>
                 <p>创建消息任务，选择模板并指定接收人。</p>
               </div>
-              <span className="badge success">POST /communication/message-tasks</span>
             </div>
             <form className="form-grid" action={createCommunicationMessageTask}>
               <div className="field"><label>模板（可选）</label><select className="select" name="templateId" defaultValue=""><option value="">不使用模板</option>{result.templates.list.map((template) => <option key={template.templateId} value={template.templateId}>{template.templateName} / {template.channel}</option>)}</select></div>
@@ -110,9 +107,7 @@ export default async function CommunicationMessagesPage({
           <div className="page-header">
             <div>
               <h3>更新消息任务状态</h3>
-              <p>当前状态更新走 PATCH /communication/message-tasks/{'{id}'}/status。</p>
             </div>
-            <span className="badge">PATCH message_tasks</span>
           </div>
           <form className="form-grid" action={updateCommunicationMessageTaskStatus}>
             <div className="field form-span-2"><label>消息任务</label><select className="select" name="taskId" defaultValue={taskOptions[0]?.messageId ?? ''} required>{taskOptions.length ? taskOptions.map((task) => <option key={task.messageId} value={task.messageId}>{task.messageType} / {task.familyName} / {task.status}</option>) : <option value="">暂无消息任务</option>}</select></div>

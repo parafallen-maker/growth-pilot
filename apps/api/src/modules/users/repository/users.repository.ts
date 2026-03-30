@@ -5,6 +5,7 @@ import { createDb, dbSchema } from '../../../db';
 import { FileJsonStore } from '../../../shared/persistence/file-json-store';
 import { isDbPersistenceEnabled } from '../../../shared/persistence/adapter';
 import { Permission, Role, UserRecord } from '../users.types';
+import { settingsRepositorySeed } from '../../settings/repository/settings.repository';
 
 interface UsersStoreShape {
   permissions: Permission[];
@@ -13,92 +14,96 @@ interface UsersStoreShape {
 }
 
 // Sync hash used only for static seed data at module load time
-const bcryptSync = require('bcrypt') as { hashSync(data: string, rounds: number): string };
+const bcryptSync = require('bcryptjs') as { hashSync(data: string, rounds: number): string };
 const seedHash = (plain: string) => bcryptSync.hashSync(plain, 12);
 
-const defaultPermissions: Permission[] = [
-  { id: 'perm-auth-session-read', code: 'auth.session.read', name: '读取会话信息', module: 'auth', action: 'read' },
-  { id: 'perm-settings-view', code: 'settings:view', name: '查看设置', module: 'settings', action: 'view' },
-  { id: 'perm-jobs-read', code: 'jobs.read', name: '读取任务中心', module: 'jobs', action: 'read' },
-  { id: 'perm-users-view', code: 'users:view', name: '查看用户', module: 'users', action: 'view' },
-  { id: 'perm-users-read', code: 'users.read', name: '读取用户（兼容旧约定）', module: 'users', action: 'read' },
-  { id: 'perm-users-role-bind', code: 'users.role.bind', name: '绑定用户角色', module: 'users', action: 'bind' },
-  { id: 'perm-teachers-view', code: 'teachers:view', name: '查看教师', module: 'teachers', action: 'view' },
-  { id: 'perm-students-view', code: 'students:view', name: '查看学生', module: 'students', action: 'view' },
-  { id: 'perm-families-view', code: 'families:view', name: '查看家庭', module: 'families', action: 'view' },
-  { id: 'perm-analytics-overview-view', code: 'analytics:overview:view', name: '查看总览分析', module: 'analytics', action: 'view' },
-  { id: 'perm-analytics-teaching-view', code: 'analytics:teaching:view', name: '查看教学分析', module: 'analytics', action: 'view' },
-  { id: 'perm-analytics-billing-view', code: 'analytics:billing:view', name: '查看收费分析', module: 'analytics', action: 'view' },
-  { id: 'perm-attendance-board-view', code: 'attendance:board:view', name: '查看签到看板', module: 'attendance', action: 'view' },
-  { id: 'perm-attendance-board-manage', code: 'attendance:board:manage', name: '管理签到事件', module: 'attendance', action: 'manage' },
-  { id: 'perm-attendance-devices-view', code: 'attendance:devices:view', name: '查看设备', module: 'attendance', action: 'view' },
-  { id: 'perm-attendance-devices-manage', code: 'attendance:devices:manage', name: '管理设备', module: 'attendance', action: 'manage' },
-  { id: 'perm-attendance-homework-time-view', code: 'attendance:homework-time:view', name: '查看作业时长', module: 'attendance', action: 'view' },
-  { id: 'perm-billing-products-view', code: 'billing:products:view', name: '查看收费产品', module: 'billing', action: 'view' },
-  { id: 'perm-billing-products-manage', code: 'billing:products:manage', name: '管理收费产品', module: 'billing', action: 'manage' },
-  { id: 'perm-billing-contracts-view', code: 'billing:contracts:view', name: '查看合同', module: 'billing', action: 'view' },
-  { id: 'perm-billing-contracts-manage', code: 'billing:contracts:manage', name: '管理合同', module: 'billing', action: 'manage' },
-  { id: 'perm-billing-invoices-view', code: 'billing:invoices:view', name: '查看账单', module: 'billing', action: 'view' },
-  { id: 'perm-billing-payments-manage', code: 'billing:payments:manage', name: '管理收款', module: 'billing', action: 'manage' },
-  { id: 'perm-billing-refunds-manage', code: 'billing:refunds:manage', name: '管理退款', module: 'billing', action: 'manage' },
-  { id: 'perm-billing-renewals-view', code: 'billing:renewals:view', name: '查看续费', module: 'billing', action: 'view' },
-  { id: 'perm-billing-renewals-manage', code: 'billing:renewals:manage', name: '管理续费', module: 'billing', action: 'manage' },
-  { id: 'perm-communication-records-view', code: 'communication:records:view', name: '查看沟通记录', module: 'communication', action: 'view' },
-  { id: 'perm-communication-records-manage', code: 'communication:records:manage', name: '管理沟通记录', module: 'communication', action: 'manage' },
-  { id: 'perm-communication-templates-view', code: 'communication:templates:view', name: '查看消息模板', module: 'communication', action: 'view' },
-  { id: 'perm-communication-templates-manage', code: 'communication:templates:manage', name: '管理消息模板', module: 'communication', action: 'manage' },
-  { id: 'perm-communication-messages-view', code: 'communication:messages:view', name: '查看消息任务', module: 'communication', action: 'view' },
-  { id: 'perm-communication-messages-manage', code: 'communication:messages:manage', name: '管理消息任务', module: 'communication', action: 'manage' },
-];
+// Generate stable permission IDs at module load time — keyed by code for cross-reference
+const permDefs = [
+  { code: 'auth.session.read', name: '读取会话信息', module: 'auth', action: 'read' },
+  { code: 'settings:view', name: '查看设置', module: 'settings', action: 'view' },
+  { code: 'jobs.read', name: '读取任务中心', module: 'jobs', action: 'read' },
+  { code: 'users:view', name: '查看用户', module: 'users', action: 'view' },
+  { code: 'users.read', name: '读取用户（兼容旧约定）', module: 'users', action: 'read' },
+  { code: 'users.role.bind', name: '绑定用户角色', module: 'users', action: 'bind' },
+  { code: 'teachers:view', name: '查看教师', module: 'teachers', action: 'view' },
+  { code: 'students:view', name: '查看学生', module: 'students', action: 'view' },
+  { code: 'families:view', name: '查看家庭', module: 'families', action: 'view' },
+  { code: 'analytics:overview:view', name: '查看总览分析', module: 'analytics', action: 'view' },
+  { code: 'analytics:teaching:view', name: '查看教学分析', module: 'analytics', action: 'view' },
+  { code: 'analytics:billing:view', name: '查看收费分析', module: 'analytics', action: 'view' },
+  { code: 'attendance:board:view', name: '查看签到看板', module: 'attendance', action: 'view' },
+  { code: 'attendance:board:manage', name: '管理签到事件', module: 'attendance', action: 'manage' },
+  { code: 'attendance:devices:view', name: '查看设备', module: 'attendance', action: 'view' },
+  { code: 'attendance:devices:manage', name: '管理设备', module: 'attendance', action: 'manage' },
+  { code: 'attendance:homework-time:view', name: '查看作业时长', module: 'attendance', action: 'view' },
+  { code: 'billing:products:view', name: '查看收费产品', module: 'billing', action: 'view' },
+  { code: 'billing:products:manage', name: '管理收费产品', module: 'billing', action: 'manage' },
+  { code: 'billing:contracts:view', name: '查看合同', module: 'billing', action: 'view' },
+  { code: 'billing:contracts:manage', name: '管理合同', module: 'billing', action: 'manage' },
+  { code: 'billing:invoices:view', name: '查看账单', module: 'billing', action: 'view' },
+  { code: 'billing:payments:manage', name: '管理收款', module: 'billing', action: 'manage' },
+  { code: 'billing:refunds:manage', name: '管理退款', module: 'billing', action: 'manage' },
+  { code: 'billing:renewals:view', name: '查看续费', module: 'billing', action: 'view' },
+  { code: 'billing:renewals:manage', name: '管理续费', module: 'billing', action: 'manage' },
+  { code: 'communication:records:view', name: '查看沟通记录', module: 'communication', action: 'view' },
+  { code: 'communication:records:manage', name: '管理沟通记录', module: 'communication', action: 'manage' },
+  { code: 'communication:templates:view', name: '查看消息模板', module: 'communication', action: 'view' },
+  { code: 'communication:templates:manage', name: '管理消息模板', module: 'communication', action: 'manage' },
+  { code: 'communication:messages:view', name: '查看消息任务', module: 'communication', action: 'view' },
+  { code: 'communication:messages:manage', name: '管理消息任务', module: 'communication', action: 'manage' },
+] as const;
 
-const teacherPermissionIds = [
-  'perm-auth-session-read',
-  'perm-settings-view',
-  'perm-teachers-view',
-  'perm-students-view',
-  'perm-families-view',
-  'perm-analytics-overview-view',
-  'perm-analytics-teaching-view',
-  'perm-attendance-board-view',
-  'perm-attendance-homework-time-view',
-  'perm-communication-records-view',
-  'perm-communication-templates-view',
-  'perm-communication-messages-view',
+const defaultPermissions: Permission[] = permDefs.map((def) => ({ id: randomUUID(), ...def }));
+const permIdByCode = new Map(defaultPermissions.map((p) => [p.code, p.id]));
+
+const teacherPermissionCodes = [
+  'auth.session.read',
+  'settings:view',
+  'teachers:view',
+  'students:view',
+  'families:view',
+  'analytics:overview:view',
+  'analytics:teaching:view',
+  'attendance:board:view',
+  'attendance:homework-time:view',
+  'communication:records:view',
+  'communication:templates:view',
+  'communication:messages:view',
 ];
 
 const defaultRoles: Role[] = [
-  { id: 'role-admin', code: 'admin', name: '系统管理员', scopeLevel: 'system', status: 'active', permissionIds: defaultPermissions.map((permission) => permission.id) },
+  { id: randomUUID(), code: 'admin', name: '系统管理员', scopeLevel: 'system', status: 'active', permissionIds: defaultPermissions.map((permission) => permission.id) },
   {
-    id: 'role-teacher',
+    id: randomUUID(),
     code: 'teacher',
     name: '任课老师',
     scopeLevel: 'campus',
     status: 'active',
-    permissionIds: teacherPermissionIds,
+    permissionIds: teacherPermissionCodes.map((code) => permIdByCode.get(code)!),
   },
 ];
 
 const defaultUsers: UserRecord[] = [
   {
-    id: 'user-admin-001',
+    id: randomUUID(),
     username: 'admin',
     passwordHash: seedHash('admin123'),
     displayName: '系统管理员',
     mobile: '13800000000',
     email: 'admin@growthpilot.local',
     roles: ['admin'],
-    campusIds: ['campus-guanshanhu', 'campus-nanming'],
+    campusIds: [settingsRepositorySeed.campusIdGsh, settingsRepositorySeed.campusIdNm],
     status: 'active',
   },
   {
-    id: 'user-teacher-001',
+    id: randomUUID(),
     username: 'teacher.zhang',
     passwordHash: seedHash('teacher123'),
     displayName: '张老师',
     mobile: '13800000001',
     email: 'teacher.zhang@growthpilot.local',
     roles: ['teacher'],
-    campusIds: ['campus-guanshanhu'],
+    campusIds: [settingsRepositorySeed.campusIdGsh],
     status: 'active',
   },
 ];

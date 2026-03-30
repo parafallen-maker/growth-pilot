@@ -36,9 +36,7 @@ export default async function FamiliesPage({
         <div className="page-header">
           <div>
             <h3>新建家庭</h3>
-            <p>已接 POST /families，可直接创建家庭档案并回跳列表。</p>
           </div>
-          <span className="badge success">POST /families</span>
         </div>
         <form className="form-grid" action={createFamily}>
           <div className="field"><label>家庭编号（可选）</label><input className="input" name="familyCode" placeholder="F202603-001" /></div>

@@ -38,9 +38,7 @@ export default async function GrowthGoalsPage({
           <div className="page-header">
             <div>
               <h3>新建目标</h3>
-              <p>已接 POST /growth/goals，可直接创建目标条目。</p>
             </div>
-            <span className="badge success">POST /growth/goals</span>
           </div>
           <form className="form-grid" action={createGrowthGoal}>
             <div className="field"><label>学生</label><select className="select" name="studentId" required defaultValue={students.list[0]?.id ?? ''}>{students.list.map((student) => <option key={student.id} value={student.id}>{student.name} / {student.studentNo}</option>)}</select></div>
@@ -91,7 +89,6 @@ export default async function GrowthGoalsPage({
                 <h3>详情侧栏</h3>
                 <p>{detail.nextAction}</p>
               </div>
-              <span className="badge success">POST /checkins</span>
             </div>
             <SummaryPanel title="基础信息" items={detail.profile} />
             <TimelinePanel title="跟进记录" items={detail.followups.length ? detail.followups : [{ title: '暂无 check-in', detail: '当前目标还没有跟进记录。' }]} />

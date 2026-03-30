@@ -30,8 +30,8 @@ export default async function AttendanceBoardPage({
     attendanceService.queryBoard(filters).catch(() => ({
       filters,
       metrics: [],
-      absentStudents: [{ name: '当前无法获取应到名单', detail: 'roster 接口尚未开放，且本次未取到 attendance/events 返回。' }],
-      abnormalRecords: [{ name: '出勤数据暂不可用', detail: '已保留页面结构，避免 SSR 直接失败。' }],
+      absentStudents: [{ name: '当前无法获取应到名单', detail: '数据暂时不可用，请稍后重试。' }],
+      abnormalRecords: [{ name: '出勤数据暂不可用', detail: '请稍后刷新重试。' }],
       eventTimeline: [],
       latestEvents: [],
       actionNotice: '当前未取到 attendance/events 数据，可稍后刷新重试。',
@@ -57,9 +57,7 @@ export default async function AttendanceBoardPage({
           <div className="page-header">
             <div>
               <h3>手动录入出勤事件</h3>
-              <p>当前表单直连 POST /attendance/events；roster 缺口仍明确保留，但补录动作不再是假按钮。</p>
             </div>
-            <span className="badge success">POST /attendance/events</span>
           </div>
           <form className="form-grid" action={createAttendanceBoardEvent}>
             <div className="field"><label>学生</label><select className="select" name="studentId" defaultValue={students.list[0]?.id ?? ''} required>{students.list.length ? students.list.map((student) => <option key={student.id} value={student.id}>{student.name} / {student.studentNo}</option>) : <option value="">暂无学生</option>}</select></div>
@@ -88,16 +86,12 @@ export default async function AttendanceBoardPage({
           <div className="page-header">
             <div>
               <h3>动作与异常闭环</h3>
-              <p>能接真事件流的先接，缺 roster 和异常工作流的地方就明说。</p>
             </div>
-            <span className="badge">real events / partial board</span>
           </div>
           <SummaryPanel
-            title="联调说明"
+            title="操作说明"
             items={[
-              { name: '事件写入', detail: 'POST /attendance/events 真接口已存在，含幂等去重。' },
               { name: '异常修正', detail: result.actionNotice },
-              { name: '页面状态', detail: '页面在服务异常时会降级展示说明，不再直接返回 SSR 500。' },
             ]}
           />
         </section>

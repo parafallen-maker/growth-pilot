@@ -98,9 +98,8 @@ export default async function GrowthReportsPage({
           <div className="page-header">
             <div>
               <h3>生成报告草稿</h3>
-              <p>已接 POST /growth/reports/generate，当前支持按学生批量生成。</p>
+              <p>选择学生批量生成报告草稿。</p>
             </div>
-            <span className="badge success">POST /generate</span>
           </div>
           <form className="form-grid" action={generateGrowthReport}>
             <div className="field"><label>报告类型</label><select className="select" name="reportType" defaultValue="weekly"><option value="weekly">weekly</option><option value="monthly">monthly</option></select></div>
@@ -115,9 +114,8 @@ export default async function GrowthReportsPage({
           <div className="page-header">
             <div>
               <h3>批量报告动作</h3>
-              <p>生成支持按学生批量执行；这里补齐已复核报告的批量发布闭环。</p>
+              <p>将已复核的报告批量发布。</p>
             </div>
-            <span className="badge success">bulk publish</span>
           </div>
           <form className="stack" action={bulkPublishGrowthReports}>
             <div className="summary-list">
@@ -179,7 +177,7 @@ export default async function GrowthReportsPage({
             </form>
           </section>
           <section className="panel stack" id="report-publish-form">
-            <div className="page-header"><h3>发布设置</h3><span className="badge success">API ready</span></div>
+            <div className="page-header"><h3>发布设置</h3></div>
             <SummaryPanel title="发布规则" items={result.editor.publishSettings} />
             <article className="selection-card">
               <strong>动作约定</strong>

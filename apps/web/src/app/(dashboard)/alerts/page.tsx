@@ -59,8 +59,7 @@ export default async function AlertsPage({
     <div className="stack">
       <PageHeader
         title="预警中心"
-        description="系统自动检测异常情况并生成预警，已切到真实 /alerts API"
-        actions={<span className="badge success">真实 /alerts API</span>}
+        description="系统自动检测异常情况并生成预警"
       />
 
       <MetricGrid items={[

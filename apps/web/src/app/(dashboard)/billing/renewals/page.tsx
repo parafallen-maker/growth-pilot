@@ -43,7 +43,6 @@ export default async function BillingRenewalsPage({
               <h3>新建续费任务</h3>
               <p>创建续费跟进记录，指定负责人和到期时间。</p>
             </div>
-            <span className="badge success">POST /billing/renewals</span>
           </div>
           <form className="form-grid" action={createBillingRenewal}>
             <div className="field"><label>家庭</label><select className="select" name="familyId" defaultValue={families.list[0]?.id ?? ''} required>{families.list.length ? families.list.map((family) => <option key={family.id} value={family.id}>{family.familyName ?? family.primaryContactName ?? family.familyCode}</option>) : <option value="">暂无家庭</option>}</select></div>
@@ -65,9 +64,7 @@ export default async function BillingRenewalsPage({
             <div className="page-header">
               <div>
                 <h3>更新跟进状态</h3>
-                <p>状态更新走 PATCH /billing/renewals/{'{id}'}/status。</p>
               </div>
-              <span className="badge">PATCH status</span>
             </div>
             <form className="form-grid" action={updateBillingRenewalStatus}>
               <div className="field form-span-2"><label>续费任务</label><select className="select" name="renewalId" defaultValue={result.list[0]?.renewalId ?? ''} required>{result.list.length ? result.list.map((item) => <option key={item.renewalId} value={item.renewalId}>{item.studentName} / {item.familyName} / {item.status}</option>) : <option value="">暂无续费任务</option>}</select></div>
@@ -81,9 +78,7 @@ export default async function BillingRenewalsPage({
             <div className="page-header">
               <div>
                 <h3>更新下次跟进</h3>
-                <p>下次跟进走 PATCH /billing/renewals/{'{id}'}/follow-up。</p>
               </div>
-              <span className="badge">PATCH follow-up</span>
             </div>
             <form className="form-grid" action={updateBillingRenewalFollowUp}>
               <div className="field form-span-2"><label>续费任务</label><select className="select" name="renewalId" defaultValue={result.list[0]?.renewalId ?? ''} required>{result.list.length ? result.list.map((item) => <option key={item.renewalId} value={item.renewalId}>{item.studentName} / {item.nextFollowUpAt}</option>) : <option value="">暂无续费任务</option>}</select></div>

@@ -73,9 +73,7 @@ export default async function HomeworkErrorTaxonomiesPage({
             <div className="page-header">
               <div>
                 <h3>新建错因</h3>
-                <p>直接写入 `/homework/error-taxonomies`，为教师复核页补全可维护词典。</p>
               </div>
-              <span className="badge success">POST ready</span>
             </div>
             <form className="form-grid" action={createErrorTaxonomy}>
               <div className="field"><label>错因编码</label><input className="input" name="code" placeholder="MATH-CALC-001" required disabled={!canManage} /></div>
@@ -98,7 +96,6 @@ export default async function HomeworkErrorTaxonomiesPage({
                 <h3>编辑错因</h3>
                 <p>{selectedTaxonomy ? `当前编辑：${selectedTaxonomy.code} / ${selectedTaxonomy.name}` : '当前页暂无词典项可编辑。'}</p>
               </div>
-              <span className="badge">PATCH ready</span>
             </div>
             {selectedTaxonomy ? (
               <form className="form-grid" action={updateErrorTaxonomy}>

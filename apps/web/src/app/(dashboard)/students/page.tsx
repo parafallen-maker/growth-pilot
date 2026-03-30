@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { DataTable, PageHeader } from '@/components/business/page-blocks';
 import { familyService } from '@/services/families-service';
-import { queryKeys } from '@/features/shared/query-keys';
 import { studentService, type StudentQuery } from '@/services/students-service';
 import { createStudent } from './actions';
 import { SubmitButton } from '@/components/business/submit-button';
@@ -71,9 +70,7 @@ export default async function StudentsPage({
         <div className="page-header">
           <div>
             <h3>新建学生</h3>
-            <p>已接 POST /students，先覆盖基础档案创建。</p>
           </div>
-          <span className="badge success">POST /students</span>
         </div>
         <form className="form-grid" action={createStudent}>
           <div className="field"><label>学生编号</label><input className="input" name="studentNo" placeholder="STU-202603-001" required /></div>
@@ -109,7 +106,7 @@ export default async function StudentsPage({
 
       <DataTable
         title={`学生列表（共 ${result.page.total} 条）`}
-        description={`当前第 ${result.page.pageNo} / ${totalPages} 页，分页 / 搜索 / 排序参数已直连列表查询。`}
+        description={`当前第 ${result.page.pageNo} / ${totalPages} 页`}
         columns={['学号', '姓名', '年级', '校区', '当前老师', '家庭主联系人', '最近作业正确率', '本周成长观察', '当前未收余额', '状态', '详情']}
         rows={result.list.map((item) => [
           item.studentNo,
@@ -124,14 +121,13 @@ export default async function StudentsPage({
           item.status,
           <Link key={`${item.id}-detail`} className="btn" href={item.detailHref}>查看 360</Link>,
         ])}
-        actions={<div className="button-row"><span className="badge">page {result.page.pageNo}/{totalPages}</span><a className="btn" href="#student-bulk-hint">批量动作说明</a></div>}
+        actions={<div className="button-row"><a className="btn" href="#student-bulk-hint">批量动作说明</a></div>}
       />
 
       <section className="panel" id="student-bulk-hint">
         <div className="page-header">
           <div>
-            <h3>分页导航 / 批量动作说明</h3>
-            <p>当前页码、每页条数、排序字段都会透传回列表查询；批量标签仍等待后端 bulk API，因此页面明确展示说明而不保留假按钮。</p>
+            <h3>分页导航</h3>
           </div>
           <div className="button-row">
             <Link className="btn" aria-disabled={result.page.pageNo <= 1} href={buildStudentsHref(filters, { pageNo: prevPage })}>上一页</Link>

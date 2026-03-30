@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { asc, eq } from 'drizzle-orm';
+import { randomUUID } from 'node:crypto';
 import { createDb, dbSchema } from '../../../db';
 import { FileJsonStore } from '../../../shared/persistence/file-json-store';
 import { isDbPersistenceEnabled } from '../../../shared/persistence/adapter';
@@ -35,21 +36,25 @@ interface SettingsStoreShape {
   dictionaries: DictionaryRecord[];
 }
 
+// Stable seed UUIDs — referenced by users.repository.ts campusIds
+const CAMPUS_ID_GSH = randomUUID();
+const CAMPUS_ID_NM = randomUUID();
+
 const defaultCampuses: CampusRecord[] = [
-  { id: 'campus-guanshanhu', code: 'GSH', name: '观山湖校区', status: 'active' },
-  { id: 'campus-nanming', code: 'NM', name: '南明校区', status: 'active' },
+  { id: CAMPUS_ID_GSH, code: 'GSH', name: '观山湖校区', status: 'active' },
+  { id: CAMPUS_ID_NM, code: 'NM', name: '南明校区', status: 'active' },
 ];
 
 const defaultTerms: TermRecord[] = [
-  { id: 'term-2026-spring-gsh', campusId: 'campus-guanshanhu', code: '2026-SPRING', name: '2026 春季学期', startDate: '2026-02-24', endDate: '2026-07-10', status: 'active' },
-  { id: 'term-2026-spring-nm', campusId: 'campus-nanming', code: '2026-SPRING-NM', name: '2026 春季学期（南明）', startDate: '2026-02-24', endDate: '2026-07-10', status: 'active' },
+  { id: randomUUID(), campusId: CAMPUS_ID_GSH, code: '2026-SPRING', name: '2026 春季学期', startDate: '2026-02-24', endDate: '2026-07-10', status: 'active' },
+  { id: randomUUID(), campusId: CAMPUS_ID_NM, code: '2026-SPRING-NM', name: '2026 春季学期（南明）', startDate: '2026-02-24', endDate: '2026-07-10', status: 'active' },
 ];
 
 const defaultDictionaries: DictionaryRecord[] = [
-  { id: 'dict-student-status-active', dictType: 'student_status', code: 'active', label: '在读', value: 'active' },
-  { id: 'dict-student-status-graduated', dictType: 'student_status', code: 'graduated', label: '结业', value: 'graduated' },
-  { id: 'dict-job-status-running', dictType: 'job_status', code: 'running', label: '执行中', value: 'running' },
-  { id: 'dict-job-status-succeeded', dictType: 'job_status', code: 'succeeded', label: '已完成', value: 'succeeded' },
+  { id: randomUUID(), dictType: 'student_status', code: 'active', label: '在读', value: 'active' },
+  { id: randomUUID(), dictType: 'student_status', code: 'graduated', label: '结业', value: 'graduated' },
+  { id: randomUUID(), dictType: 'job_status', code: 'running', label: '执行中', value: 'running' },
+  { id: randomUUID(), dictType: 'job_status', code: 'succeeded', label: '已完成', value: 'succeeded' },
 ];
 
 interface SettingsRepositoryPort {
@@ -142,4 +147,6 @@ export const settingsRepositorySeed = {
   campuses: defaultCampuses,
   terms: defaultTerms,
   dictionaries: defaultDictionaries,
+  campusIdGsh: CAMPUS_ID_GSH,
+  campusIdNm: CAMPUS_ID_NM,
 };

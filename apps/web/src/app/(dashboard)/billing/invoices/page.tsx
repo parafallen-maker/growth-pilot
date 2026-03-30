@@ -46,7 +46,6 @@ export default async function BillingInvoicesPage({
               <h3>新建账单</h3>
               <p>为学生创建账单并添加收费项目。</p>
             </div>
-            <span className="badge success">POST /billing/invoices</span>
           </div>
           <form className="form-grid" action={createBillingInvoice}>
             <div className="field"><label>账单编号</label><input className="input" name="invoiceNo" placeholder="INV-202603-001" required /></div>
@@ -72,9 +71,8 @@ export default async function BillingInvoicesPage({
           <div className="page-header">
             <div>
               <h3>记录收款</h3>
-              <p>表单已接入 POST /billing/invoices/{'{id}'}/payments。当前后端只开放创建与详情，支付列表聚合尚未开放。</p>
+              <p>为账单记录收款信息。</p>
             </div>
-            <span className="badge success">POST /payments</span>
           </div>
           <form className="form-grid" action={createInvoicePayment}>
             <div className="field form-span-2"><label>账单</label><select className="select" name="invoiceId" required defaultValue=""><option value="" disabled>请选择账单</option>{result.invoices.list.map((invoice) => <option key={invoice.invoiceId} value={invoice.invoiceId}>{invoice.invoiceNo} / {invoice.familyName} / {invoice.receivableYuan}</option>)}</select></div>
@@ -92,9 +90,8 @@ export default async function BillingInvoicesPage({
           <div className="page-header">
             <div>
               <h3>发起退款</h3>
-              <p>当前退款表单依赖最近一次成功创建并回显的支付详情，不伪造 payments/refunds 聚合列表。</p>
+              <p>基于已有支付记录发起退款申请。</p>
             </div>
-            <span className="badge">POST /billing/payments/{'{id}'}/refunds</span>
           </div>
           {paymentDetail ? (
             <>
@@ -114,7 +111,7 @@ export default async function BillingInvoicesPage({
               </form>
             </>
           ) : (
-            <SummaryPanel title="当前退款入口状态" items={[{ name: '需要支付详情', detail: '先通过本页“记录支付”成功创建一笔 payment，本页再用 GET /billing/payments/{id} 展示可退款上下文。' }]} />
+            <SummaryPanel title="当前退款入口状态" items={[{ name: '需要支付详情', detail: '请先通过本页"记录收款"创建一笔支付记录，即可在此发起退款。' }]} />
           )}
         </section>
         <FilterBar fields={[
@@ -137,9 +134,8 @@ export default async function BillingInvoicesPage({
           ...result.adjustments,
           { name: '统一动作位', detail: action.actions.join(' / ') },
           { name: '状态流', detail: action.statusFlow },
-          { name: '页面状态', detail: result.invoices.list.length ? '账单列表已接真；支付/退款列表继续明确依赖后端聚合接口。' : '当前无账单结果，已保留真实录入表单并禁用提交。' },
-          refundDetail ? { name: '最近退款详情', detail: `${refundDetail.refund.refundNo} / ${refundDetail.refund.status} / ${refundDetail.invoice?.invoiceNo ?? '未关联账单'}` } : { name: '退款详情入口', detail: '当 refundId 已知时，本页会额外调用 GET /billing/refunds/{id} 展示最近一次退款上下文。' },
-        ].map((item) => ({ name: 'name' in item ? item.name : item.title, detail: item.detail }))} />
+          refundDetail ? { name: '最近退款详情', detail: `${refundDetail.refund.refundNo} / ${refundDetail.refund.status} / ${refundDetail.invoice?.invoiceNo ?? '未关联账单'}` } : null,
+        ].filter((item): item is NonNullable<typeof item> => Boolean(item)).map((item) => ({ name: 'name' in item ? item.name : item.title, detail: item.detail }))} />
       </div>
     </PermissionGuard>
   );

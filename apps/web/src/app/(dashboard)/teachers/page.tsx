@@ -35,9 +35,7 @@ export default async function TeachersPage({
         <div className="page-header">
           <div>
             <h3>新建教师</h3>
-            <p>已接 POST /teachers，可直接创建教师档案并回跳列表。</p>
           </div>
-          <span className="badge success">POST /teachers</span>
         </div>
         <form className="form-grid" action={createTeacher}>
           <div className="field"><label>校区 ID</label><input className="input" name="campusId" placeholder="campus-guiyang" required /></div>

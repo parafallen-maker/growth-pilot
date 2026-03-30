@@ -52,7 +52,6 @@ export default async function GrowthObservationsPage({
               <h3>新建成长观察</h3>
               <p>选择学生和评价模板，按维度为学生打分。</p>
             </div>
-            <span className="badge success">POST /growth/observations</span>
           </div>
           {activeRubric ? (
             <>
