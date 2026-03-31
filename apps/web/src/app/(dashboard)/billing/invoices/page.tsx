@@ -40,6 +40,26 @@ export default async function BillingInvoicesPage({
         {query?.payment ? <section className="panel"><div className="badge success">{query.paymentReplayed === '1' ? '幂等重放成功' : '支付已记录'}：{query.payment}{query.paymentStatus ? ` / status=${query.paymentStatus}` : ''}</div></section> : null}
         {query?.refund ? <section className="panel"><div className="badge success">退款已创建：{query.refund}{query.refundStatus ? ` / status=${query.refundStatus}` : ''}</div></section> : null}
         {query?.error ? <section className="panel"><div className="badge warning">{decodeURIComponent(query.error)}</div></section> : null}
+        {/* 欠费预警区域 */}
+        {(() => {
+          const overdueInvoices = result.invoices.list.filter((item) => {
+            const status = (item.status as string).toLowerCase();
+            return status === 'overdue' || status === 'issued';
+          });
+          if (!overdueInvoices.length) return null;
+          const totalOverdue = overdueInvoices.reduce((sum, item) => {
+            const paid = parseFloat(String(item.paidYuan)) || 0;
+            const receivable = parseFloat(String(item.receivableYuan)) || 0;
+            return sum + Math.max(receivable - paid, 0);
+          }, 0);
+          return (
+            <section className="panel" style={{ borderColor: 'var(--color-danger, #e74c3c)', borderLeft: '4px solid var(--color-danger, #e74c3c)' }}>
+              <h3 style={{ color: 'var(--color-danger, #e74c3c)', margin: '0 0 8px' }}>⚠️ 欠费预警</h3>
+              <p>当前有 <strong>{overdueInvoices.length}</strong> 笔未缴清账单，合计欠费金额 <strong>¥{totalOverdue.toFixed(2)}</strong></p>
+              <div className="subtle" style={{ marginTop: 8 }}>请及时跟进催缴，避免账单长期逾期。</div>
+            </section>
+          );
+        })()}
         <section className="panel stack" id="invoice-create-form">
           <div className="page-header">
             <div>
@@ -53,7 +73,7 @@ export default async function BillingInvoicesPage({
             <div className="field"><label>家庭</label><select className="select" name="familyId" defaultValue={families.list[0]?.id ?? ''} required>{families.list.length ? families.list.map((family) => <option key={family.id} value={family.id}>{family.familyName ?? family.primaryContactName ?? family.familyCode}</option>) : <option value="">暂无家庭</option>}</select></div>
             <div className="field"><label>学生</label><select className="select" name="studentId" defaultValue={students.list[0]?.id ?? ''} required>{students.list.length ? students.list.map((student) => <option key={student.id} value={student.id}>{student.name} / {student.studentNo}</option>) : <option value="">暂无学生</option>}</select></div>
             <div className="field"><label>账期</label><input className="input" name="billingPeriod" placeholder="2026-03" required /></div>
-            <div className="field"><label>状态</label><select className="select" name="status" defaultValue="issued"><option value="draft">draft</option><option value="issued">issued</option><option value="paid">paid</option></select></div>
+            <div className="field"><label>状态</label><select className="select" name="status" defaultValue="issued"><option value="draft">草稿</option><option value="issued">已开具</option><option value="paid">已缴费</option></select></div>
             <div className="field"><label>开票日期</label><input className="input" type="date" name="issueDate" required /></div>
             <div className="field"><label>到期日期</label><input className="input" type="date" name="dueDate" required /></div>
             <div className="field"><label>应收金额（元）</label><input className="input" type="number" min="0" step="0.01" name="amount" required /></div>
@@ -79,8 +99,8 @@ export default async function BillingInvoicesPage({
             <div className="field"><label>支付编号</label><input className="input" name="paymentNo" placeholder="PAY-202603-001" required /></div>
             <div className="field"><label>支付金额（元）</label><input className="input" type="number" min="0" step="0.01" name="paidAmount" required /></div>
             <div className="field"><label>支付时间</label><input className="input" type="datetime-local" name="paymentTime" required /></div>
-            <div className="field"><label>支付渠道</label><select className="select" name="channel" defaultValue="wechat_pay"><option value="wechat_pay">wechat_pay</option><option value="alipay">alipay</option><option value="bank_transfer">bank_transfer</option><option value="cash">cash</option></select></div>
-            <div className="field"><label>状态</label><select className="select" name="status" defaultValue="success"><option value="success">success</option><option value="failed">failed</option><option value="canceled">canceled</option></select></div>
+            <div className="field"><label>支付渠道</label><select className="select" name="channel" defaultValue="wechat_pay"><option value="wechat_pay">微信支付</option><option value="alipay">支付宝</option><option value="bank_transfer">银行转账</option><option value="cash">现金</option></select></div>
+            <div className="field"><label>状态</label><select className="select" name="status" defaultValue="success"><option value="success">成功</option><option value="failed">失败</option><option value="canceled">已取消</option></select></div>
             <div className="field"><label>交易流水号</label><input className="input" name="transactionNo" placeholder="wx_20260325_xxx" /></div>
             <div className="field form-span-2"><label>备注</label><textarea className="textarea" name="remark" placeholder="收款说明、分次支付备注等" /></div>
             <div className="button-row form-span-2"><button className="btn primary" type="submit" disabled={!result.invoices.list.length}>记录收款</button></div>
@@ -105,7 +125,7 @@ export default async function BillingInvoicesPage({
                 <div className="field"><label>退款编号</label><input className="input" name="refundNo" placeholder="RF-202603-001" required /></div>
                 <div className="field"><label>退款金额（元）</label><input className="input" type="number" min="0" step="0.01" name="refundAmount" required /></div>
                 <div className="field"><label>退款时间</label><input className="input" type="datetime-local" name="refundTime" required /></div>
-                <div className="field"><label>状态</label><select className="select" name="status" defaultValue="pending"><option value="pending">pending</option><option value="completed">completed</option><option value="rejected">rejected</option></select></div>
+                <div className="field"><label>状态</label><select className="select" name="status" defaultValue="pending"><option value="pending">待处理</option><option value="completed">已完成</option><option value="rejected">已驳回</option></select></div>
                 <div className="field form-span-2"><label>退款原因</label><textarea className="textarea" name="reason" placeholder="退费原因、班型调整说明、结转备注等" required /></div>
                 <div className="button-row form-span-2"><button className="btn primary" type="submit">发起退款</button></div>
               </form>

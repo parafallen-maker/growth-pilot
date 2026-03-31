@@ -1,7 +1,10 @@
 import Link from 'next/link';
 import { MetricGrid, PageHeader, SummaryPanel, TimelinePanel } from '@/components/business/page-blocks';
 import { studentService } from '@/services/students-service';
+import { billingService } from '@/services/billing-service';
 import { PageBreadcrumbs } from '../../_components/page-breadcrumbs';
+import { StudentEditSection } from './student-edit-section';
+import { BillingByStudentSection } from './billing-by-student';
 
 function currency(amountCents: number) {
   return `¥${(amountCents / 100).toLocaleString('zh-CN')}`;
@@ -23,6 +26,7 @@ function statusText(status?: string | null) {
 export default async function Student360Page({ params }: { params: Promise<{ studentId: string }> }) {
   const { studentId } = await params;
   const aggregate = await studentService.detail360(studentId);
+  const billingData = await billingService.queryInvoices({ studentId }).catch(() => null);
 
   return (
     <div className="stack">
@@ -30,7 +34,7 @@ export default async function Student360Page({ params }: { params: Promise<{ stu
       <PageHeader
         title={`Student 360 · ${aggregate.student.name}`}
         description={`${aggregate.student.studentNo} / ${aggregate.student.gradeLabel} / ${aggregate.currentEnrollment?.campusId ?? '--'} / 状态 ${statusText(aggregate.student.status)}`}
-        actions={<><Link className="btn" href="/students">返回列表</Link><Link className="btn primary" href="/communication/records">查看沟通台账</Link></>}
+        actions={<><Link className="btn" href="/students">返回列表</Link><button className="btn primary" type="button" data-toggle-edit>编辑</button><Link className="btn" href="/communication/records">查看沟通台账</Link></>}
       />
 
       <MetricGrid
@@ -84,6 +88,10 @@ export default async function Student360Page({ params }: { params: Promise<{ stu
           }))}
         />
       </div>
+
+      <StudentEditSection student={aggregate.student} />
+
+      <BillingByStudentSection studentId={studentId} studentName={aggregate.student.name} billingData={billingData} />
     </div>
   );
 }

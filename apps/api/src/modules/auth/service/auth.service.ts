@@ -19,7 +19,7 @@ export class AuthService {
   private readonly jwtSecret = requireJwtSecret();
   private readonly issuer = 'growthpilot-api';
   private readonly audience = 'growthpilot-web';
-  private readonly accessTtlSeconds = Number(process.env.JWT_ACCESS_TTL_SECONDS ?? 15 * 60);
+  private readonly accessTtlSeconds = Number(process.env.JWT_ACCESS_TTL_SECONDS ?? 2 * 60 * 60);
   private readonly refreshTtlSeconds = Number(process.env.JWT_REFRESH_TTL_SECONDS ?? 30 * 24 * 60 * 60);
   private readonly loginRateLimitMax = Number(process.env.AUTH_LOGIN_RATE_LIMIT_MAX ?? 10);
   private readonly loginRateLimitWindowSeconds = Number(process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_SECONDS ?? 60);

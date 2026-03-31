@@ -4,6 +4,7 @@ import { requireCurrentUser } from '@/lib/current-user';
 import { roleLabels, type AppRole } from '@/lib/navigation';
 import { ALERT_TYPE_LABELS, TASK_PRIORITY_LABELS, TASK_TYPE_LABELS, getPriorityStyle } from '@/lib/business-logic';
 import { CsvExportButton } from '../_components/csv-export-button';
+import { TermSwitcher } from './term-switcher';
 import Link from 'next/link';
 
 const taskStatusLabel: Record<string, string> = { open: '待办', in_progress: '进行中', done: '已完成' };
@@ -29,5 +30,5 @@ async function TeacherDashboard({ currentUser, campusId, termId }: { currentUser
 
 async function AdminDashboard({ campusId, termId }: { campusId: string; termId: string }) {
   const data = await analyticsService.queryOverview({ campusId, termId });
-  return <div className="stack"><PageHeader title="经营总览" description="查看校区核心指标和运营状况" actions={<><button className="btn primary">切学期</button><CsvExportButton filename="analytics-overview.csv" headers={['指标', '值', '说明']} rows={data.metrics.map((item) => [item.label, item.value, item.hint])} /></>} /><MetricGrid items={data.metrics} /><div className="grid-2">{data.charts.map((chart) => <ChartPanel key={chart.title} title={chart.title} description={chart.description} items={chart.items} />)}</div><div className="grid-2"><SummaryPanel title="经营趋势摘要" items={data.chartCards} /><SummaryPanel title="运营摘要" items={data.tableCards} /></div><div className="grid-2"><TimelinePanel title="治理提示" items={data.governance.map((item) => ({ title: item.name, detail: item.detail }))} /><TimelinePanel title="全校待办" items={[{ title: '今日需复核总数', detail: '24 份' }, { title: '逾期未缴费', detail: '¥12,400' }]} /></div></div>;
+  return <div className="stack"><PageHeader title="经营总览" description="查看校区核心指标和运营状况" actions={<><TermSwitcher campusId={campusId} termId={termId} /><CsvExportButton filename="analytics-overview.csv" headers={['指标', '值', '说明']} rows={data.metrics.map((item) => [item.label, item.value, item.hint])} /></>} /><MetricGrid items={data.metrics} /><div className="grid-2">{data.charts.map((chart) => <ChartPanel key={chart.title} title={chart.title} description={chart.description} items={chart.items} />)}</div><div className="grid-2"><SummaryPanel title="经营趋势摘要" items={data.chartCards} /><SummaryPanel title="运营摘要" items={data.tableCards} /></div><div className="grid-2"><TimelinePanel title="治理提示" items={data.governance.map((item) => ({ title: item.name, detail: item.detail }))} /><TimelinePanel title="全校待办" items={[{ title: '今日需复核总数', detail: '24 份' }, { title: '逾期未缴费', detail: '¥12,400' }]} /></div></div>;
 }

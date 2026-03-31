@@ -3,6 +3,7 @@ import { PageHeader, SummaryPanel, TabStrip, TimelinePanel } from '@/components/
 import { requireCurrentUser } from '@/lib/current-user';
 import { queryKeys } from '@/features/shared/query-keys';
 import { settingsService } from '@/services/settings-service';
+import { DictionaryManager } from '../dictionary-manager';
 
 export default async function SettingsSystemPage() {
   const currentUser = await requireCurrentUser();
@@ -23,6 +24,7 @@ export default async function SettingsSystemPage() {
         </div>
         <div className="grid-2">
           <SummaryPanel title="字典" items={detail.dictionaries} />
+          <DictionaryManager dictionaries={detail.dictionaries} />
           <TimelinePanel title="AI 任务中心" items={detail.jobs.map((job) => ({ title: job.name, detail: job.detail }))} />
         </div>
       </div>

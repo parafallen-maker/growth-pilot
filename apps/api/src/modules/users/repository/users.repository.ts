@@ -71,7 +71,13 @@ const permDefs = [
   { code: 'alerts:manage', name: '管理告警', module: 'alerts', action: 'manage' },
 ] as const;
 
-const defaultPermissions: Permission[] = permDefs.map((def) => ({ id: randomUUID(), ...def }));
+const seenCodes = new Set<string>();
+const permDefsFiltered = permDefs.filter((def) => {
+  if (seenCodes.has(def.code)) return false;
+  seenCodes.add(def.code);
+  return true;
+});
+const defaultPermissions: Permission[] = permDefsFiltered.map((def) => ({ id: randomUUID(), ...def }));
 const permIdByCode = new Map(defaultPermissions.map((p) => [p.code, p.id]));
 
 const teacherPermissionCodes = [

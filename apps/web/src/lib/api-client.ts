@@ -59,8 +59,11 @@ async function parseResponse<T>(response: Response, path: string): Promise<T> {
   const payload = text ? (JSON.parse(text) as Partial<ApiEnvelope<T>>) : null;
 
   if (!response.ok) {
+    const fallbackMessage = response.status === 429
+      ? '请求过于频繁，请稍后再试'
+      : `API ${path} failed`;
     throw new ApiError(
-      payload?.message ?? `API ${path} failed`,
+      payload?.message ?? fallbackMessage,
       response.status,
       payload?.code,
       payload?.traceId,

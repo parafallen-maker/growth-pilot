@@ -138,12 +138,36 @@ export const studentService = {
     });
   },
 
+  async listImportJobs() {
+    const auth = await getAuthTokens();
+    return apiRequest<Array<{
+      jobId: string;
+      status: string;
+      progress: number;
+      queuedAt: string;
+      finishedAt: string | null;
+      result: {
+        totalRows?: number;
+        validRows?: number;
+        invalidRows?: number;
+        errors?: Array<{ rowNumber: number; field?: string; message: string }>;
+      } | null;
+      errorMessage: string | null;
+    }>>('/jobs?jobType=students_import', { auth, retryOn401: Boolean(auth.refreshToken) });
+  },
+
   action() {
     return {
       template: 'student-import-template.xlsx',
-      jobs: [
-        { title: '导入任务 GP-IMP-001', detail: 'running / 82% / 已校验 186 行' },
-        { title: '字段映射', detail: '学号 -> studentNo；班级 -> enrollment.className' },
+      fieldMappings: [
+        { title: '学号', detail: 'studentNo' },
+        { title: '姓名', detail: 'name' },
+        { title: '年级', detail: 'gradeLabel' },
+        { title: '班级', detail: 'className' },
+        { title: '家庭编码', detail: 'familyCode' },
+        { title: '校区', detail: 'campusId' },
+        { title: '学期', detail: 'termId' },
+        { title: '主班老师', detail: 'primaryTeacherId' },
       ],
     };
   },

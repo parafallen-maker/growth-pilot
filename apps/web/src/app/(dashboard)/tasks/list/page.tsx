@@ -57,6 +57,7 @@ export default async function TaskListPage({
       <PageHeader
         title="任务中心"
         description={`全校任务管理，当前登录：${currentUser.name}`}
+        actions={<a className="btn primary" href="#task-create-form">新建任务</a>}
       />
 
       <MetricGrid items={[
@@ -65,6 +66,31 @@ export default async function TaskListPage({
         { label: '已完成', value: String(doneCount), hint: '已闭环' },
         { label: '总计', value: String(metricsSource.page.total), hint: '全部任务' },
       ]} />
+
+      <section className="panel stack" id="task-create-form">
+        <div className="page-header">
+          <div>
+            <h3>新建任务</h3>
+            <p>创建新的待办任务。</p>
+          </div>
+        </div>
+        <form className="form-grid" action="/tasks/list">
+          <input type="hidden" name="ownerUserId" value={currentUser.id} />
+          <div className="field form-span-2"><label>任务标题</label><input className="input" name="title" placeholder="请输入任务标题" required /></div>
+          <div className="field"><label>类型</label><select className="select" name="taskType" defaultValue="custom">
+            {Object.entries(typeLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select></div>
+          <div className="field"><label>优先级</label><select className="select" name="priority" defaultValue="medium">
+            <option value="high">高</option>
+            <option value="medium">中</option>
+            <option value="low">低</option>
+          </select></div>
+          <div className="field"><label>截止日期</label><input className="input" type="date" name="dueDate" /></div>
+          <div className="field"><label>关联学生ID</label><input className="input" name="studentId" placeholder="选填" /></div>
+          <div className="field form-span-2"><label>描述</label><textarea className="textarea" name="description" placeholder="任务描述（选填）" /></div>
+          <div className="button-row form-span-2"><button className="btn primary" type="submit">创建任务</button></div>
+        </form>
+      </section>
 
       <TabStrip
         baseUrl="/tasks/list"
