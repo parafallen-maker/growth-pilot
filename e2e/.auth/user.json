@@ -1,0 +1,39 @@
+{
+  "cookies": [
+    {
+      "name": "gp_access_token",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiMWY5MmMxMS05ZDdiLTRhZWItODRlZi1jMTg0MzJhZWRjZWIiLCJzaWQiOiIzYWEwZDljYS0zOTY4LTRkMWQtYjc3MC01YmI0NjUyOGI3NmUiLCJqdGkiOiJlMjcwODgyYy01YWY4LTRlMTctOTYxMC0zYzFjY2I3OTZmYzEiLCJ0eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0OTg2ODA5LCJpc3MiOiJncm93dGhwaWxvdC1hcGkiLCJhdWQiOiJncm93dGhwaWxvdC13ZWIiLCJpYXQiOjE3NzQ5ODU5MDl9.IhyB-TE6HY55BVG8RH0qyVZoiFB3XeBvrdJOWB8lIQ4",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1777577909.831788,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "gp_refresh_token",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiMWY5MmMxMS05ZDdiLTRhZWItODRlZi1jMTg0MzJhZWRjZWIiLCJzaWQiOiIzYWEwZDljYS0zOTY4LTRkMWQtYjc3MC01YmI0NjUyOGI3NmUiLCJqdGkiOiJmZTU2Y2E3OC1lNzgxLTQzNTAtYmJjMi04N2RmOGI1YTVlYjEiLCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3NzU3NzkwOSwiaXNzIjoiZ3Jvd3RocGlsb3QtYXBpIiwiYXVkIjoiZ3Jvd3RocGlsb3Qtd2ViIiwiaWF0IjoxNzc0OTg1OTA5fQ.jH73fYBSzp_HKtKMOdXk_5R5V66gR0K92fhU8PHp5tU",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1777577909.831861,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "growthpilot.accessToken",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiMWY5MmMxMS05ZDdiLTRhZWItODRlZi1jMTg0MzJhZWRjZWIiLCJzaWQiOiIzYWEwZDljYS0zOTY4LTRkMWQtYjc3MC01YmI0NjUyOGI3NmUiLCJqdGkiOiJlMjcwODgyYy01YWY4LTRlMTctOTYxMC0zYzFjY2I3OTZmYzEiLCJ0eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0OTg2ODA5LCJpc3MiOiJncm93dGhwaWxvdC1hcGkiLCJhdWQiOiJncm93dGhwaWxvdC13ZWIiLCJpYXQiOjE3NzQ5ODU5MDl9.IhyB-TE6HY55BVG8RH0qyVZoiFB3XeBvrdJOWB8lIQ4"
+        },
+        {
+          "name": "growthpilot.refreshToken",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiMWY5MmMxMS05ZDdiLTRhZWItODRlZi1jMTg0MzJhZWRjZWIiLCJzaWQiOiIzYWEwZDljYS0zOTY4LTRkMWQtYjc3MC01YmI0NjUyOGI3NmUiLCJqdGkiOiJmZTU2Y2E3OC1lNzgxLTQzNTAtYmJjMi04N2RmOGI1YTVlYjEiLCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3NzU3NzkwOSwiaXNzIjoiZ3Jvd3RocGlsb3QtYXBpIiwiYXVkIjoiZ3Jvd3RocGlsb3Qtd2ViIiwiaWF0IjoxNzc0OTg1OTA5fQ.jH73fYBSzp_HKtKMOdXk_5R5V66gR0K92fhU8PHp5tU"
+        }
+      ]
+    }
+  ]
+}
