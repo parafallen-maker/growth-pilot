@@ -3,7 +3,7 @@ import { DataTable, FilterBar, MetricGrid, PageHeader, PaginationBar, TabStrip }
 import { SubmitButton } from '@/components/business/submit-button';
 import { requireCurrentUser } from '@/lib/current-user';
 import { tasksService, type TaskQuery } from '@/services/tasks-service';
-import { advanceTask } from '../actions';
+import { advanceTask, createTask } from '../actions';
 
 const statusLabel: Record<string, string> = { open: '待办', in_progress: '进行中', done: '已完成' };
 const priorityLabel: Record<string, string> = { high: '🔴 高', medium: '🟡 中', low: '⚪ 低' };
@@ -74,7 +74,7 @@ export default async function TaskListPage({
             <p>创建新的待办任务。</p>
           </div>
         </div>
-        <form className="form-grid" action="/tasks/list">
+        <form className="form-grid" action={createTask}>
           <input type="hidden" name="ownerUserId" value={currentUser.id} />
           <div className="field form-span-2"><label>任务标题</label><input className="input" name="title" placeholder="请输入任务标题" required /></div>
           <div className="field"><label>类型</label><select className="select" name="taskType" defaultValue="custom">

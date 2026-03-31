@@ -24,3 +24,9 @@ export async function advanceTask(formData: FormData) {
     revalidatePath(returnPath);
   }
 }
+
+export async function createTask(formData: FormData) {
+  // TODO: integrate with backend task creation API when available
+  revalidatePath('/tasks/list');
+  return { success: false, error: '功能开发中，敬请期待' };
+}

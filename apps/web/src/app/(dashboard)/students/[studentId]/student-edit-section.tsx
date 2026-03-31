@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { studentStatusLabels, studentStatusTransitions } from '@/lib/enums';
+import { updateStudent } from '../actions';
 
 export function StudentEditSection({ student }: { student: { id: string; studentNo: string; name: string; gender?: string; gradeLabel: string; className?: string; schoolName?: string; status: string; profileNotes?: string } }) {
   const [visible, setVisible] = useState(false);
@@ -11,27 +12,13 @@ export function StudentEditSection({ student }: { student: { id: string; student
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const body: Record<string, string> = {};
-    const name = fd.get('name');
-    const gradeLabel = fd.get('gradeLabel');
-    const gender = fd.get('gender');
-    const status = fd.get('status');
-    if (name) body.name = String(name);
-    if (gradeLabel) body.gradeLabel = String(gradeLabel);
-    if (gender) body.gender = String(gender);
-    if (status) body.status = String(status);
-
     startTransition(async () => {
-      const res = await fetch(`/api/v1/students/${student.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (res.ok) {
+      const result = await updateStudent(student.id, fd);
+      if (result.success) {
         setMsg('保存成功');
         setTimeout(() => window.location.reload(), 600);
       } else {
-        setMsg('保存失败');
+        setMsg(result.error ?? '保存失败');
       }
     });
   };

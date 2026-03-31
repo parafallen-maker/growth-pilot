@@ -36,10 +36,24 @@ export function Lightbox({ images, initialIndex = 0, open, onClose }: LightboxPr
   const prev = useCallback(() => setIndex((i) => (i > 0 ? i - 1 : images.length - 1)), [images.length]);
   const next = useCallback(() => setIndex((i) => (i < images.length - 1 ? i + 1 : 0)), [images.length]);
 
+  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleDoubleClick = useCallback(() => {
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+    }
     if (zoomed) { setZoomed(false); setScale(1); setOffset({ x: 0, y: 0 }); }
     else { setZoomed(true); setScale(2.5); }
   }, [zoomed]);
+
+  const handleImageClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+    clickTimerRef.current = setTimeout(() => {
+      clickTimerRef.current = null;
+    }, 300);
+  }, []);
 
   const handleBackdropClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) onClose();
@@ -98,7 +112,7 @@ export function Lightbox({ images, initialIndex = 0, open, onClose }: LightboxPr
       <img
         src={images[index]}
         alt={`Preview ${index + 1}`}
-        onClick={(e) => { e.stopPropagation(); handleDoubleClick(); }}
+        onClick={handleImageClick}
         onDoubleClick={(e) => { e.stopPropagation(); handleDoubleClick(); }}
         draggable={false}
         style={{

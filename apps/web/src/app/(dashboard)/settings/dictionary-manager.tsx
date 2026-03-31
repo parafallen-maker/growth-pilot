@@ -1,6 +1,9 @@
 'use client';
 
+'use client';
+
 import { useState } from 'react';
+import { apiRequest } from '@/lib/api-client';
 
 export function DictionaryManager({ dictionaries }: { dictionaries: Array<{ name: string; detail: string }> }) {
   const [mode, setMode] = useState<'idle' | 'create' | 'edit'>('idle');
@@ -12,16 +15,12 @@ export function DictionaryManager({ dictionaries }: { dictionaries: Array<{ name
     e.preventDefault();
     try {
       const method = mode === 'create' ? 'POST' : 'PUT';
-      const res = await fetch('/settings/dictionaries', {
+      const res = await apiRequest('/settings/dictionaries', {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      if (res.ok) {
-        window.location.reload();
-      } else {
-        alert('操作失败：' + (await res.text()));
-      }
+      window.location.reload();
     } catch (err) {
       alert('网络错误');
     }
@@ -30,12 +29,8 @@ export function DictionaryManager({ dictionaries }: { dictionaries: Array<{ name
   const handleDelete = async (dictType: string) => {
     if (!confirm(`确认删除字典类型「${dictType}」？`)) return;
     try {
-      const res = await fetch(`/settings/dictionaries?dictType=${encodeURIComponent(dictType)}`, { method: 'DELETE' });
-      if (res.ok) {
-        window.location.reload();
-      } else {
-        alert('删除失败：' + (await res.text()));
-      }
+      await apiRequest(`/settings/dictionaries?dictType=${encodeURIComponent(dictType)}`, { method: 'DELETE' });
+      window.location.reload();
     } catch {
       alert('网络错误');
     }

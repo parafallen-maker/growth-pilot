@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { createDb, dbSchema } from '../../../db';
 import { FileJsonStore } from '../../../shared/persistence/file-json-store';
@@ -86,6 +86,9 @@ class FileSettingsRepository implements SettingsRepositoryPort {
   }
 
   async createDictionary(record: Omit<DictionaryRecord, 'id'>): Promise<DictionaryRecord> {
+    if (this.store.read().dictionaries.some((d) => d.dictType === record.dictType && d.code === record.code)) {
+      throw new Error(`dictionary already exists: type=${record.dictType}, code=${record.code}`);
+    }
     const newItem: DictionaryRecord = { ...record, id: randomUUID() };
     this.store.update((data) => { data.dictionaries.push(newItem); });
     return newItem;
@@ -160,7 +163,10 @@ class DbSettingsRepository implements SettingsRepositoryPort {
   }
 
   async updateDictionary(code: string, data: Partial<DictionaryRecord>): Promise<DictionaryRecord | null> {
-    const existing = await this.db.select().from(dbSchema.systemDictionaries).where(eq(dbSchema.systemDictionaries.code, code)).limit(1);
+    const where = data.dictType !== undefined
+      ? and(eq(dbSchema.systemDictionaries.code, code), eq(dbSchema.systemDictionaries.dictType, data.dictType))
+      : eq(dbSchema.systemDictionaries.code, code);
+    const existing = await this.db.select().from(dbSchema.systemDictionaries).where(where).limit(1);
     if (!existing.length) return null;
     const row = existing[0];
     const updates: any = {};
@@ -172,9 +178,10 @@ class DbSettingsRepository implements SettingsRepositoryPort {
   }
 
   async deleteDictionary(dictType: string, code?: string): Promise<boolean> {
-    const conditions = [eq(dbSchema.systemDictionaries.dictType, dictType)];
-    // Note: real impl would use and() for code filter too
-    await this.db.delete(dbSchema.systemDictionaries).where(conditions[0]);
+    const where = code
+      ? and(eq(dbSchema.systemDictionaries.dictType, dictType), eq(dbSchema.systemDictionaries.code, code))
+      : eq(dbSchema.systemDictionaries.dictType, dictType);
+    await this.db.delete(dbSchema.systemDictionaries).where(where);
     return true;
   }
 }

@@ -35,7 +35,13 @@ export class BillingService {
   async createRenewal(payload: CreateRenewalDto) { return this.billingRepository.createRenewal({ familyId: payload.familyId, studentId: payload.studentId, campusId: payload.campusId ?? null, termId: payload.termId ?? null, contractId: payload.contractId ?? null, ownerUserId: payload.ownerUserId ?? null, expectedEndDate: payload.expectedEndDate ?? null, status: payload.status ?? 'todo', lastContactAt: payload.lastContactAt ?? null, nextFollowUpAt: payload.nextFollowUpAt ?? null, note: payload.note ?? null }); }
   async updateRenewalStatus(renewalId: string, payload: UpdateRenewalStatusDto) { return this.billingRepository.updateRenewal(renewalId, { status: payload.status, lastContactAt: payload.lastContactAt, note: payload.note }); }
 
-  async updateInvoiceStatus(invoiceId: string, payload: UpdateInvoiceStatusDto) { return this.billingRepository.updateInvoice(invoiceId, { status: payload.status }); }
+  async updateInvoiceStatus(invoiceId: string, payload: UpdateInvoiceStatusDto) {
+    const VALID_STATUSES = new Set(['draft', 'issued', 'partial_paid', 'paid', 'overdue', 'canceled', 'refunded', 'void']);
+    if (payload.status && !VALID_STATUSES.has(payload.status)) {
+      throw new ConflictException(`invalid invoice status: ${payload.status}`);
+    }
+    return this.billingRepository.updateInvoice(invoiceId, { status: payload.status });
+  }
   async updateRenewalFollowUp(renewalId: string, payload: UpdateRenewalFollowUpDto) { return this.billingRepository.updateRenewal(renewalId, { nextFollowUpAt: payload.nextFollowUpAt, note: payload.note }); }
   private async refreshInvoiceStatus(invoiceId: string) { const invoice = await this.billingRepository.getInvoiceOrThrow(invoiceId); const netReceived = await this.computeSuccessfulPayments(invoiceId) - await this.computeSuccessfulRefundsByInvoice(invoiceId); let status = invoice.status; if (netReceived <= 0) status = invoice.status === 'canceled' ? 'canceled' : 'issued'; else if (netReceived < invoice.amountCents) status = 'partial'; else status = 'paid'; await this.billingRepository.updateInvoice(invoiceId, { status }); }
   private async computeSuccessfulPayments(invoiceId: string) { return (await this.billingRepository.listPaymentsByInvoice(invoiceId)).filter((item) => item.status === 'success').reduce((sum, item) => sum + item.paidAmountCents, 0); }

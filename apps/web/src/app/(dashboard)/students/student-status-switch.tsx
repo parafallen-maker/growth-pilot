@@ -1,12 +1,24 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { studentStatusLabels, studentStatusTransitions } from '@/lib/enums';
 import { updateStudentStatus } from './actions';
 
 export function StudentStatusSwitch({ studentId, currentStatus }: { studentId: string; currentStatus: string }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [open]);
 
   const nextStatuses = studentStatusTransitions[currentStatus] ?? [];
 
@@ -23,7 +35,7 @@ export function StudentStatusSwitch({ studentId, currentStatus }: { studentId: s
   };
 
   return (
-    <div style={{ position: 'relative', display: 'inline-block' }}>
+    <div ref={containerRef} style={{ position: 'relative', display: 'inline-block' }}>
       <button
         className="btn small"
         style={{ fontWeight: 600, minWidth: 56 }}
