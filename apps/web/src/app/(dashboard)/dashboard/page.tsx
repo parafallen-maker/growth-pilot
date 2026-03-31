@@ -1,4 +1,6 @@
+import { Suspense } from 'react';
 import { ChartPanel, MetricGrid, PageHeader, SummaryPanel, TimelinePanel } from '@/components/business/page-blocks';
+import { DashboardSkeleton } from '@/components/ui/skeleton';
 import { analyticsService } from '@/services/analytics-service';
 import { requireCurrentUser } from '@/lib/current-user';
 import { roleLabels, type AppRole } from '@/lib/navigation';
@@ -11,7 +13,15 @@ const taskStatusLabel: Record<string, string> = { open: '待办', in_progress: '
 const aiStatusLabel: Record<string, string> = { pending: '待分析', processing: '分析中', completed: '已分析', failed: '分析失败' };
 const reviewStatusLabel: Record<string, string> = { unreviewed: '待复核', reviewing: '复核中', reviewed: '已复核', published: '已发布' };
 
-export default async function DashboardPage() {
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+async function DashboardContent() {
   const currentUser = await requireCurrentUser();
   const campusId = 'campus-guiyang';
   const termId = '2026-spring';

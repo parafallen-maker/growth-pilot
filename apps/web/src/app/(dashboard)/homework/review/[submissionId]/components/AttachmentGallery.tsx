@@ -1,4 +1,8 @@
+'use client';
+
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
+import { Lightbox } from '@/components/ui/lightbox';
 
 export interface Attachment {
   fileId: string;
@@ -18,6 +22,15 @@ interface AttachmentGalleryProps {
 }
 
 export function AttachmentGallery({ attachments, navigation }: AttachmentGalleryProps) {
+  const imageUrls = attachments.map((a) => a.directHref).filter((u): u is string => !!u);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const openLightbox = useCallback((idx: number) => {
+    setLightboxIndex(idx);
+    setLightboxOpen(true);
+  }, []);
+
   return (
     <section className="panel stack">
       <div className="page-header">
@@ -32,18 +45,15 @@ export function AttachmentGallery({ attachments, navigation }: AttachmentGallery
       </div>
       
       <div className="stack" style={{ gap: 24 }}>
-        {attachments.map((attachment) => (
+        {attachments.map((attachment, idx) => (
           <div className="attachment-card" key={attachment.fileId} style={{ padding: 16, border: '1px solid var(--border)', borderRadius: 8 }}>
-            {/* Inline Image Preview for P1 Optimization */}
             <div className="attachment-preview-container" style={{ marginBottom: 12, background: 'var(--bg-subtle)', borderRadius: 4, overflow: 'hidden', minHeight: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {attachment.directHref ? (
                 <img 
                   src={attachment.directHref} 
                   alt={attachment.name} 
                   style={{ maxWidth: '100%', maxHeight: 600, objectFit: 'contain', cursor: 'pointer' }}
-                  onClick={() => {
-                    if (attachment.directHref) window.open(attachment.directHref, '_blank');
-                  }}
+                  onClick={() => openLightbox(idx)}
                 />
               ) : (
                 <div className="muted" style={{ padding: 40, textAlign: 'center' }}>
@@ -72,6 +82,13 @@ export function AttachmentGallery({ attachments, navigation }: AttachmentGallery
           </div>
         ))}
       </div>
+
+      <Lightbox
+        images={imageUrls}
+        initialIndex={lightboxIndex}
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+      />
     </section>
   );
 }

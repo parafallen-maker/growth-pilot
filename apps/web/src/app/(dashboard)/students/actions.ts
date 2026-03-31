@@ -43,3 +43,40 @@ export async function createStudent(formData: FormData) {
     bounce({ error: error instanceof Error ? error.message : '新建学生失败' });
   }
 }
+
+export async function updateStudentStatus(studentId: string, status: string) {
+  try {
+    await studentService.update(studentId, { status });
+    revalidatePath('/students');
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : '更新失败' };
+  }
+}
+
+export async function updateStudent(studentId: string, formData: FormData) {
+  try {
+    const payload: Record<string, string> = {};
+    const name = String(formData.get('name') ?? '').trim();
+    const gradeLabel = String(formData.get('gradeLabel') ?? '').trim();
+    const gender = String(formData.get('gender') ?? '').trim();
+    const status = String(formData.get('status') ?? '').trim();
+    const familyId = String(formData.get('familyId') ?? '').trim();
+    const className = String(formData.get('className') ?? '').trim();
+    const schoolName = String(formData.get('schoolName') ?? '').trim();
+    const profileNotes = String(formData.get('profileNotes') ?? '').trim();
+
+    if (name) payload.name = name;
+    if (gradeLabel) payload.gradeLabel = gradeLabel;
+    if (gender) payload.gender = gender;
+    if (status) payload.status = status;
+    if (familyId) payload.familyId = familyId;
+
+    // For extra fields not in PATCH DTO, skip them
+    await studentService.update(studentId, payload);
+    revalidatePath(`/students/${studentId}`);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : '更新失败' };
+  }
+}

@@ -39,7 +39,7 @@ export function BillingByStudentSection({ studentId, studentName, billingData }:
   return (
     <div className="stack">
       <h3>📋 关联账单（{billingData.invoices.page.total} 条）</h3>
-      <table className="data-table">
+      <div className="table-wrapper"><table className="data-table">
         <thead>
           <tr>
             <th>账单编号</th>
@@ -62,7 +62,7 @@ export function BillingByStudentSection({ studentId, studentName, billingData }:
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
     </div>
   );
 }

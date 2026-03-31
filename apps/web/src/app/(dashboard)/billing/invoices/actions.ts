@@ -110,3 +110,13 @@ export async function createInvoiceRefund(formData: FormData) {
     bounce({ error: error instanceof Error ? error.message : '创建退款失败' });
   }
 }
+
+export async function updateInvoiceStatus(invoiceId: string, status: string) {
+  try {
+    await billingService.updateInvoiceStatus(invoiceId, status);
+    revalidatePath('/billing/invoices');
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : '更新失败' };
+  }
+}

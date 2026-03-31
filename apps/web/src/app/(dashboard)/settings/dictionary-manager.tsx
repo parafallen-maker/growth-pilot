@@ -62,7 +62,7 @@ export function DictionaryManager({ dictionaries }: { dictionaries: Array<{ name
         </form>
       )}
 
-      <table className="data-table">
+      <div className="table-wrapper"><table className="data-table">
         <thead>
           <tr>
             <th>字典类型</th>
@@ -83,7 +83,7 @@ export function DictionaryManager({ dictionaries }: { dictionaries: Array<{ name
           ))}
           {dictionaries.length === 0 && <tr><td colSpan={3} className="subtle">暂无字典数据</td></tr>}
         </tbody>
-      </table>
+      </table></div>
     </div>
   );
 }

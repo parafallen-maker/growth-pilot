@@ -2,14 +2,47 @@
  * 枚举值中文映射
  */
 
+/** 学生状态 */
+export const studentStatusLabels: Record<string, string> = {
+  trial: '试听',
+  active: '在读',
+  paused: '暂停',
+  left: '离开',
+  graduated: '毕业',
+  inactive: '停读',
+};
+
+/** 学生状态流转（合法下一步） */
+export const studentStatusTransitions: Record<string, string[]> = {
+  trial: ['active', 'left'],
+  active: ['paused', 'left', 'graduated'],
+  paused: ['active', 'left'],
+  left: ['active', 'trial'],
+  graduated: [],
+  inactive: ['active'],
+};
+
 /** 账单状态 */
 export const invoiceStatusLabels: Record<string, string> = {
   draft: '草稿',
   issued: '已开具',
+  partial_paid: '部分收款',
+  partial: '部分缴费',
   paid: '已缴费',
   overdue: '逾期',
   canceled: '已取消',
-  partial: '部分缴费',
+  refunded: '已退款',
+};
+
+/** 账单状态流转（合法下一步） */
+export const invoiceStatusTransitions: Record<string, string[]> = {
+  draft: ['issued', 'canceled'],
+  issued: ['partial_paid', 'paid', 'overdue', 'canceled'],
+  partial_paid: ['paid', 'overdue', 'canceled'],
+  paid: ['refunded'],
+  overdue: ['paid', 'refunded', 'canceled'],
+  refunded: [],
+  canceled: [],
 };
 
 /** 支付状态 */

@@ -1,5 +1,6 @@
 import { apiRequest, type PageResult } from '@/lib/api-client';
 import { getAuthTokens } from '@/lib/auth-session';
+import { studentStatusLabels } from '@/lib/enums';
 import type { Student360Aggregate } from '@growthpilot/schema';
 import type { QueryBase } from '@/features/shared/types';
 
@@ -47,6 +48,7 @@ type StudentItem = {
   observation: string;
   balance: string;
   status: string;
+  rawStatus: string;
   detailHref: string;
 };
 
@@ -61,18 +63,7 @@ function buildQuery(params: Record<string, string | number | undefined>) {
 
 const formatPercent = (value?: number | null) => (typeof value === 'number' ? `${value}%` : '--');
 const formatCurrency = (amountCents?: number | null) => `¥${((amountCents ?? 0) / 100).toLocaleString('zh-CN')}`;
-const formatStudentStatus = (value?: string | null) => {
-  switch (value) {
-    case 'active':
-      return '在读';
-    case 'trial':
-      return '试听';
-    case 'inactive':
-      return '停读';
-    default:
-      return value ?? '--';
-  }
-};
+const formatStudentStatus = (value?: string | null) => studentStatusLabels[value ?? ''] ?? value ?? '--';
 
 function mapStudentAggregate(aggregate: Student360Aggregate): StudentItem {
   return {
@@ -87,6 +78,7 @@ function mapStudentAggregate(aggregate: Student360Aggregate): StudentItem {
     observation: aggregate.growthSummary.latestImprovementNotes ?? aggregate.growthSummary.latestStrengths ?? '--',
     balance: formatCurrency(aggregate.billingSummary.outstandingAmount),
     status: formatStudentStatus(aggregate.student.status),
+    rawStatus: aggregate.student.status,
     detailHref: `/students/${aggregate.student.id}`,
   };
 }
@@ -108,6 +100,7 @@ export const studentService = {
       observation: '--',
       balance: '--',
       status: formatStudentStatus(student.status),
+      rawStatus: student.status,
       detailHref: `/students/${student.id}`,
     }));
 
@@ -154,6 +147,16 @@ export const studentService = {
       } | null;
       errorMessage: string | null;
     }>>('/jobs?jobType=students_import', { auth, retryOn401: Boolean(auth.refreshToken) });
+  },
+
+  async update(id: string, payload: { name?: string; gradeLabel?: string; gender?: string; status?: string; familyId?: string }) {
+    const auth = await getAuthTokens();
+    return apiRequest<{ id: string }>(`/students/${id}`, {
+      method: 'PATCH',
+      body: payload,
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
   },
 
   action() {

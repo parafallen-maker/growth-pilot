@@ -47,7 +47,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const api = useMemo<ToastApi>(() => {
     const enqueue = (toast: ToastInput) => {
       const id = createToastId();
-      setToasts((current) => [...current, { ...toast, id }]);
+      setToasts((current) => {
+        // Dedup: skip if same title+tone+description already exists
+        const isDuplicate = current.some(
+          (t) => t.title === toast.title && t.tone === (toast.tone ?? 'info') && t.description === toast.description,
+        );
+        if (isDuplicate) return current;
+        return [...current, { ...toast, id }];
+      });
       return id;
     };
 

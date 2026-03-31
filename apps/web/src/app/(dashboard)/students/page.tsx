@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { DataTable, PageHeader } from '@/components/business/page-blocks';
+import { EmptyState } from '@/components/ui/empty-state';
 import { familyService } from '@/services/families-service';
 import { studentService, type StudentQuery } from '@/services/students-service';
 import { createStudent } from './actions';
+import { StudentStatusSwitch } from './student-status-switch';
 import { SubmitButton } from '@/components/business/submit-button';
 import { CsvExportButton } from '../_components/csv-export-button';
 
@@ -92,7 +94,7 @@ export default async function StudentsPage({
           <div className="field"><label>关键词</label><input className="input" name="keyword" defaultValue={filters.keyword ?? ''} placeholder="姓名 / 学号 / 家庭 / 老师" /></div>
           <div className="field"><label>校区</label><select className="select" name="campusId" defaultValue={filters.campusId ?? 'all'}><option value="all">全部校区</option><option value="campus-guiyang">贵阳主校区</option></select></div>
           <div className="field"><label>学期</label><select className="select" name="termId" defaultValue={filters.termId ?? '2026-spring'}><option value="all">全部学期</option><option value="2026-spring">2026 春季</option></select></div>
-          <div className="field"><label>状态</label><select className="select" name="status" defaultValue={filters.status ?? 'active'}><option value="all">全部</option><option value="active">在读</option><option value="trial">试听</option><option value="inactive">停读</option></select></div>
+          <div className="field"><label>状态</label><select className="select" name="status" defaultValue={filters.status ?? 'active'}><option value="all">全部</option><option value="active">在读</option><option value="trial">试听</option><option value="paused">暂停</option><option value="left">离开</option><option value="graduated">毕业</option><option value="inactive">停读</option></select></div>
           <div className="field"><label>排序字段</label><select className="select" name="sortBy" defaultValue={filters.sortBy ?? 'updatedAt'}>{SORT_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div>
           <div className="field"><label>排序方向</label><select className="select" name="sortOrder" defaultValue={filters.sortOrder ?? 'desc'}><option value="desc">降序</option><option value="asc">升序</option></select></div>
           <div className="field"><label>每页条数</label><select className="select" name="pageSize" defaultValue={String(filters.pageSize ?? 20)}>{PAGE_SIZE_OPTIONS.map((size) => <option key={size} value={String(size)}>{size} 条</option>)}</select></div>
@@ -118,11 +120,13 @@ export default async function StudentsPage({
           item.accuracy,
           item.observation,
           item.balance,
-          item.status,
+          <StudentStatusSwitch key={item.id} studentId={item.id} currentStatus={item.rawStatus} />,
           <Link key={`${item.id}-detail`} className="btn" href={item.detailHref}>查看 360</Link>,
         ])}
         actions={<div className="button-row"><a className="btn" href="#student-bulk-hint">批量动作说明</a></div>}
       />
+
+      {result.list.length === 0 && <EmptyState icon="🎓" title="暂无学生数据" description="当前没有学生记录，请新建或导入学生。" actionLabel="新建学生" actionHref="#new-student-form" />}
 
       <section className="panel" id="student-bulk-hint">
         <div className="page-header">

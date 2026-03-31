@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { PermissionGuard } from '@/components/business/permission-guard';
 import { DataTable, FilterBar, MetricGrid, PageHeader, PaginationBar } from '@/components/business/page-blocks';
+import { EmptyState } from '@/components/ui/empty-state';
 import { homeworkPermissions } from '@/features/homework/constants';
 import { requireCurrentUser } from '@/lib/current-user';
 import { homeworkService } from '@/services/homework-service';
@@ -151,6 +152,7 @@ export default async function HomeworkSubmissionsPage({
           </form>
         </section>
 
+        {result.list.length === 0 && <EmptyState icon="📝" title="暂无作业提交" description="当前没有作业提交记录。" actionLabel="上传作业" actionHref="#homework-upload-form" />}
         <FilterBar
           fields={[
             { label: '关键词', value: '学生 / 提交编号' },

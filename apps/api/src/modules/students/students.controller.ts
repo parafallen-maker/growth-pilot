@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiAuthGuard } from '../../common/auth.guard';
 import { PermissionGuard } from '../../common/permission.guard';
 import { RequirePermission } from '../../common/permission.decorator';
@@ -7,6 +7,7 @@ import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { CreateStudentImportDto } from './dto/create-student-import.dto';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { StudentQueryDto } from './dto/student-query.dto';
+import { UpdateStudentDto } from './dto/update-student.dto';
 import { StudentsService } from './students.service';
 
 @Controller('students')
@@ -40,6 +41,12 @@ export class StudentsController {
   @Post(':studentId/enrollments')
   async createEnrollment(@Param('studentId') studentId: string, @Body() payload: CreateEnrollmentDto) {
     return ok(await this.studentsService.createEnrollment(studentId, payload));
+  }
+
+  @Patch(':studentId')
+  @RequirePermission('students:manage')
+  async update(@Param('studentId') studentId: string, @Body() payload: UpdateStudentDto) {
+    return ok(await this.studentsService.update(studentId, payload));
   }
 
   @Post('import')

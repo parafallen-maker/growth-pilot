@@ -82,11 +82,12 @@ export function AppShell({ children, currentUser }: { children: ReactNode; curre
               <button
                 type="button"
                 className="btn sidebar-toggle"
+                aria-label={menuOpen ? '关闭菜单' : '打开菜单'}
                 aria-expanded={menuOpen}
                 aria-controls="dashboard-sidebar"
                 onClick={() => setMenuOpen((value) => !value)}
               >
-                {menuOpen ? '关闭菜单' : '菜单'}
+                ☰
               </button>
               <div>
                 <strong>管理后台</strong>

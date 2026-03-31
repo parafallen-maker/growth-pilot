@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { DataTable, FilterBar, PageHeader, PaginationBar } from '@/components/business/page-blocks';
+import { EmptyState } from '@/components/ui/empty-state';
 import { SubmitButton } from '@/components/business/submit-button';
 import { CsvExportButton } from '../_components/csv-export-button';
 import { QueryStatusToast } from '../_components/query-status-toast';
@@ -50,6 +51,7 @@ export default async function TeachersPage({
         </form>
       </section>
 
+      {result.list.length === 0 && <EmptyState icon="👨‍🏫" title="暂无教师数据" description="当前没有教师档案记录。" actionLabel="新建教师" actionHref="#new-teacher-form" />}
       <FilterBar fields={[{ label: '关键词', value: '姓名 / 工号' }, { label: '校区', value: '全部校区', kind: 'select' }, { label: '状态', value: '在岗', kind: 'select' }, { label: '学科', value: '全部学科', kind: 'select' }]} />
       <DataTable
         title={`教师列表（共 ${result.page.total} 条）`}

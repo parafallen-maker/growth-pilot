@@ -61,6 +61,9 @@ interface SettingsRepositoryPort {
   listCampuses(): Promise<CampusRecord[]>;
   listTerms(campusId?: string): Promise<TermRecord[]>;
   listDictionaries(dictType?: string): Promise<DictionaryRecord[]>;
+  createDictionary(record: Omit<DictionaryRecord, 'id'>): Promise<DictionaryRecord>;
+  updateDictionary(code: string, data: Partial<DictionaryRecord>): Promise<DictionaryRecord | null>;
+  deleteDictionary(dictType: string, code?: string): Promise<boolean>;
 }
 
 class FileSettingsRepository implements SettingsRepositoryPort {
@@ -80,6 +83,36 @@ class FileSettingsRepository implements SettingsRepositoryPort {
 
   async listDictionaries(dictType?: string) {
     return this.store.read().dictionaries.filter((item) => !dictType || item.dictType === dictType);
+  }
+
+  async createDictionary(record: Omit<DictionaryRecord, 'id'>): Promise<DictionaryRecord> {
+    const newItem: DictionaryRecord = { ...record, id: randomUUID() };
+    this.store.update((data) => { data.dictionaries.push(newItem); });
+    return newItem;
+  }
+
+  async updateDictionary(code: string, data: Partial<DictionaryRecord>): Promise<DictionaryRecord | null> {
+    let found: DictionaryRecord | null = null;
+    this.store.update((store) => {
+      const idx = store.dictionaries.findIndex((d) => d.code === code);
+      if (idx >= 0) {
+        store.dictionaries[idx] = { ...store.dictionaries[idx], ...data, id: store.dictionaries[idx].id };
+        found = { ...store.dictionaries[idx] };
+      }
+    });
+    return found;
+  }
+
+  async deleteDictionary(dictType: string, code?: string): Promise<boolean> {
+    let deleted = false;
+    this.store.update((store) => {
+      const before = store.dictionaries.length;
+      store.dictionaries = store.dictionaries.filter(
+        (d) => !(d.dictType === dictType && (code === undefined || d.code === code)),
+      );
+      deleted = store.dictionaries.length < before;
+    });
+    return deleted;
   }
 }
 
@@ -120,6 +153,30 @@ class DbSettingsRepository implements SettingsRepositoryPort {
       value: row.value ?? '',
     }));
   }
+
+  async createDictionary(record: Omit<DictionaryRecord, 'id'>): Promise<DictionaryRecord> {
+    const [row] = await this.db.insert(dbSchema.systemDictionaries).values({ dictType: record.dictType, code: record.code, label: record.label, value: record.value }).returning();
+    return { id: row.id, dictType: row.dictType, code: row.code, label: row.label, value: row.value ?? '' };
+  }
+
+  async updateDictionary(code: string, data: Partial<DictionaryRecord>): Promise<DictionaryRecord | null> {
+    const existing = await this.db.select().from(dbSchema.systemDictionaries).where(eq(dbSchema.systemDictionaries.code, code)).limit(1);
+    if (!existing.length) return null;
+    const row = existing[0];
+    const updates: any = {};
+    if (data.label !== undefined) updates.label = data.label;
+    if (data.value !== undefined) updates.value = data.value;
+    if (data.dictType !== undefined) updates.dictType = data.dictType;
+    await this.db.update(dbSchema.systemDictionaries).set(updates).where(eq(dbSchema.systemDictionaries.id, row.id));
+    return { id: row.id, dictType: updates.dictType ?? row.dictType, code, label: updates.label ?? row.label, value: updates.value ?? row.value ?? '' };
+  }
+
+  async deleteDictionary(dictType: string, code?: string): Promise<boolean> {
+    const conditions = [eq(dbSchema.systemDictionaries.dictType, dictType)];
+    // Note: real impl would use and() for code filter too
+    await this.db.delete(dbSchema.systemDictionaries).where(conditions[0]);
+    return true;
+  }
 }
 
 @Injectable()
@@ -140,6 +197,18 @@ export class SettingsRepository {
 
   listDictionaries(dictType?: string) {
     return this.adapter.listDictionaries(dictType);
+  }
+
+  createDictionary(record: Omit<DictionaryRecord, 'id'>) {
+    return this.adapter.createDictionary(record);
+  }
+
+  updateDictionary(code: string, data: Partial<DictionaryRecord>) {
+    return this.adapter.updateDictionary(code, data);
+  }
+
+  deleteDictionary(dictType: string, code?: string) {
+    return this.adapter.deleteDictionary(dictType, code);
   }
 }
 

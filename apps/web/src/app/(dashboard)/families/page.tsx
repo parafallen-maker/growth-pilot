@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { DataTable, FilterBar, PageHeader, PaginationBar } from '@/components/business/page-blocks';
+import { EmptyState } from '@/components/ui/empty-state';
 import { SubmitButton } from '@/components/business/submit-button';
 import { CsvExportButton } from '../_components/csv-export-button';
 import { QueryStatusToast } from '../_components/query-status-toast';
@@ -52,6 +53,7 @@ export default async function FamiliesPage({
         </form>
       </section>
 
+      {result.list.length === 0 && <EmptyState icon="🏠" title="暂无家庭数据" description="当前没有家庭档案记录。" actionLabel="新建家庭" actionHref="#new-family-form" />}
       <FilterBar fields={[{ label: '关键词', value: '家庭名 / 联系人 / 电话' }, { label: '校区', value: '全部校区', kind: 'select' }, { label: '状态', value: '正常', kind: 'select' }, { label: '未收余额', value: '全部', kind: 'select' }, { label: '待办任务', value: '全部', kind: 'select' }]} />
       <DataTable
         title={`家庭列表（共 ${result.page.total} 条）`}

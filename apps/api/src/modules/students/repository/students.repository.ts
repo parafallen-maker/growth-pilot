@@ -37,6 +37,7 @@ interface StudentsRepositoryPort {
   findStudentById(studentId: string): Promise<PersistedStudent | undefined>;
   createStudent(input: CreateStudentInput): Promise<Student>;
   createEnrollment(studentId: string, input: CreateEnrollmentInput): Promise<Enrollment>;
+  updateStudent(studentId: string, patch: Partial<Pick<CreateStudentInput, 'name' | 'gradeLabel' | 'gender' | 'status' | 'familyId'>>): Promise<Student>;
 }
 
 class FileStudentsRepository implements StudentsRepositoryPort {
@@ -116,6 +117,15 @@ class FileStudentsRepository implements StudentsRepositoryPort {
       state.enrollments.unshift(enrollment);
       student.updatedAt = now;
       return enrollment;
+    });
+  }
+
+  async updateStudent(studentId: string, patch: Partial<CreateStudentInput>) {
+    return this.store.transact((state) => {
+      const student = state.students.find((item) => item.id === studentId);
+      if (!student) throw new NotFoundException(`Student ${studentId} not found`);
+      Object.assign(student, patch, { updatedAt: new Date().toISOString() });
+      return student;
     });
   }
 }
@@ -241,6 +251,18 @@ class DbStudentsRepository implements StudentsRepositoryPort {
     return this.mapEnrollment(created);
   }
 
+  async updateStudent(studentId: string, patch: Partial<CreateStudentInput>) {
+    const student = await this.findStudentById(studentId);
+    if (!student) throw new NotFoundException(`Student ${studentId} not found`);
+    const now = new Date();
+    const [updated] = await this.db
+      .update(dbSchema.students)
+      .set({ ...patch, updatedAt: now })
+      .where(eq(dbSchema.students.id, studentId))
+      .returning();
+    return this.mapStudent(updated);
+  }
+
   private mapStudent(row: typeof dbSchema.students.$inferSelect): PersistedStudent {
     return {
       id: row.id,
@@ -310,6 +332,10 @@ export class StudentsRepository {
 
   createStudent(input: CreateStudentInput) {
     return this.adapter.createStudent(input);
+  }
+
+  updateStudent(studentId: string, patch: Partial<CreateStudentInput>) {
+    return this.adapter.updateStudent(studentId, patch);
   }
 
   createEnrollment(studentId: string, input: CreateEnrollmentInput) {

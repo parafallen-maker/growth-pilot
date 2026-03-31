@@ -130,6 +130,7 @@ type InvoiceItem = {
   dueDate: string;
   paidYuan: string;
   status: string;
+  rawStatus: string;
   actions: string;
 };
 
@@ -309,6 +310,7 @@ export const billingService = {
       dueDate: item.dueDate,
       paidYuan: toYuan(0),
       status: item.status,
+      rawStatus: item.status,
       actions: '查看账单 / 记录支付 / 发起退款',
     }));
 
@@ -359,6 +361,16 @@ export const billingService = {
       payment: { id: string; paymentNo: string; invoiceId: string; paidAmountCents: number; paymentTime: string; channel: string; status: string } | null;
       invoice: { id: string; invoiceNo: string; familyId: string; studentId: string; amountCents: number; dueDate: string; status: string } | null;
     }>(`/billing/refunds/${refundId}`, { auth, retryOn401: Boolean(auth.refreshToken) });
+  },
+
+  async updateInvoiceStatus(invoiceId: string, status: string) {
+    const auth = await getAuthTokens();
+    return apiRequest<{ id: string; status: string }>(`/billing/invoices/${invoiceId}/status`, {
+      method: 'PATCH',
+      body: { status },
+      auth,
+      retryOn401: Boolean(auth.refreshToken),
+    });
   },
 
   actionInvoice(invoiceNo: string) {

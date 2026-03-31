@@ -7,6 +7,7 @@ import { requireCurrentUser } from '@/lib/current-user';
 import { serverApiRequest } from '@/lib/server-api';
 import { billingService } from '@/services/billing-service';
 import { createBillingInvoice, createInvoicePayment, createInvoiceRefund } from './actions';
+import { InvoiceStatusSwitch } from './invoice-status-switch';
 
 export default async function BillingInvoicesPage({
   searchParams,
@@ -144,7 +145,7 @@ export default async function BillingInvoicesPage({
         ]} />
         <section className="panel stack">
           <TabStrip tabs={[...billingTabs]} active="账单" />
-          <DataTable title="账单列表" columns={['账单编号', '家庭', '学生', '应收（元）', '截止日', '已收（元）', '状态', '动作']} rows={result.invoices.list.map((item) => [item.invoiceNo, item.familyName, item.studentName, item.receivableYuan, item.dueDate, item.paidYuan, item.status, item.actions])} />
+          <DataTable title="账单列表" columns={['账单编号', '家庭', '学生', '应收（元）', '截止日', '已收（元）', '状态', '动作']} rows={result.invoices.list.map((item) => [item.invoiceNo, item.familyName, item.studentName, item.receivableYuan, item.dueDate, item.paidYuan, <InvoiceStatusSwitch key={item.invoiceId} invoiceId={item.invoiceId} currentStatus={item.rawStatus} />, item.actions])} />
         </section>
         <div className="grid-2">
           <DataTable title="支付列表" columns={['支付编号', '账单编号', '家庭', '学生', '支付金额（元）', '支付时间', '渠道', '动作']} rows={result.payments.list.map((item) => [item.paymentNo, item.invoiceNo, item.familyName, item.studentName, item.paidYuan, item.paidAt, item.channel, item.actions])} />

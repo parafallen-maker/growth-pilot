@@ -33,6 +33,22 @@ export class SettingsService {
     return buildPagedResult(await this.settingsRepository.listDictionaries(dictType));
   }
 
+  async createDictionary(payload: { dictType: string; code: string; label: string; value: string }) {
+    const record = await this.settingsRepository.createDictionary(payload);
+    return record;
+  }
+
+  async updateDictionary(code: string, payload: { dictType: string; label?: string; value?: string }) {
+    const record = await this.settingsRepository.updateDictionary(code, payload);
+    if (!record) throw new Error('字典记录不存在');
+    return record;
+  }
+
+  async deleteDictionary(dictType: string) {
+    const deleted = await this.settingsRepository.deleteDictionary(dictType);
+    if (!deleted) throw new Error('字典记录不存在');
+  }
+
   private async listRoleCatalog() {
     const roles = await this.usersRepository.listRoles();
 

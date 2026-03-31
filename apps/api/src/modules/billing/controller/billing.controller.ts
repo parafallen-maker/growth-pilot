@@ -15,6 +15,7 @@ import { InvoiceQueryDto } from '../dto/invoice-query.dto';
 import { RenewalQueryDto } from '../dto/renewal-query.dto';
 import { UpdateRenewalFollowUpDto } from '../dto/update-renewal-follow-up.dto';
 import { UpdateRenewalStatusDto } from '../dto/update-renewal-status.dto';
+import { UpdateInvoiceStatusDto } from '../dto/update-invoice-status.dto';
 import { BillingService } from '../service/billing.service';
 
 @Controller('billing')
@@ -72,6 +73,12 @@ export class BillingController {
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
     return ok(await this.billingService.createPayment(invoiceId, payload, idempotencyKey));
+  }
+
+  @Patch('invoices/:invoiceId/status')
+  @RequirePermission('billing:invoices:manage')
+  async updateInvoiceStatus(@Param('invoiceId') invoiceId: string, @Body() payload: UpdateInvoiceStatusDto) {
+    return ok(await this.billingService.updateInvoiceStatus(invoiceId, payload));
   }
 
   @Get('payments/:paymentId')

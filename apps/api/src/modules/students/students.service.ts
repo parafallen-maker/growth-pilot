@@ -18,6 +18,7 @@ import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { CreateStudentImportDto } from './dto/create-student-import.dto';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { StudentQueryDto } from './dto/student-query.dto';
+import { UpdateStudentDto } from './dto/update-student.dto';
 import { StudentsRepository } from './repository/students.repository';
 
 interface ImportedStudentRow {
@@ -180,6 +181,10 @@ export class StudentsService {
       profileNotes: payload.profileNotes,
       status: 'active',
     });
+  }
+
+  update(studentId: string, payload: UpdateStudentDto): Promise<Student> {
+    return this.studentsRepository.updateStudent(studentId, payload);
   }
 
   createEnrollment(studentId: string, payload: CreateEnrollmentDto): Promise<Enrollment> {
