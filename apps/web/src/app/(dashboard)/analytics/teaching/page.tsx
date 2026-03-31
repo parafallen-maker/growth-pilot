@@ -30,12 +30,8 @@ export default async function AnalyticsTeachingPage() {
         </div>
         <div className="grid-2" id="teaching-ranking">
           {result?.charts[2] ? <ChartPanel title={result.charts[2].title} description={result.charts[2].description} items={result.charts[2].items} /> : <ChartPanel title="高频错因 TopN" description="暂无数据" items={[]} />}
-          <SummaryPanel title="排行 / 摘要" items={result?.tableCards ?? [{ name: '数据说明', detail: '当前未取到 teaching 聚合结果，可稍后刷新重试。' }]} />
+          <SummaryPanel title="排行 / 摘要" items={result?.tableCards ?? []} />
         </div>
-        <div className="grid-2">
-          <SummaryPanel title="图表解读" items={result?.chartCards ?? []} />
-        </div>
-        <SummaryPanel title="导出与验收提示" items={[{ name: '图表导出', detail: analyticsChartExportHint }, { name: '验收口径', detail: 'teaching 看板展示老师/学科/错因/覆盖率，且无数据不画空图。' }]} />
       </div>
     </PermissionGuard>
   );

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "start:dev": "tsx watch src/main.ts",
+    "start:dev": "tsc -p tsconfig.json --watch --outDir dist/apps/api/src & sleep 2 && node --watch-path dist/apps/api/src dist/apps/api/src/main.js",
     "start:worker:dev": "tsx watch src/worker.ts",
     "build": "tsc -p tsconfig.json",
     "lint": "tsc --noEmit -p tsconfig.json",

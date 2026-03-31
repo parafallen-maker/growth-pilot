@@ -97,7 +97,7 @@ export default async function GrowthGoalsPage({
               <form className="selection-card" action={createGrowthGoalCheckin}>
                 <input type="hidden" name="goalId" value={action.goalId} />
                 <strong>提交 Check-in</strong>
-                <div className="subtle" style={{ marginTop: 8 }}>endpoint: {action.endpoint} · permission: {action.permissionCode}</div>
+                <div className="subtle" style={{ marginTop: 8 }}>{action.action}</div>
                 <div className="form-grid" style={{ marginTop: 12 }}>
                   <div className="field"><label>跟进日期</label><input className="input" type="date" name="checkinDate" required /></div>
                   <div className="field"><label>进度值</label><input className="input" type="number" name="progressValue" defaultValue="1" /></div>

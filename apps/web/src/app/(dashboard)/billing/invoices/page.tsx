@@ -130,10 +130,8 @@ export default async function BillingInvoicesPage({
           <DataTable title="支付列表" columns={['支付编号', '账单编号', '家庭', '学生', '支付金额（元）', '支付时间', '渠道', '动作']} rows={result.payments.list.map((item) => [item.paymentNo, item.invoiceNo, item.familyName, item.studentName, item.paidYuan, item.paidAt, item.channel, item.actions])} />
           <DataTable title="退款列表" columns={['退款编号', '支付编号', '家庭', '学生', '退款金额（元）', '退款时间', '状态', '动作']} rows={result.refunds.list.map((item) => [item.refundNo, item.paymentNo, item.familyName, item.studentName, item.refundYuan, item.refundAt, item.status, item.actions])} />
         </div>
-        <SummaryPanel title="调整项 + 动作状态" items={[
+        <SummaryPanel title="调整项" items={[
           ...result.adjustments,
-          { name: '统一动作位', detail: action.actions.join(' / ') },
-          { name: '状态流', detail: action.statusFlow },
           refundDetail ? { name: '最近退款详情', detail: `${refundDetail.refund.refundNo} / ${refundDetail.refund.status} / ${refundDetail.invoice?.invoiceNo ?? '未关联账单'}` } : null,
         ].filter((item): item is NonNullable<typeof item> => Boolean(item)).map((item) => ({ name: 'name' in item ? item.name : item.title, detail: item.detail }))} />
       </div>

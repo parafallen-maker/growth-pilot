@@ -32,13 +32,11 @@ export default async function AnalyticsBillingPage() {
           {result?.charts.length ? result.charts.slice(2).map((chart) => (
             <ChartPanel key={chart.title} title={chart.title} description={chart.description} items={chart.items} />
           )) : <ChartPanel title="账龄 / 续费漏斗" description="暂无数据" items={[]} />}
-          <SummaryPanel title="排行 / 摘要" items={result?.tableCards ?? [{ name: '数据说明', detail: '当前未取到 billing 聚合结果，可稍后刷新重试。' }]} />
-        </div>
-        <div className="grid-2">
-          <SummaryPanel title="图表解读" items={result?.chartCards ?? []} />
           <SummaryPanel title="排行 / 摘要" items={result?.tableCards ?? []} />
         </div>
-        <SummaryPanel title="导出与验收提示" items={[{ name: '图表导出', detail: analyticsChartExportHint }, { name: '金额显示', detail: '页面展示统一为元，接口传输仍保持 cents。' }]} />
+        <div className="grid-2">
+          <SummaryPanel title="排行 / 摘要" items={result?.tableCards ?? []} />
+        </div>
       </div>
     </PermissionGuard>
   );

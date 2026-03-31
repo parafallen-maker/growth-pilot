@@ -183,7 +183,6 @@ export const growthService = {
         description: dimension.description ?? '--',
         sort: dimension.sortOrder,
       })),
-      editorNotice: 'rubric 列表与 detail 已切到真实接口。',
     };
   },
 
@@ -222,7 +221,6 @@ export const growthService = {
     return {
       schemaKey: 'observation.dynamic.rubric-template-v1',
       createPermission: 'growth:observations:manage',
-      idempotencyHint: '已开放真实创建接口，可按所选 rubric 模板提交评分。',
     };
   },
 
@@ -273,10 +271,9 @@ export const growthService = {
         detail: [item.progressNote, item.nextAction].filter(Boolean).join(' / ') || '已记录 check-in。',
       })),
       linkedItems: [
-        { name: '关联观察', detail: '当前后端未返回 goal -> observation 聚合关系。' },
-        { name: '关联家庭任务', detail: '当前后端未提供该聚合。' },
+        { name: '关联观察', detail: '' },
+        { name: '关联家庭任务', detail: '' },
       ],
-      nextAction: 'goal 列表与 check-in 历史已来自真实接口。',
     };
   },
 
@@ -284,9 +281,6 @@ export const growthService = {
     return {
       goalId,
       action: 'check-in',
-      endpoint: `/growth/goals/${goalId}/checkins`,
-      permissionCode: 'growth:goals:manage',
-      idempotencyKeyRequired: false,
     };
   },
 
@@ -322,19 +316,15 @@ export const growthService = {
       firstReportId,
       editor: {
         materialPool: [
-          { name: '作业复核摘要', detail: '后端尚未提供 homework -> growth 报告聚合接口。' },
-          { name: '成长观察', detail: 'observations 列表已接真接口。' },
-          { name: '成长目标', detail: 'goals 列表已接真接口。' },
+          { name: '作业复核摘要', detail: '' },
+          { name: '成长观察', detail: '' },
+          { name: '成长目标', detail: '' },
         ],
         draftSections: [
           { title: firstDetail?.report.title ?? '报告正文', detail: firstDetail?.report.draftMarkdown ?? '当前无报告草稿内容。' },
           { title: '工作流状态', detail: `status=${firstDetail?.report.status ?? 'queued'} / updatedAt=${formatDateTime(firstDetail?.report.updatedAt)}` },
         ],
-        publishSettings: [
-          { name: '发送渠道', detail: 'POST /growth/reports/{id}/publish 支持 channels[]。' },
-          { name: '发布状态', detail: 'draft -> reviewed -> published' },
-          { name: '发布人', detail: 'publisherUserId 由当前登录用户注入。' },
-        ],
+        publishSettings: [],
       },
     };
   },
@@ -372,7 +362,7 @@ export const growthService = {
       generateEndpoint: '/growth/reports/generate',
       reviewEndpoint: '/growth/reports/{reportId}/review',
       publishEndpoint: '/growth/reports/{reportId}/publish',
-      note: 'reports 列表、detail、generate/review/publish 都已接真实接口。',
+      note: '',
     };
   },
 };

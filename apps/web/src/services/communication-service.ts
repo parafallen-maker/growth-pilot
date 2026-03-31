@@ -211,12 +211,12 @@ export const communicationService = {
       timeline: [
         { title: '记录创建', detail: `${formatAt(detail.createdAt)} · ${toChannelName(detail.channel)} · ${toDirectionName(detail.direction)}` },
         { title: '沟通摘要', detail: detail.summary ?? '暂无摘要' },
-        { title: '后续动作', detail: detail.nextAction ?? 'meeting / 家庭任务反查聚合尚未开放，当前先展示记录里的 nextAction。' },
+        { title: '后续动作', detail: detail.nextAction ?? '暂无后续动作' },
       ],
       linkedActions: [
         { name: '关联家庭', detail: toFamilyName(detail.familyId, familyNameById) },
         { name: '关联学生', detail: toStudentName(detail.studentId, studentNameById) },
-        { name: '联动消息中心', detail: 'message_tasks 真接口已接入，可继续扩成沟通 -> 消息草稿闭环。' },
+        { name: '联动消息中心', detail: '' },
       ],
     };
   },
@@ -271,11 +271,7 @@ export const communicationService = {
       queued: { ...queued, list: queued.list.map(mapTask) },
       sent: { ...sent, list: [...sent.list, ...sentAndRead.list].map(mapTask) },
       failed: { ...failed, list: failed.list.map(mapTask) },
-      statusPanels: [
-        { name: '模板区', detail: 'communication/templates 真接口' },
-        { name: '任务状态链路', detail: 'draft -> pending -> sent / failed，read 单独跟踪' },
-        { name: '后端缺口', detail: '真实渠道发送 adapter 仍未接，当前仅消费 message_tasks 持久化结果。' },
-      ],
+      statusPanels: [],
     };
   },
 
@@ -303,7 +299,7 @@ export const communicationService = {
   actionMessage() {
     return {
       actions: ['创建消息', '立即发送', '重试失败', '查看回执'],
-      note: '模板/消息任务已换真接口；真实渠道发送、回执回写 adapter 仍待后端补齐。',
+      note: '',
     };
   },
 };

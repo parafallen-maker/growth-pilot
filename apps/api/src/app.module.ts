@@ -1,7 +1,5 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR, Reflector } from '@nestjs/core';
-import { ApiAuthGuard } from './common/auth.guard';
-import { PermissionGuard } from './common/permission.guard';
 import { InMemoryRateLimitGuard, PasswordService, SensitiveDataInterceptor } from './common/security';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
@@ -23,9 +21,9 @@ import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
+    UsersModule,
     AuthModule,
     AnalyticsModule,
-    UsersModule,
     SettingsModule,
     JobsModule,
     TeachersModule,
@@ -42,8 +40,6 @@ import { UsersModule } from './modules/users/users.module';
     GrowthModule,
   ],
   providers: [
-    ApiAuthGuard,
-    PermissionGuard,
     PasswordService,
     {
       provide: APP_GUARD,

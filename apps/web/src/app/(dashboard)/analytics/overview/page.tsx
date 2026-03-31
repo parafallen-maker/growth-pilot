@@ -30,9 +30,7 @@ export default async function AnalyticsOverviewPage() {
         </div>
         <div className="grid-2">
           <SummaryPanel title="排行 / 摘要" items={result?.tableCards ?? []} />
-          <SummaryPanel title="图表解读" items={result?.chartCards ?? []} />
         </div>
-        <SummaryPanel title="导出与验收提示" items={[{ name: '图表导出', detail: analyticsChartExportHint }, { name: '验收口径', detail: 'overview 看板支持校区/学期/日期筛选，且无数据不画空图。' }]} />
       </div>
     </PermissionGuard>
   );

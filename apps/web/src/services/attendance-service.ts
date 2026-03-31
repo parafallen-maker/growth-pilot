@@ -201,20 +201,19 @@ export const attendanceService = {
     return {
       filters: params,
       metrics: [
-        { label: '今日事件', value: String(result.page.total), hint: 'attendance/events 真接口' },
+        { label: '今日事件', value: String(result.page.total) },
         { label: '签到数', value: String(normalCheckins), hint: '按当天 checkin 事件统计' },
         { label: '异常事件', value: String(abnormalEvents.length), hint: '迟到 / 补录 / 其他异常' },
         { label: '最近 1h 事件', value: String(recentHourCount), hint: '按最新事件时间向前 1 小时窗口统计' },
       ],
       absentStudents: result.page.total
-        ? [{ name: '应到名单缺口', detail: 'attendance/events 已接真，但后端仍未提供 roster/应到名单接口，无法计算真正未签到名单。' }]
-        : [{ name: '暂无当日事件', detail: '当前筛选下未返回 attendance/events，且 roster 接口尚未开放。' }],
+        ? [{ name: '应到名单缺口', detail: '后端仍未提供 roster/应到名单接口，无法计算真正未签到名单。' }]
+        : [{ name: '暂无当日事件', detail: '当前筛选下未返回事件。' }],
       abnormalRecords: abnormalEvents.length
         ? abnormalEvents.map((item) => ({ name: item.eventType, detail: `${item.studentName} · ${item.happenedAt} · ${item.note}` }))
         : [{ name: '暂无异常', detail: '当前筛选条件下未命中异常事件。' }],
       eventTimeline: latestEvents.map((item) => ({ title: `${item.happenedAt} · ${item.studentName} · ${item.eventType}`, detail: `${item.campusName} · ${item.status} · ${item.note}` })),
       latestEvents,
-      actionNotice: 'POST /attendance/events 真接口已在；未签到名单与异常修正原因库因缺 roster / workflow API 暂保留说明位。',
     };
   },
 
@@ -311,7 +310,7 @@ export const attendanceService = {
     return {
       bindPermission: 'attendance:devices:manage',
       unbindPermission: 'attendance:devices:manage',
-      note: '设备/绑定列表已换真接口；批量绑定、批量换绑工作流仍待后端补批处理接口。',
+      note: '批量绑定、批量换绑工作流仍待后端补批处理接口。',
     };
   },
 
@@ -359,14 +358,14 @@ export const attendanceService = {
 
     return {
       metrics: [
-        { label: '总分钟', value: String(totalMinutes), hint: 'attendance/homework-time/daily-stats 真接口' },
+        { label: '总分钟', value: String(totalMinutes) },
         { label: '人均投入', value: `${averageMinutes}min`, hint: '按当前筛选记录均值' },
         { label: '异常学生', value: String(exceptions.length), hint: '偏低 / 偏高规则先按分钟阈值' },
         { label: '有效会话', value: String(totalSessions), hint: '来自 dailyStats.sessionCount 聚合' },
       ],
       stats: [
         { name: '日统计', detail: `当前筛选总计 ${totalMinutes} 分钟 / ${totalSessions} 次会话` },
-        { name: '趋势图', detail: '后端暂未提供时间序列专用接口，当前先用 daily stats 汇总做解读。' },
+        { name: '趋势图', detail: '当前先用 daily stats 汇总做解读。' },
         { name: '学科分布', detail: subjectBreakdown.length ? subjectBreakdown.map((item) => `${item.name} ${item.detail}`).join(' / ') : '暂无数据' },
         { name: '学生排行', detail: topStudents.length ? topStudents.map((item) => `${item.name} ${item.detail}`).join(' / ') : '暂无数据' },
       ],

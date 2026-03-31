@@ -236,7 +236,7 @@ export const homeworkService = {
       } catch {
         return {
           name: fileId,
-          detail: '已关联真实 fileId，但暂时未拉到文件元数据。',
+          detail: '文件元数据暂不可用',
           fileId,
           href: `/api/files/${fileId}`,
           directHref: null,
@@ -338,7 +338,12 @@ export const homeworkService = {
     };
   },
 
-  async taxonomyQuery(params: QueryBase = {}): Promise<PageResult<ErrorTaxonomyItem>> {
+  async taxonomyQuery(params: QueryBase & { status?: string; subject?: string; keyword?: string } = {}): Promise<PageResult<ErrorTaxonomyItem>> {
+    const queryMap: Record<string, string> = {};
+    if (params.keyword) queryMap.keyword = params.keyword;
+    if (params.status && params.status !== 'all') queryMap.status = params.status;
+    if (params.subject) queryMap.subject = params.subject;
+    const qs = Object.keys(queryMap).length ? '?' + new URLSearchParams(queryMap).toString() : '';
     const result = await serverApiRequest<Array<{
       id: string;
       code: string;
@@ -349,7 +354,7 @@ export const homeworkService = {
       stageScope?: string;
       status: ErrorTaxonomyStatus;
       sortOrder: number;
-    }>>(`/homework/error-taxonomies${buildQuery(params)}`);
+    }>>(`/homework/error-taxonomies${qs}`);
 
     return {
       list: result.map((item) => ({

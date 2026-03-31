@@ -49,8 +49,8 @@ export default async function CommunicationRecordsPage({
             <div className="button-row form-span-2"><SubmitButton pendingLabel="创建中...">创建沟通记录</SubmitButton></div>
           </form>
         </section>
-        <FilterBar fields={[{ label: '家庭筛选', value: '全部家庭', kind: 'select' }, { label: '学生筛选', value: '全部学生', kind: 'select' }, { label: '关键词', value: '家庭 / 学生 / 主题' }, { label: '渠道', value: '全部渠道', kind: 'select' }, { label: '方向', value: '当前列表未接后端 query 参数', kind: 'select' }, { label: '开始时间', value: '当前列表未接后端 query 参数' }, { label: '结束时间', value: '当前列表未接后端 query 参数' }]} />
-        <div className="grid-billing-layout"><DataTable title="沟通记录列表" columns={['时间', '家庭', '学生', '渠道', '方向', '主题', '记录人', '动作']} rows={result.list.map((item) => [item.occurredAt, item.familyName, item.studentName, item.channel, item.direction, item.subject, item.recorder, item.actions])} emptyLabel="暂无沟通记录。" /><div className="stack"><TimelinePanel title="沟通时间线" items={detail.timeline} /><SummaryPanel title="关联动作位" items={detail.linkedActions} /></div></div>
+        <FilterBar fields={[{ label: '家庭筛选', value: '全部家庭', kind: 'select' }, { label: '学生筛选', value: '全部学生', kind: 'select' }, { label: '关键词', value: '家庭 / 学生 / 主题' }, { label: '渠道', value: '全部渠道', kind: 'select' }, { label: '方向', value: '全部方向', kind: 'select' }, { label: '开始时间', value: '' }, { label: '结束时间', value: '' }]} />
+        <div className="grid-billing-layout"><DataTable title="沟通记录列表" columns={['时间', '家庭', '学生', '渠道', '方向', '主题', '记录人', '动作']} rows={result.list.map((item) => [item.occurredAt, item.familyName, item.studentName, item.channel, item.direction, item.subject, item.recorder, item.actions])} emptyLabel="暂无沟通记录。" /><div className="stack"><TimelinePanel title="沟通时间线" items={detail.timeline} /><SummaryPanel title="关联操作" items={detail.linkedActions} /></div></div>
         <PaginationBar pageNo={result.page.pageNo} pageSize={result.page.pageSize} total={result.page.total} baseUrl="/communication/records" />
       </div>
     </PermissionGuard>

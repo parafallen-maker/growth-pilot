@@ -115,13 +115,13 @@ export const settingsService = {
     return {
       roles: roles.length
         ? roles
-        : [{ name: '角色目录', detail: '当前后端未返回角色目录。' }],
+        : [{ name: '角色目录', detail: '暂无角色数据' }],
       permissionModules: permissionModules.length
         ? permissionModules
-        : [{ name: '权限模块', detail: '当前后端未返回权限目录。' }],
+        : [{ name: '权限模块', detail: '暂无权限模块' }],
       currentPermissions: currentPermissions.length
         ? currentPermissions
-        : [{ name: '权限目录', detail: '当前后端未返回权限点。' }],
+        : [{ name: '权限目录', detail: '暂无权限数据' }],
     };
   },
 
@@ -160,7 +160,7 @@ export const settingsService = {
               name: `${job.jobType} / ${job.status}`,
               detail: `${job.jobId} · ${job.bizType}:${job.bizId} · ${job.progress}% · queued ${job.queuedAt.replace('T', ' ').slice(0, 16)}${job.finishedAt ? ` · finished ${job.finishedAt.replace('T', ' ').slice(0, 16)}` : ''}${job.errorMessage ? ` · ${job.errorMessage}` : ''}`,
             }))
-          : [{ name: 'AI 任务中心', detail: '已接入 GET /jobs，当前筛选范围内暂无任务。' }])
+          : [{ name: 'AI 任务中心', detail: '当前筛选范围内暂无任务' }])
       : [{ name: 'AI 任务中心', detail: '当前登录用户缺少 jobs.read 权限，无法读取任务列表。' }];
 
     return {

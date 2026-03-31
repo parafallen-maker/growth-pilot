@@ -106,7 +106,6 @@ export default async function GrowthRubricsPage({
                 <SummaryPanel title="当前模板" items={[
                   { name: '模板名称', detail: detail.name },
                   { name: '状态', detail: detail.status },
-                  { name: 'schemaVersion', detail: detail.schemaVersion },
                   { name: '说明', detail: detail.editorNotice },
                 ]} />
                 <SummaryPanel title="维度详情" items={detail.dimensions.map((dimension) => ({

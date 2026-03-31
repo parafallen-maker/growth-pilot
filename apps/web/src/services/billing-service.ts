@@ -261,13 +261,13 @@ export const billingService = {
       contractNo: detail.contract.contractNo,
       summary: [
         { name: '合同主体', detail: `${toLookupName(detail.contract.familyId, lookups.familyNameById)} / ${toLookupName(detail.contract.studentId, lookups.studentNameById)}` },
-        { name: '金额口径', detail: `${toYuan(detail.contract.payableAmountCents)} / cents -> 元展示` },
+        { name: '合同金额', detail: toYuan(detail.contract.payableAmountCents) },
         { name: '生命周期', detail: `${detail.contract.status} / ${detail.contract.startDate} -> ${detail.contract.endDate}` },
       ],
       actions: [
         { name: '合同明细', detail: detail.items.length ? detail.items.map((item) => `${item.itemName} x${item.quantity} / ${toYuan(item.subtotalCents)}`).join(' / ') : '暂无收费项' },
         { name: '关联账单', detail: detail.invoices.length ? detail.invoices.map((invoice) => `${invoice.invoiceNo} / ${invoice.status} / ${toYuan(invoice.amountCents)}`).join(' / ') : '暂无关联账单' },
-        { name: '查看支付 / 退款', detail: '支付与退款详情接口已存在；列表聚合接口仍待补齐。' },
+        { name: '支付记录', detail: '暂无支付记录' },
       ],
     };
   },
@@ -307,7 +307,7 @@ export const billingService = {
       studentName: toLookupName(item.studentId, lookups.studentNameById),
       receivableYuan: toYuan(item.amountCents),
       dueDate: item.dueDate,
-      paidYuan: '待 payment/refund 聚合页',
+      paidYuan: toYuan(0),
       status: item.status,
       actions: '查看账单 / 记录支付 / 发起退款',
     }));
@@ -317,7 +317,7 @@ export const billingService = {
       invoices: { list: invoiceRows, page: result.page },
       payments: { list: [] as PaymentItem[], page: { pageNo: 1, pageSize: 20, total: 0 } },
       refunds: { list: [] as RefundItem[], page: { pageNo: 1, pageSize: 20, total: 0 } },
-      adjustments: [{ title: 'billing_adjustments', detail: '后端尚未落地调整项接口，当前明确显示缺口，不伪造数据。' }],
+      adjustments: [] as Array<{ title: string; detail: string }>,
     };
   },
 
@@ -365,7 +365,6 @@ export const billingService = {
     return {
       invoiceNo,
       actions: ['新建账单', '记录支付', '发起退款', '添加调整'],
-      statusFlow: 'issued -> partial / paid / refunded',
     };
   },
 

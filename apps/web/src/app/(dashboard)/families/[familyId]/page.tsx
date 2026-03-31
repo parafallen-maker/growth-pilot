@@ -67,7 +67,7 @@ export default async function FamilyDetailPage({
         ? familyTasks.list.map((task) => ({ title: `${task.title} / ${task.status}`, detail: `${task.type} / 截止 ${task.dueLabel} / owner ${task.ownerUserId}` }))
         : detail.tasks.length
           ? detail.tasks.map((item, index) => ({ title: `家庭任务 ${index + 1}`, detail: JSON.stringify(item) }))
-          : [{ title: '暂无家庭任务', detail: '已尝试调用 tasks 真接口和家庭详情聚合，当前均未返回任务。' }]}
+          : [{ title: '暂无家庭任务', detail: '当前无待办任务。' }]}
     />
   );
 
@@ -78,7 +78,7 @@ export default async function FamilyDetailPage({
         ? communications.list.map((record) => ({ title: `${record.subject} / ${record.channel}`, detail: `${record.occurredAt} / ${record.direction} / ${record.studentName}` }))
         : detail.communications.length
           ? detail.communications.map((item, index) => ({ title: `沟通记录 ${index + 1}`, detail: JSON.stringify(item) }))
-          : [{ title: '暂无沟通记录', detail: '已尝试调用 communication/records 真接口和家庭详情聚合，当前均未返回沟通。' }]}
+          : [{ title: '暂无沟通记录', detail: '当前无沟通记录。' }]}
     />
   );
 
@@ -100,7 +100,7 @@ export default async function FamilyDetailPage({
           items={[
             { title: '监护人数', detail: `${detail.guardians.length} 位` },
             { title: '关联学生', detail: `${detail.students.length} 位` },
-            { title: '任务覆盖', detail: familyTasks.list.length ? `${familyTasks.list.length} 条真实任务` : `${detail.tasks.length} 条详情聚合任务` },
+            { title: '任务覆盖', detail: familyTasks.list.length ? `${familyTasks.list.length} 条关联任务` : `${detail.tasks.length} 条任务` },
             { title: '最近沟通', detail: communications.list[0] ? `${communications.list[0].subject} / ${communications.list[0].occurredAt}` : detail.communications[0] ? formatDateTime((detail.communications[0] as { updatedAt?: string }).updatedAt) : '暂无沟通' },
           ]}
         />

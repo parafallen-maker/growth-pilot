@@ -147,11 +147,11 @@ export default async function GrowthReportsPage({
         </div>
         <div className="report-workbench-layout">
           <section className="panel stack">
-            <div className="page-header"><h3>素材池</h3><span className="badge">traceable sources</span></div>
+            <div className="page-header"><h3>素材池</h3></div>
             <SummaryPanel title="素材来源" items={result.editor.materialPool} />
           </section>
           <section className="panel stack" id="report-review-form">
-            <div className="page-header"><h3>结构化复核编辑器</h3><span className="badge">real detail</span></div>
+            <div className="page-header"><h3>结构化复核编辑器</h3></div>
             {result.editor.draftSections.map((item) => (
               <article key={item.title} className="selection-card">
                 <strong>{item.title}</strong>
@@ -179,11 +179,6 @@ export default async function GrowthReportsPage({
           <section className="panel stack" id="report-publish-form">
             <div className="page-header"><h3>发布设置</h3></div>
             <SummaryPanel title="发布规则" items={result.editor.publishSettings} />
-            <article className="selection-card">
-              <strong>动作约定</strong>
-              <div className="subtle" style={{ marginTop: 8 }}>{action.note}</div>
-              <div className="subtle" style={{ marginTop: 8 }}>generate: {action.generateEndpoint} / review: {action.reviewEndpoint} / publish: {action.publishEndpoint}</div>
-            </article>
             <form className="selection-card stack" action={publishGrowthReport}>
               <input type="hidden" name="reportId" value={selectedReportId} />
               <strong>确认发布</strong>

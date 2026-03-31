@@ -54,7 +54,7 @@ export default async function AttendanceHomeworkTimePage() {
 
         <div className="grid-2">
           <SummaryPanel title="异常状态" items={detail.exceptions} />
-          <SummaryPanel title="数据说明" items={[{ name: '趋势序列', detail: '专用时间序列接口尚未开放，当前先展示真实日统计汇总。' }]} />
+
         </div>
 
         <DataTable

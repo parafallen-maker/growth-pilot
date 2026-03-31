@@ -63,15 +63,15 @@ export const analyticsService = {
     return {
       filters: params,
       metrics: [
-        { label: '在读学生数', value: String(result.activeStudentCount), hint: '来自 contracts active student 聚合' },
-        { label: '待复核作业', value: String(result.pendingHomeworkCount), hint: '来自 homework reviewStatus 聚合' },
-        { label: '周报完成率', value: `${(result.reportPublishRate * 100).toFixed(1)}%`, hint: '当前口径仍基于 homework reviewed/published 比率' },
-        { label: '本月实收', value: toYuan(result.receivedCents), hint: 'VO 层 cents -> 元展示' },
+        { label: '在读学生数', value: String(result.activeStudentCount) },
+        { label: '待复核作业', value: String(result.pendingHomeworkCount) },
+        { label: '周报完成率', value: `${(result.reportPublishRate * 100).toFixed(1)}%` },
+        { label: '本月实收', value: toYuan(result.receivedCents) },
       ],
       charts: [
         {
           title: '经营金额对比',
-          description: '来自 overview trend 的应收 / 实收聚合。',
+          
           items: [
             { label: '应收', value: result.trend.receivableCents, valueLabel: toYuan(result.trend.receivableCents), detail: '当前筛选窗口应收总额', tone: 'warning' },
             { label: '实收', value: result.trend.receivedCents, valueLabel: toYuan(result.trend.receivedCents), detail: '当前筛选窗口已收总额', tone: 'success' },
@@ -83,7 +83,7 @@ export const analyticsService = {
           items: [
             { label: '续费待跟进', value: result.trend.renewalTodoCount, valueLabel: `${result.trend.renewalTodoCount} 条`, detail: '当前需要继续跟进的续费机会', tone: 'brand' },
             { label: '沟通触达', value: result.trend.communicationTouchCount, valueLabel: `${result.trend.communicationTouchCount} 次`, detail: '沟通记录触达次数', tone: 'success' },
-            { label: '消息失败', value: result.trend.messageFailureCount, valueLabel: `${result.trend.messageFailureCount} 条`, detail: 'message_tasks 失败条数', tone: 'danger' },
+            { label: '消息失败', value: result.trend.messageFailureCount, valueLabel: `${result.trend.messageFailureCount} 条`, tone: 'danger' },
             { label: '签到异常', value: result.todayAttendanceAnomalyCount, valueLabel: `${result.todayAttendanceAnomalyCount} 条`, detail: '今日出勤异常数', tone: 'warning' },
           ],
         },
@@ -98,12 +98,8 @@ export const analyticsService = {
         { name: '今日签到异常', detail: `${result.todayAttendanceAnomalyCount} 条` },
         { name: '经营摘要', detail: `应收 ${toYuan(result.receivableCents)} / 实收 ${toYuan(result.receivedCents)}` },
       ],
-      emptyState: { name: '空状态', detail: '当筛选区间无数据时，仅展示说明与引导，不渲染误导性空图。' },
-      governance: [
-        { name: 'service 分层', detail: '页面只调 analyticsService.queryOverview，不在页面里直写 fetch。' },
-        { name: 'query key', detail: 'analyticsOverview(filters) 与后端 overview 聚合查询一一对应。' },
-        { name: '权限守卫', detail: 'overview 仅 super_admin / campus_admin 可见。' },
-      ],
+      governance: [],
+      emptyState: { name: '空状态', detail: '当筛选区间无数据时,仅展示说明与引导,不渲染误导性空图。' },
     };
   },
 
@@ -123,15 +119,15 @@ export const analyticsService = {
     return {
       filters: params,
       metrics: [
-        { label: '待复核作业', value: String(result.teacherWorkloads.reduce((sum, item) => sum + item.pendingReviewCount, 0)), hint: '老师维度真实聚合' },
-        { label: '学科平均正确率', value: result.subjectAccuracy[0] ? `${result.subjectAccuracy[0].avgAccuracyPct}%` : '--', hint: '当前展示首个学科样本' },
-        { label: '高频错因数', value: String(result.topErrors.length), hint: 'TopN 聚合来自最终错因摘要' },
-        { label: '观察覆盖项', value: String(result.growthCoverage.length), hint: 'homework daily stats 聚合' },
+        { label: '待复核作业', value: String(result.teacherWorkloads.reduce((sum, item) => sum + item.pendingReviewCount, 0)) },
+        { label: '学科平均正确率', value: result.subjectAccuracy[0] ? `${result.subjectAccuracy[0].avgAccuracyPct}%` : '--' },
+        { label: '高频错因数', value: String(result.topErrors.length) },
+        { label: '观察覆盖项', value: String(result.growthCoverage.length) },
       ],
       charts: [
         {
           title: '学科正确率',
-          description: '按学科展示真实平均正确率。',
+          description: '各学科平均正确率',
           items: result.subjectAccuracy.map((item) => ({
             label: item.subject,
             value: item.avgAccuracyPct,
@@ -153,7 +149,7 @@ export const analyticsService = {
         },
         {
           title: '高频错因 TopN',
-          description: '来自最终错因摘要聚合。',
+          
           items: result.topErrors.map((item) => ({
             label: item.label,
             value: item.count,
@@ -168,12 +164,8 @@ export const analyticsService = {
         ...result.teacherWorkloads.map((item) => ({ name: item.teacherName, detail: `待复核 ${item.pendingReviewCount} / 在带 ${item.activeStudentCount} / 沟通 ${item.communicationCount}` })),
         { name: '数据源', detail: `${result.dataSource.mode} / HW ${result.dataSource.homeworkSubmissionCount}` },
       ],
-      emptyState: { name: '空状态', detail: '若当前学期无教学数据，展示“先完成作业复核/观察记录后再分析”。' },
-      governance: [
-        { name: 'service 分层', detail: 'analyticsService.queryTeaching 保留图表/排行/无数据口径。' },
-        { name: 'query key', detail: 'analyticsTeaching(filters) 预留给 TanStack Query 接入。' },
-        { name: '权限守卫', detail: 'teaching 仅 super_admin / campus_admin 可见。' },
-      ],
+      governance: [],
+      emptyState: { name: '空状态', detail: '若当前学期无教学数据,展示"先完成作业复核/观察记录后再分析"。' },
     };
   },
 
@@ -207,10 +199,10 @@ export const analyticsService = {
     return {
       filters: params,
       metrics: [
-        { label: '月度应收', value: toYuan(receivableTotal), hint: 'billing contracts / invoices 聚合' },
-        { label: '月度实收', value: toYuan(receivedTotal), hint: 'payment success 聚合' },
+        { label: '月度应收', value: toYuan(receivableTotal) },
+        { label: '月度实收', value: toYuan(receivedTotal) },
         { label: '逾期账单', value: String(result.agingSummary.reduce((sum, item) => sum + item.invoiceCount, 0)), hint: '按账龄桶汇总' },
-        { label: '续费机会', value: String(result.renewalFunnel.reduce((sum, item) => sum + item.count, 0)), hint: '续费 funnel 聚合' },
+        { label: '续费机会', value: String(result.renewalFunnel.reduce((sum, item) => sum + item.count, 0)) },
       ],
       charts: [
         {
@@ -253,7 +245,7 @@ export const analyticsService = {
             label: item.status,
             value: item.count,
             valueLabel: `${item.count} 条`,
-            detail: 'renewal status 聚合',
+            detail: '按续费阶段分组',
             tone: 'brand',
           })),
         },
@@ -265,12 +257,8 @@ export const analyticsService = {
         { name: '消息任务', detail: `${result.messageTaskCount} 条` },
       ],
       tableCards: result.renewalFunnel.map((item) => ({ name: `续费 ${item.status}`, detail: `${item.count} 条` })),
-      emptyState: { name: '空状态', detail: '若无账单/支付数据，仅展示金额口径说明与创建账单引导。' },
-      governance: [
-        { name: 'VO 金额口径', detail: '接口仍传 cents，前端 VO 统一转元；analytics 不直接裸用 cents。' },
-        { name: 'query key', detail: 'analyticsBilling(filters) 对应 billing 聚合查询。' },
-        { name: '权限守卫', detail: 'billing analytics 含 finance 可见。' },
-      ],
+      governance: [],
+      emptyState: { name: '空状态', detail: '若无账单/支付数据，仅展示创建账单引导。' },
     };
   },
 };
