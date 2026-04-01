@@ -29,6 +29,7 @@ import { UsersController } from '../../src/modules/users/controller/users.contro
 import { UsersRepository } from '../../src/modules/users/repository/users.repository';
 import { UsersService } from '../../src/modules/users/service/users.service';
 import { PERMISSION_METADATA_KEY } from '../../src/common/permission.decorator';
+import { PasswordService } from '../../src/common/security';
 import { createQaFixture } from './e2e-main-flow.fixture';
 
 const currentDir = fileURLToPath(new URL('.', import.meta.url));
@@ -142,7 +143,7 @@ test('QA-06 contract smoke exercises representative happy paths across auth, cor
   const authController = new AuthController(fixture.authService);
   const usersRepository = new UsersRepository();
   const settingsController = new SettingsController(new SettingsService(new SettingsRepository(), usersRepository));
-  const usersController = new UsersController(new UsersService(usersRepository));
+  const usersController = new UsersController(new UsersService(usersRepository, new PasswordService()));
   const jobsRepository = new JobsRepository();
   const jobsService = new JobsService(jobsRepository);
   const jobsController = new JobsController(jobsService);
@@ -186,7 +187,7 @@ test('QA-06 contract smoke exercises representative happy paths across auth, cor
     campusIds: ['campus-001'],
   }));
   assert.equal(createdUser.username, 'qa.user');
-  assert.deepEqual(assertEnvelope(await usersController.assignRoles('user-teacher-001', { roleIds: ['teacher'] })), { success: true });
+  assert.deepEqual(assertEnvelope(await usersController.assignRoles(createdUser.id, { roleIds: ['teacher'] })), { success: true });
 
   const queuedJob = jobsService.createJob({
     jobType: 'qa-smoke',

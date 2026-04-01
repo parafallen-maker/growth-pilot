@@ -1,6 +1,11 @@
 import { mkdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { AuthService } from '../../src/modules/auth/service/auth.service';
+import { DefaultAuthSessionRepository } from '../../src/modules/auth/repository/auth-session.repository';
+import { AuthSessionCacheService } from '../../src/modules/auth/service/auth-session-cache.service';
+import { AuthRateLimitService } from '../../src/modules/auth/service/auth-rate-limit.service';
+import { RedisKvService } from '../../src/modules/auth/service/redis-kv.service';
+import { BullmqJobBroker } from '../../src/modules/jobs/queue/bullmq-job-broker';
 import { AttendanceRepository } from '../../src/modules/attendance/repository/attendance.repository';
 import { AttendanceService } from '../../src/modules/attendance/service/attendance.service';
 import { AnalyticsRepository } from '../../src/modules/analytics/repository/analytics.repository';
@@ -34,6 +39,7 @@ import { TeachersRepository } from '../../src/modules/teachers/repository/teache
 import { TeachersService } from '../../src/modules/teachers/teachers.service';
 import { UsersRepository } from '../../src/modules/users/repository/users.repository';
 import { UsersService } from '../../src/modules/users/service/users.service';
+import { PasswordService } from '../../src/common/security';
 
 const dataDir = resolve(process.cwd(), '.data');
 process.env.JWT_SECRET ??= 'growthpilot-test-secret-with-32-chars!';
@@ -47,8 +53,13 @@ export function createQaFixture() {
   resetDataDir();
 
   const usersRepository = new UsersRepository();
-  const usersService = new UsersService(usersRepository);
-  const authService = new AuthService(usersService);
+  const passwordService = new PasswordService();
+  const usersService = new UsersService(usersRepository, passwordService);
+  const redisKvService = new RedisKvService();
+  const authSessionRepository = new DefaultAuthSessionRepository();
+  const authSessionCacheService = new AuthSessionCacheService(redisKvService);
+  const authRateLimitService = new AuthRateLimitService(redisKvService);
+  const authService = new AuthService(usersService, authSessionRepository, authSessionCacheService, authRateLimitService);
 
   const fileAssetRepository = new FileAssetRepository();
   const filesService = new FilesService(fileAssetRepository, new MockObjectStorageAdapter());
@@ -74,7 +85,7 @@ export function createQaFixture() {
 
   const growthRepository = new GrowthRepository();
   const reportMaterialAssembler = new ReportMaterialAssembler(growthRepository);
-  const reportDraftJob = new ReportDraftJob(growthRepository, reportMaterialAssembler, jobsService);
+  const reportDraftJob = new ReportDraftJob(growthRepository, reportMaterialAssembler, jobsService, new BullmqJobBroker());
   const growthService = new GrowthService(growthRepository, reportDraftJob);
 
   process.env.GROWTHPILOT_MASTER_DATA_PATH = resolve(dataDir, 'master-data.json');

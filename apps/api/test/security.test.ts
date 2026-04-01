@@ -27,7 +27,7 @@ test('seeded and newly created users persist only password hashes', async () => 
   process.env.JWT_SECRET = 'growthpilot-test-secret-with-32-chars!';
   resetUsersPersistence();
 
-  const usersService = new UsersService(new UsersRepository());
+  const usersService = new UsersService(new UsersRepository(), new PasswordService());
 
   const seededAdmin = await usersService.validateCredentials('admin', 'admin123');
   assert.ok(seededAdmin);

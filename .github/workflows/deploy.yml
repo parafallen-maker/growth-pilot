@@ -53,8 +53,8 @@ on:
         required: false
         type: boolean
         default: true
-  push:
-    branches: [main]
+  # push trigger removed — deploy is invoked via workflow_call (from ci.yml)
+  # or workflow_dispatch (manual) only, since no deploy secrets are configured yet.
 
 permissions:
   contents: read

@@ -2012,6 +2012,77 @@ paths:
                                 type: string
                         page:
                           $ref: '#/components/schemas/PageResultMeta'
+    post:
+      tags:
+      - settings
+      summary: 新增字典项
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dictType, code, label, value]
+              properties:
+                dictType:
+                  type: string
+                code:
+                  type: string
+                label:
+                  type: string
+                value:
+                  type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    put:
+      tags:
+      - settings
+      summary: 更新字典项
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                dictType:
+                  type: string
+                label:
+                  type: string
+                value:
+                  type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags:
+      - settings
+      summary: 删除字典项
+      parameters:
+      - name: dictType
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
   /users:
     get:
       tags:
@@ -2325,6 +2396,32 @@ paths:
                   properties:
                     data:
                       $ref: '#/components/schemas/Student'
+    patch:
+      tags:
+      - students
+      summary: 更新学生信息
+      parameters:
+      - $ref: '#/components/parameters/studentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                gradeLabel:
+                  type: string
+                status:
+                  type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
   /students/{studentId}/360:
     get:
       tags:
@@ -4096,6 +4193,36 @@ paths:
                           format: uuid
                         invoiceNo:
                           type: string
+  /billing/invoices/{invoiceId}/status:
+    patch:
+      tags:
+      - billing
+      summary: 更新账单状态
+      parameters:
+      - name: invoiceId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [pending, paid, overdue, cancelled, refunded]
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
   /billing/invoices/{invoiceId}/payments:
     post:
       tags:

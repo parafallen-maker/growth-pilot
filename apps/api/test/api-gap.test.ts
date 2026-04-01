@@ -17,6 +17,7 @@ import { TeachersRepository } from '../src/modules/teachers/repository/teachers.
 import { TeachersService } from '../src/modules/teachers/teachers.service';
 import { UsersRepository } from '../src/modules/users/repository/users.repository';
 import { UsersService } from '../src/modules/users/service/users.service';
+import { PasswordService } from '../src/common/security';
 
 const dataDir = resolve(process.cwd(), '.data');
 const runtimeDir = resolve(process.cwd(), '.runtime');
@@ -56,7 +57,7 @@ function createFixture() {
       billingRepository,
       jobsService,
     ),
-    usersService: new UsersService(usersRepository),
+    usersService: new UsersService(usersRepository, new PasswordService()),
   };
 }
 

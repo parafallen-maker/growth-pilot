@@ -13,6 +13,7 @@ import { SettingsRepository } from '../src/modules/settings/repository/settings.
 import { ACCESS_PERMISSION_DICT_TYPE, ACCESS_ROLE_DICT_TYPE, SettingsService } from '../src/modules/settings/service/settings.service';
 import { UsersRepository } from '../src/modules/users/repository/users.repository';
 import { UsersService } from '../src/modules/users/service/users.service';
+import { PasswordService } from '../src/common/security';
 
 function resetPersistence() {
   rmSync('.data/auth-sessions.json', { force: true });
@@ -26,7 +27,7 @@ function createFixture() {
   process.env.JWT_SECRET = 'growthpilot-test-secret-with-32-chars!';
   resetPersistence();
   const usersRepository = new UsersRepository();
-  const usersService = new UsersService(usersRepository);
+  const usersService = new UsersService(usersRepository, new PasswordService());
   const redisKvService = new RedisKvService();
   const authService = new AuthService(
     usersService,
