@@ -13,7 +13,7 @@ export type PageHeaderProps = {
 };
 
 export type MetricGridProps = {
-  items: { label: string; value: string; hint: string }[];
+  items: { label: string; value: string; hint?: string }[];
 };
 
 export type FilterFieldOption = {

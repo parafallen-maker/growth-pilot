@@ -174,6 +174,7 @@ export const growthService = {
       name: detail.name,
       schemaVersion: 'rubric-template-v1',
       status: detail.status,
+      editorNotice: '编辑模板将影响所有使用该模板的观察记录，请谨慎操作。',
       dimensions: detail.dimensions.map((dimension) => ({
         id: dimension.id,
         code: dimension.code,
@@ -221,6 +222,7 @@ export const growthService = {
     return {
       schemaKey: 'observation.dynamic.rubric-template-v1',
       createPermission: 'growth:observations:manage',
+      idempotencyHint: '提交相同 studentId + observationDate 会触发幂等校验',
     };
   },
 
@@ -274,6 +276,7 @@ export const growthService = {
         { name: '关联观察', detail: '' },
         { name: '关联家庭任务', detail: '' },
       ],
+      nextAction: goal ? `当前进度 ${goal.progress} / ${goal.targetValue}，截止 ${goal.dueDate}` : '暂无目标数据',
     };
   },
 

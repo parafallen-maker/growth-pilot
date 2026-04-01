@@ -35,7 +35,7 @@ export default async function AttendanceBoardPage({
       eventTimeline: [],
       latestEvents: [],
       actionNotice: '当前未取到 attendance/events 数据，可稍后刷新重试。',
-    })),
+    })) as unknown as Awaited<ReturnType<typeof attendanceService.queryBoard>> & { actionNotice: string },
     serverApiRequest<PageResult<{ id: string; name: string; studentNo: string }>>('/students?pageNo=1&pageSize=50').catch(() => ({ list: [], page: { pageNo: 1, pageSize: 50, total: 0 } })),
     serverApiRequest<PageResult<{ id: string; serialNo: string }>>('/attendance/devices?pageNo=1&pageSize=50').catch(() => ({ list: [], page: { pageNo: 1, pageSize: 50, total: 0 } })),
   ]);

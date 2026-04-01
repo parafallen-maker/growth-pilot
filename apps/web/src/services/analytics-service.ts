@@ -63,15 +63,15 @@ export const analyticsService = {
     return {
       filters: params,
       metrics: [
-        { label: '在读学生数', value: String(result.activeStudentCount) },
-        { label: '待复核作业', value: String(result.pendingHomeworkCount) },
-        { label: '周报完成率', value: `${(result.reportPublishRate * 100).toFixed(1)}%` },
-        { label: '本月实收', value: toYuan(result.receivedCents) },
+        { label: '在读学生数', value: String(result.activeStudentCount), hint: '当前活跃学生数' },
+        { label: '待复核作业', value: String(result.pendingHomeworkCount), hint: '等待老师复核的作业' },
+        { label: '周报完成率', value: `${(result.reportPublishRate * 100).toFixed(1)}%`, hint: '已发布周报占比' },
+        { label: '本月实收', value: toYuan(result.receivedCents), hint: '本月已收总额' },
       ],
       charts: [
         {
           title: '经营金额对比',
-          
+          description: '应收与实收金额对比图。',
           items: [
             { label: '应收', value: result.trend.receivableCents, valueLabel: toYuan(result.trend.receivableCents), detail: '当前筛选窗口应收总额', tone: 'warning' },
             { label: '实收', value: result.trend.receivedCents, valueLabel: toYuan(result.trend.receivedCents), detail: '当前筛选窗口已收总额', tone: 'success' },
@@ -83,7 +83,7 @@ export const analyticsService = {
           items: [
             { label: '续费待跟进', value: result.trend.renewalTodoCount, valueLabel: `${result.trend.renewalTodoCount} 条`, detail: '当前需要继续跟进的续费机会', tone: 'brand' },
             { label: '沟通触达', value: result.trend.communicationTouchCount, valueLabel: `${result.trend.communicationTouchCount} 次`, detail: '沟通记录触达次数', tone: 'success' },
-            { label: '消息失败', value: result.trend.messageFailureCount, valueLabel: `${result.trend.messageFailureCount} 条`, tone: 'danger' },
+            { label: '消息失败', value: result.trend.messageFailureCount, valueLabel: `${result.trend.messageFailureCount} 条`, detail: '发送失败的消息数', tone: 'danger' },
             { label: '签到异常', value: result.todayAttendanceAnomalyCount, valueLabel: `${result.todayAttendanceAnomalyCount} 条`, detail: '今日出勤异常数', tone: 'warning' },
           ],
         },
@@ -119,10 +119,10 @@ export const analyticsService = {
     return {
       filters: params,
       metrics: [
-        { label: '待复核作业', value: String(result.teacherWorkloads.reduce((sum, item) => sum + item.pendingReviewCount, 0)) },
-        { label: '学科平均正确率', value: result.subjectAccuracy[0] ? `${result.subjectAccuracy[0].avgAccuracyPct}%` : '--' },
-        { label: '高频错因数', value: String(result.topErrors.length) },
-        { label: '观察覆盖项', value: String(result.growthCoverage.length) },
+        { label: '待复核作业', value: String(result.teacherWorkloads.reduce((sum, item) => sum + item.pendingReviewCount, 0)), hint: '全部老师待复核作业合计' },
+        { label: '学科平均正确率', value: result.subjectAccuracy[0] ? `${result.subjectAccuracy[0].avgAccuracyPct}%` : '--', hint: '取第一个学科的正确率' },
+        { label: '高频错因数', value: String(result.topErrors.length), hint: '当前 topN 错因数量' },
+        { label: '观察覆盖项', value: String(result.growthCoverage.length), hint: '已覆盖的学科观察项数' },
       ],
       charts: [
         {
@@ -149,7 +149,7 @@ export const analyticsService = {
         },
         {
           title: '高频错因 TopN',
-          
+          description: '按错误频次排列的高频错因。',
           items: result.topErrors.map((item) => ({
             label: item.label,
             value: item.count,
@@ -199,10 +199,10 @@ export const analyticsService = {
     return {
       filters: params,
       metrics: [
-        { label: '月度应收', value: toYuan(receivableTotal) },
-        { label: '月度实收', value: toYuan(receivedTotal) },
+        { label: '月度应收', value: toYuan(receivableTotal), hint: '趋势汇总应收总额' },
+        { label: '月度实收', value: toYuan(receivedTotal), hint: '趋势汇总实收总额' },
         { label: '逾期账单', value: String(result.agingSummary.reduce((sum, item) => sum + item.invoiceCount, 0)), hint: '按账龄桶汇总' },
-        { label: '续费机会', value: String(result.renewalFunnel.reduce((sum, item) => sum + item.count, 0)) },
+        { label: '续费机会', value: String(result.renewalFunnel.reduce((sum, item) => sum + item.count, 0)), hint: '各阶段续费机会合计' },
       ],
       charts: [
         {

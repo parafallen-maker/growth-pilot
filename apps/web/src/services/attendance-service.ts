@@ -201,7 +201,7 @@ export const attendanceService = {
     return {
       filters: params,
       metrics: [
-        { label: '今日事件', value: String(result.page.total) },
+        { label: '今日事件', value: String(result.page.total), hint: '当前筛选窗口事件总数' },
         { label: '签到数', value: String(normalCheckins), hint: '按当天 checkin 事件统计' },
         { label: '异常事件', value: String(abnormalEvents.length), hint: '迟到 / 补录 / 其他异常' },
         { label: '最近 1h 事件', value: String(recentHourCount), hint: '按最新事件时间向前 1 小时窗口统计' },
@@ -358,7 +358,7 @@ export const attendanceService = {
 
     return {
       metrics: [
-        { label: '总分钟', value: String(totalMinutes) },
+        { label: '总分钟', value: String(totalMinutes), hint: '当前筛选记录总计' },
         { label: '人均投入', value: `${averageMinutes}min`, hint: '按当前筛选记录均值' },
         { label: '异常学生', value: String(exceptions.length), hint: '偏低 / 偏高规则先按分钟阈值' },
         { label: '有效会话', value: String(totalSessions), hint: '来自 dailyStats.sessionCount 聚合' },
