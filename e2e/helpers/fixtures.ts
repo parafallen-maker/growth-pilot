@@ -1,28 +1,22 @@
-import { test as base, expect, type Page } from '@playwright/test';
+import { test as base, expect, type Page, type BrowserContext } from '@playwright/test';
 
 let _cachedState: { cookies: any[]; origins: any[] } | null = null;
-let _loginCount = 0;
 
 async function doLogin(page: Page): Promise<boolean> {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      // Hard reload login page to avoid stale connection issues
-      await page.goto('/login', { timeout: 15000, waitUntil: 'domcontentloaded' });
-      await page.getByLabel('用户名').fill('admin');
-      await page.getByLabel('密码').fill('admin123');
-      await page.getByRole('button', { name: '登录进入 Dashboard' }).click();
-      await Promise.race([
-        page.waitForURL('**/dashboard**', { timeout: 15000 }),
-        page.getByText(/工作台|Dashboard/).waitFor({ state: 'visible', timeout: 15000 }),
-      ]);
-      await page.waitForTimeout(500);
-      _loginCount++;
-      return true;
-    } catch {
-      await page.waitForTimeout(1000);
-    }
+  try {
+    await page.goto('/login', { timeout: 10000 });
+    await page.getByLabel('用户名').fill('admin');
+    await page.getByLabel('密码').fill('admin123');
+    await page.getByRole('button', { name: '登录进入 Dashboard' }).click();
+    await Promise.race([
+      page.waitForURL('**/dashboard**', { timeout: 25000 }),
+      page.getByText(/工作台|Dashboard/).waitFor({ state: 'visible', timeout: 25000 }),
+    ]);
+    await page.waitForTimeout(300);
+    return true;
+  } catch {
+    return false;
   }
-  return false;
 }
 
 export const authTest = base.extend<{ page: Page }>({});
@@ -31,8 +25,8 @@ export const test = base.extend<{ page: Page }>({}).extend({
   page: async ({ browser }, use, testInfo) => {
     const baseURL = testInfo.project.use?.baseURL as string || 'http://localhost:3000';
 
+    // Auth tests manage their own login; clear cache after logout test
     if (testInfo.file.includes('auth/')) {
-      // Auth tests manage their own login; clear cache if it was a logout test
       if (testInfo.title.includes('退出')) {
         _cachedState = null;
       }
@@ -43,9 +37,10 @@ export const test = base.extend<{ page: Page }>({}).extend({
       return;
     }
 
-    const context = await browser.newContext({ baseURL });
-    const page = await context.newPage();
+    let context: BrowserContext = await browser.newContext({ baseURL });
+    let page: Page = await context.newPage();
 
+    // Try cached state first
     if (_cachedState) {
       await context.addCookies(_cachedState.cookies);
       await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
@@ -54,8 +49,16 @@ export const test = base.extend<{ page: Page }>({}).extend({
       }
     }
 
+    // Fresh login needed
     if (!_cachedState) {
-      const ok = await doLogin(page);
+      let ok = await doLogin(page);
+      if (!ok) {
+        // Server may be congested — recreate context to release TCP connections
+        await context.close();
+        context = await browser.newContext({ baseURL });
+        page = await context.newPage();
+        ok = await doLogin(page);
+      }
       if (ok) {
         _cachedState = await context.storageState();
       }
