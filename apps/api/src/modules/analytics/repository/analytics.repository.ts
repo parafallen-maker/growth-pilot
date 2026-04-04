@@ -140,7 +140,7 @@ export class AnalyticsRepository {
       this.selectOne<{ todo_count: string | number | null }>(
         sql`
           select count(*) filter (where r.status = 'todo') as todo_count
-          from renewals r
+          from renewal_tasks r
           ${this.joinScopedContracts('r.contract_id')}
           where ${this.joinConditions(this.renewalScopeFilters(query, contractScope.contractIds))}
         `,
@@ -155,7 +155,7 @@ export class AnalyticsRepository {
       this.selectOne<{ failure_count: string | number | null }>(
         sql`
           select count(*) as failure_count
-          from message_tasks m
+          from outbound_messages m
           where ${this.joinConditions([
             ...this.messageTaskScopeFilters(query, contractScope.studentIds),
             sql`m.status = 'failed'`,
@@ -348,7 +348,7 @@ export class AnalyticsRepository {
         select
           r.status,
           count(*) as count
-        from renewals r
+        from renewal_tasks r
         ${this.joinScopedContracts('r.contract_id')}
         where ${this.joinConditions(this.renewalScopeFilters(query, contractScope.contractIds))}
         group by r.status
@@ -360,7 +360,7 @@ export class AnalyticsRepository {
       `),
       this.selectOne<{ task_count: string | number | null }>(sql`
         select count(*) as task_count
-        from message_tasks m
+        from outbound_messages m
         where ${this.joinConditions(this.messageTaskScopeFilters(query, contractScope.studentIds))}
       `),
       this.selectRows<{ id: string; amount_cents: string | number | null }>(sql`
