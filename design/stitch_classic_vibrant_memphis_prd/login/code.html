@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Growth-Pilot | 登录</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&amp;family=Noto+Sans+SC:wght@400;500;700;900&amp;family=Archivo:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "outline-variant": "#acadaf",
+                        "inverse-primary": "#ff6b6b",
+                        "inverse-surface": "#0c0e10",
+                        "surface-container-high": "#e1e2e5",
+                        "surface-container": "#e7e8ea",
+                        "tertiary-container": "#fee56c",
+                        "surface": "#f6f6f8",
+                        "surface-variant": "#dbdde0",
+                        "on-error": "#ffefec",
+                        "tertiary-fixed": "#fee56c",
+                        "on-secondary-fixed": "#004844",
+                        "surface-container-low": "#f0f1f3",
+                        "on-secondary-fixed-variant": "#006761",
+                        "on-error-container": "#520c00",
+                        "error-dim": "#b92902",
+                        "tertiary-fixed-dim": "#f0d760",
+                        "surface-tint": "#aa2c32",
+                        "on-tertiary-fixed": "#4c4100",
+                        "inverse-on-surface": "#9c9d9f",
+                        "primary-container": "#ff7574",
+                        "secondary-container": "#7cf6ec",
+                        "on-tertiary-fixed-variant": "#6c5d00",
+                        "surface-container-highest": "#dbdde0",
+                        "primary": "#aa2c32",
+                        "outline": "#757779",
+                        "on-surface": "#2d2f31",
+                        "secondary-dim": "#005a55",
+                        "primary-fixed-dim": "#f56364",
+                        "secondary-fixed": "#7cf6ec",
+                        "secondary-fixed-dim": "#6ce8de",
+                        "on-secondary-container": "#005c57",
+                        "on-tertiary-container": "#615300",
+                        "error-container": "#f95630",
+                        "on-primary": "#ffefee",
+                        "on-primary-container": "#4e0009",
+                        "primary-fixed": "#ff7574",
+                        "error": "#b02500",
+                        "surface-bright": "#f6f6f8",
+                        "on-surface-variant": "#5a5c5d",
+                        "tertiary-dim": "#5c4f00",
+                        "on-primary-fixed-variant": "#60000d",
+                        "on-primary-fixed": "#000000",
+                        "background": "#f6f6f8",
+                        "tertiary": "#6a5b00",
+                        "on-tertiary": "#fff3c5",
+                        "on-background": "#2d2f31",
+                        "surface-dim": "#d2d4d8",
+                        "secondary": "#006761",
+                        "primary-dim": "#992027",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#befff8"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk", "Noto Sans SC"],
+                        "body": ["Archivo", "Noto Sans SC"],
+                        "label": ["Archivo", "Noto Sans SC"]
+                    },
+                    borderRadius: { "DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .memphis-pattern {
+            background-color: #f6f6f8;
+            background-image: radial-gradient(#000 1px, transparent 1px);
+            background-size: 24px 24px;
+            background-opacity: 0.1;
+        }
+        .hard-shadow {
+            box-shadow: 8px 8px 0px 0px rgba(0,0,0,1);
+        }
+        .hard-shadow-sm {
+            box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+        }
+        .btn-active:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px 0px rgba(0,0,0,1);
+        }
+        .zigzag {
+            width: 100px;
+            height: 20px;
+            background: linear-gradient(135deg, transparent 25%, #4ECDC4 25%, #4ECDC4 50%, transparent 50%, transparent 75%, #4ECDC4 75%, #4ECDC4 100%),
+                        linear-gradient(225deg, transparent 25%, #4ECDC4 25%, #4ECDC4 50%, transparent 50%, transparent 75%, #4ECDC4 75%, #4ECDC4 100%);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class="bg-background font-body text-on-surface min-h-screen flex flex-col overflow-x-hidden memphis-pattern">
+<!-- Header / TopAppBar (Suppressing internal nav as per "The Destination Rule" for Transactional page, but keeping brand identity) -->
+<header class="flex justify-between items-center w-full px-6 py-4 bg-[#F4F4F6] border-b-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sticky top-0 z-50">
+<div class="text-2xl font-black text-black uppercase tracking-tighter font-headline">
+            Growth-Pilot <span class="text-[#FF6B6B]">课后成长系统</span>
+</div>
+<div class="flex gap-4">
+<button class="material-symbols-outlined p-2 border-[3px] border-black bg-white hover:bg-[#FFE66D] transition-all active:translate-x-[2px] active:translate-y-[2px]" data-icon="language">language</button>
+<button class="material-symbols-outlined p-2 border-[3px] border-black bg-white hover:bg-[#FFE66D] transition-all active:translate-x-[2px] active:translate-y-[2px]" data-icon="help_outline">help_outline</button>
+</div>
+</header>
+<main class="flex-grow flex items-center justify-center relative p-6">
+<!-- Background Memphis Decorations -->
+<div class="absolute top-20 left-10 w-24 h-24 rounded-full border-[3px] border-black bg-[#FFE66D] -rotate-12 hidden md:block"></div>
+<div class="absolute bottom-20 right-10 w-32 h-32 border-[3px] border-black bg-[#4ECDC4] rotate-12 hidden md:block"></div>
+<div class="absolute top-1/2 left-[5%] zigzag -translate-y-1/2 rotate-90 opacity-40"></div>
+<div class="absolute top-1/4 right-[8%] w-0 h-0 border-l-[40px] border-l-transparent border-r-[40px] border-r-transparent border-bottom-[70px] border-b-[#FF6B6B] rotate-45 hidden lg:block"></div>
+<!-- Login Card -->
+<div class="w-full max-w-md bg-white border-[3px] border-black hard-shadow p-8 md:p-12 relative z-10">
+<!-- Decorative corner accent -->
+<div class="absolute -top-4 -right-4 w-12 h-12 bg-[#FF6B6B] border-[3px] border-black flex items-center justify-center">
+<span class="material-symbols-outlined text-white" data-icon="rocket_launch">rocket_launch</span>
+</div>
+<div class="mb-10 text-center md:text-left">
+<h1 class="font-headline font-black text-4xl mb-2 tracking-tight">欢迎回来</h1>
+<p class="text-on-surface-variant font-medium">继续您的有目的的顽皮成长之旅</p>
+</div>
+<form class="space-y-6">
+<!-- Input: Username -->
+<div class="space-y-2">
+<label class="font-headline font-bold text-lg block" for="username">用户名/邮箱</label>
+<div class="relative group">
+<input class="w-full px-4 py-4 bg-white border-[3px] border-black focus:ring-0 focus:outline-none focus:bg-[#ffefee] focus:shadow-none transition-all hard-shadow-sm focus:translate-x-[2px] focus:translate-y-[2px]" id="username" placeholder="输入您的用户名" type="text"/>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-black opacity-50" data-icon="person">person</span>
+</div>
+</div>
+<!-- Input: Password -->
+<div class="space-y-2">
+<div class="flex justify-between items-end">
+<label class="font-headline font-bold text-lg block" for="password">密码</label>
+<a class="text-sm font-bold text-black hover:text-[#FF6B6B] underline transition-colors decoration-[2px]" href="#">忘记密码?</a>
+</div>
+<div class="relative group">
+<input class="w-full px-4 py-4 bg-white border-[3px] border-black focus:ring-0 focus:outline-none focus:bg-[#ffefee] focus:shadow-none transition-all hard-shadow-sm focus:translate-x-[2px] focus:translate-y-[2px]" id="password" placeholder="输入您的密码" type="password"/>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-black opacity-50" data-icon="lock">lock</span>
+</div>
+</div>
+<!-- Remember Me -->
+<div class="flex items-center gap-3 py-2">
+<input class="w-6 h-6 border-[3px] border-black rounded-none text-[#FF6B6B] focus:ring-0 cursor-pointer" id="remember" type="checkbox"/>
+<label class="font-bold text-sm select-none cursor-pointer" for="remember">记住我的登录信息</label>
+</div>
+<!-- Action Button -->
+<button class="w-full py-5 bg-[#FF6B6B] text-white font-black text-xl border-[3px] border-black hard-shadow hover:bg-[#ff7574] transition-all btn-active flex items-center justify-center gap-3" type="submit">
+                    登录 
+                    <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</form>
+<!-- Social Login Alternative -->
+<div class="mt-10 pt-8 border-t-[3px] border-black border-dashed">
+<p class="text-center text-sm font-bold text-on-surface-variant mb-6 uppercase tracking-widest">或通过社交账号登录</p>
+<div class="grid grid-cols-2 gap-4">
+<button class="flex items-center justify-center gap-2 py-3 border-[3px] border-black bg-white hover:bg-[#4ECDC4] transition-all font-bold hard-shadow-sm btn-active active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+<img alt="WeChat" class="w-5 h-5" data-alt="minimalist black and white wechat icon on clear background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5mHKxCTiKH_KHQc-U4XU5Rfa0UMjPnhHCP-Xwdm6T_58ta08gP0pi1Tsr2Ji-9BAHmajuYSZljhrxmmB2nfATx7TeDm8ok3ypqhMR-5wgMlUFYl0JLcbxaHr0DEcpSv3yqiwqF7VARSbvGF0I-TeQs3dgqt_2X-JUTqhZhPTckKBwhdz3Fr10tXiw3hqGD1cE6ENqanVzX2bPO856s1oH9MvqklJVLdOa-AY-c1UQudRTPyANYDlF0VAujMhWL3War2wRMg5LpLmd"/>
+                        微信
+                    </button>
+<button class="flex items-center justify-center gap-2 py-3 border-[3px] border-black bg-white hover:bg-[#FFE66D] transition-all font-bold hard-shadow-sm btn-active active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+<img alt="Google" class="w-5 h-5" data-alt="minimalist black and white google g logo icon on clear background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjcyPDM-KpCO8PQHx6Wu7ueCw-x4kNoBuxf463yEDAS3vjfIwoKFkPdu4y2AL9pmC6skdHEUzfbv_0k6xkmlHF8WcQloPLlxp--9AaxTV1KCkqM14DTcq9qjOMUNW2SywJ7HLmgorBlJ-IzZOjaIlV9FCMuNLLJg-d30_yYEslpDYUnFV1Pe92FFGWebVCIgHO550X3YYJWsjCKktRtMhLw9rWZaUerBfuBRDPVf9DlbRtkmPWITWZ9Vk52un4IAFvpDAJXSbVeMJI"/>
+                        Google
+                    </button>
+</div>
+</div>
+<!-- Register Link -->
+<div class="mt-10 text-center">
+<span class="font-medium text-on-surface-variant">还没有账号? </span>
+<a class="font-black text-black underline decoration-[3px] decoration-[#4ECDC4] hover:text-[#4ECDC4] transition-colors" href="#">立即注册</a>
+</div>
+</div>
+<!-- Floating Decoration -->
+<div class="absolute -bottom-10 -left-10 w-40 h-40 bg-white border-[3px] border-black hard-shadow-sm flex items-center justify-center rotate-12 z-0 hidden lg:flex">
+<img alt="Growth" class="w-20 h-20" data-alt="3d colorful rocket icon in a vibrant pop art style with thick outlines" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqQ0bCwoMMPy5a0BTqnFb57zMl9pXFmavv1w3bv2Asv-LpXU0s_XUEVgzF6PSuurlwZfhvllsEGFSc6UAe-V7Zc6BOdkthsZMo4xXxnWIDGMksYmg3AAgvnNn-yeRuGgWfBUqplBmALH0BXjIOqGDEtKrb2R3ew4iWvS9NQnvAP0Kh8oRmBS_6lkWL7icXc9vZB-o24154NnrJ-saO0dz8h3SRte6gJiV6_wSq_AL7n36uqw0f7czqtWt56q_b9l6yOloA72dYsst9"/>
+</div>
+</main>
+<!-- Footer (Shared Component Logic) -->
+<footer class="w-full py-8 px-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-white border-t-[3px] border-black font-['Noto_Sans_SC'] text-sm font-medium">
+<div class="text-lg font-bold text-black">
+            Growth-Pilot <span class="text-[#4ECDC4]">运营系统</span>
+</div>
+<div class="flex flex-wrap justify-center gap-6">
+<a class="text-slate-600 hover:text-[#FF6B6B] transition-colors" href="#">关于我们</a>
+<a class="text-slate-600 hover:text-[#FF6B6B] transition-colors" href="#">使用条款</a>
+<a class="text-slate-600 hover:text-[#FF6B6B] transition-colors" href="#">隐私政策</a>
+<a class="text-slate-600 hover:text-[#FF6B6B] transition-colors" href="#">联系支持</a>
+</div>
+<div class="text-slate-500">
+            © 2024 Growth-Pilot 课后成长运营系统. 有目的的顽皮.
+        </div>
+</footer>
+</body></html>

@@ -1,0 +1,208 @@
+# Soft Pastel Memphis
+
+## Product Overview
+
+**The Pitch:** A comprehensive, zero-stress operations platform for after-school tutoring centers. Growth-Pilot transforms tedious admin work into a delightful, visually soothing experience that reduces staff burnout and streamlines daily workflows.
+
+**For:** Center managers, tutors, and administrative staff who spend 8+ hours a day managing students, schedules, and payments. 
+
+**Device:** Desktop
+
+**Design Direction:** Soft Pastel Corporate Memphis. Friendly, geometric, and spacious. Uses low-saturation macaron colors, aggressive border radii, and offset pastel drop shadows to evoke a playful yet professional atmosphere.
+
+**Inspired by:** Gumroad (structural playfulness), Duolingo (friendly geometry, soft colors).
+
+---
+
+## Screens
+
+- **Dashboard:** High-level operational overview, quick-action widgets, and daily metrics.
+- **Student Management:** Roster list, detailed academic and personal profiles, attendance tracking.
+- **Homework & Scheduling:** Visual calendar, drag-and-drop class scheduling, assignment tracking.
+- **Billing & Financials:** Revenue charts, pending invoices, one-click payment reminders.
+- **Communication:** Unified inbox, broadcast announcements, automated parent updates.
+
+---
+
+## Key Flows
+
+**Onboarding a New Student:**
+1. User is on Student Management -> sees empty state "Add your first learner" or top-right "New Student" pill button.
+2. User clicks "New Student" -> a slide-out drawer appears with a chunky, step-by-step form.
+3. User fills details, clicks "Save Profile" -> Drawer slides out, success toast (peach pink) pops up, roster updates instantly.
+
+**Sending a Class Broadcast:**
+1. User is on Communication -> selects "New Notice" floating action button.
+2. User selects target audience (e.g., "Grade 5 Math") via mint-green multiselect chips.
+3. User types message, clicks "Send" -> Confetti animation plays within the card, message appears in the sent log.
+
+---
+
+<details>
+<summary>Design System</summary>
+
+## Color Palette
+
+- **Primary:** `#A8E6CF` (Mint Green) - Primary buttons, active states, progress bars
+- **Secondary:** `#FFD3B6` (Peach Pink) - Secondary actions, hover states, warning badges
+- **Tertiary:** `#DCD3FF` (Lavender) - Accents, illustrations, selected tabs
+- **Background:** `#F9F8F6` (Warm Cream) - Main app background
+- **Surface:** `#FFFFFF` (Pure White) - Cards, modals, sidebars
+- **Text:** `#4A4A4A` (Soft Charcoal) - Headers, primary body text
+- **Muted:** `#9CA3AF` (Warm Gray) - Helper text, disabled states, borders
+- **Accent:** `#FFECB3` (Butter Yellow) - Highlighted text, pending statuses
+
+## Typography
+
+Distinctive, rounded, and approachable.
+
+- **Headings:** `Outfit`, 700, 24-40px (Bouncy, geometric, high-impact)
+- **Body:** `Nunito`, 600, 16px (Extremely readable, soft rounded terminals)
+- **Small text:** `Nunito`, 500, 14px 
+- **Buttons:** `Outfit`, 700, 15px, tracking-wide
+
+**Style notes:** 
+- **Border Radius:** `24px` for large containers, `9999px` (pill) for buttons and chips.
+- **Shadows:** Hard offset pastel shadows (`8px 8px 0px rgba(168, 230, 207, 0.4)`) on active or hovering elements, no soft blurs.
+- **Borders:** `2px solid #4A4A4A` on interactive elements to ground the pastel colors and add Memphis-style contrast.
+
+## Design Tokens
+
+```css
+:root {
+  --color-primary: #A8E6CF;
+  --color-secondary: #FFD3B6;
+  --color-tertiary: #DCD3FF;
+  --color-background: #F9F8F6;
+  --color-surface: #FFFFFF;
+  --color-text: #4A4A4A;
+  --color-muted: #9CA3AF;
+  
+  --font-heading: 'Outfit', sans-serif;
+  --font-body: 'Nunito', sans-serif;
+  
+  --radius-card: 24px;
+  --radius-pill: 9999px;
+  
+  --shadow-memphis-mint: 4px 4px 0px #A8E6CF;
+  --shadow-memphis-peach: 4px 4px 0px #FFD3B6;
+  --shadow-memphis-dark: 4px 4px 0px #4A4A4A;
+  
+  --border-thick: 2px solid #4A4A4A;
+}
+```
+
+</details>
+
+---
+
+<details>
+<summary>Screen Specifications</summary>
+
+### Dashboard
+
+**Purpose:** Provide a zero-stress morning briefing on center operations.
+
+**Layout:** 280px left sidebar (navigation). Main content area uses a loose masonry grid. 48px top padding.
+
+**Key Elements:**
+- **Greeting Hero:** 32px `Outfit` header, personalized text ("Good morning, Sarah!"), flanked by a stylized vector sun.
+- **Metric Cards (Row 1):** 3 identical 24px-radius white cards. Hard 2px dark border. Values in 40px `Outfit`.
+  - *Attendance:* Mint green accent pill.
+  - *Pending Payments:* Peach pink accent pill.
+  - *Tasks:* Lavender accent pill.
+- **Today's Schedule (Column 1):** Vertical timeline. Time slots in soft charcoal, class pills in alternating pastel background colors.
+- **Quick Actions (Column 2):** Grid of 4 square buttons (Add Student, Invoice, Message, Schedule). Hovering shifts them up 4px with a dark Memphis shadow.
+
+**States:**
+- **Empty:** "Nothing scheduled today!" in Butter Yellow box, large smiling geometric face.
+- **Loading:** Pulsing mint green rounded rectangles.
+
+### Student Management
+
+**Purpose:** Comprehensive directory and profiling of all learners.
+
+**Layout:** Full-bleed white surface area, 80px top search/filter bar, grid of student cards.
+
+**Key Elements:**
+- **Search Bar:** Pill-shaped, 64px height, 24px left padding, pastel lavender focus ring.
+- **Filter Chips:** Mint green outline chips ("All", "Grade 5", "Owing", "Absent"). Active state fills solid mint.
+- **Student Cards:** 
+  - **Avatar:** 64x64px circular, random pastel background with monogram.
+  - **Name & Grade:** 18px `Outfit`, 14px `Nunito` muted.
+  - **Status Badge:** Butter yellow pill for "Needs Attention", Mint for "On Track".
+
+**Interactions:**
+- **Hover Card:** `transform: translateY(-4px)`, `--shadow-memphis-dark` appears.
+- **Click Card:** Opens 400px right-side overlay drawer with full academic history.
+
+### Homework & Scheduling
+
+**Purpose:** Drag-and-drop calendar for class mapping and assignment distribution.
+
+**Layout:** 100% height grid. Left 20% displays draggable class types, right 80% displays the weekly calendar.
+
+**Key Elements:**
+- **Calendar Grid:** Pale gray dashed lines (`#E5E7EB`), no solid borders to keep it airy.
+- **Class Blocks:** Rounded rectangles (8px radius). Background corresponds to subject (Math = Peach, Science = Mint, English = Lavender).
+- **Instructor Avatars:** Overlapping 24px circular avatars in the bottom right of each class block.
+
+**Interactions:**
+- **Drag Block:** Block becomes slightly transparent, snaps to 30-minute grid increments.
+- **Drop Block:** Satisfying "pop" scale animation (1.0 to 1.05 to 1.0), toast notification confirms schedule change.
+
+### Billing & Financials
+
+**Purpose:** Approachable interface for chasing payments and tracking revenue.
+
+**Layout:** Top summary row, bottom split 60/40 (Invoice List / Revenue Chart).
+
+**Key Elements:**
+- **Revenue Chart:** Soft, curvy line graph (Bezier curves). Fill gradient from Lavender to transparent.
+- **Invoice List Rows:** 
+  - **Parent Name:** 16px `Nunito` bold.
+  - **Amount:** 16px `Outfit`, right-aligned.
+  - **Remind Button:** Small pill button, outline style. Hovering turns it solid Peach Pink.
+- **Status Indicators:** "Paid" (Mint pill), "Overdue" (Peach pill), "Draft" (Muted pill).
+
+**Interactions:**
+- **Click Remind:** Button changes to "Sent!" with a tiny checkmark, button disabled.
+
+### Communication
+
+**Purpose:** Central hub for parent-teacher-admin messaging.
+
+**Layout:** Classic split-pane. 350px left inbox list, right-side chat view.
+
+**Key Elements:**
+- **Inbox Items:** 80px high. Unread items have a 12px Mint Green dot.
+- **Chat Bubbles:** 
+  - *Outbound:* Mint Green background, dark text, bottom-right radius 0px.
+  - *Inbound:* Pure White background, 2px dark border, bottom-left radius 0px.
+- **Composer:** 64px pill-shaped input docked at the bottom. Circular "Send" button embedded on the right.
+
+**States:**
+- **Empty:** Right pane shows large Lavender megaphone graphic and "Select a conversation or start a broadcast."
+
+</details>
+
+---
+
+<details>
+<summary>Build Guide</summary>
+
+**Stack:** HTML + Tailwind CSS v3
+
+**Setup Notes:**
+- Add `Outfit` and `Nunito` from Google Fonts.
+- Extend `tailwind.config.js` with custom colors (`mint: '#A8E6CF'`, `peach: '#FFD3B6'`, etc.) and the custom Memphis box-shadows.
+
+**Build Order:**
+1. **Design System & Layout:** Setup Sidebar and global background. Establish typography and button components.
+2. **Dashboard:** Builds the core metric cards and timeline UI, setting the geometric tone.
+3. **Student Management:** Establishes the card grid system, search inputs, and slide-out drawers.
+4. **Communication:** Implements the split-pane layout and intricate chat bubble geometry.
+5. **Homework & Scheduling:** Most complex interactive piece (drag-and-drop grid).
+6. **Billing & Financials:** Data visualization and tabular data styling.
+
+</details>

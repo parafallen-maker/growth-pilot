@@ -34,8 +34,10 @@ export function AppShell({ children, currentUser }: { children: ReactNode; curre
         <aside id="dashboard-sidebar" className={`sidebar${menuOpen ? ' open' : ''}`} aria-label="侧边导航">
           <div className="sidebar-brand">
             <div>
-              <h1>Growth Pilot</h1>
-              <div className="muted">洪基托管成长中心</div>
+              <h1>Growth-Pilot</h1>
+              <div className="muted" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 4 }}>
+                洪基托管成长中心
+              </div>
             </div>
             <button type="button" className="btn ghost sidebar-close" onClick={() => setMenuOpen(false)}>
               关闭

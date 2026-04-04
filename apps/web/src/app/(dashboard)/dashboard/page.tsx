@@ -13,6 +13,12 @@ const taskStatusLabel: Record<string, string> = { open: '待办', in_progress: '
 const aiStatusLabel: Record<string, string> = { pending: '待分析', processing: '分析中', completed: '已分析', failed: '分析失败' };
 const reviewStatusLabel: Record<string, string> = { unreviewed: '待复核', reviewing: '复核中', reviewed: '已复核', published: '已发布' };
 
+const statCardColors = [
+  { bg: '#4ECDC4', text: '#000' },
+  { bg: '#FF6B6B', text: '#fff' },
+  { bg: '#FFE66D', text: '#000' },
+];
+
 export default function DashboardPage() {
   return (
     <Suspense fallback={<DashboardSkeleton />}>
@@ -40,5 +46,69 @@ async function TeacherDashboard({ currentUser, campusId, termId }: { currentUser
 
 async function AdminDashboard({ campusId, termId }: { campusId: string; termId: string }) {
   const data = await analyticsService.queryOverview({ campusId, termId });
-  return <div className="stack"><PageHeader title="经营总览" description="查看校区核心指标和运营状况" actions={<><TermSwitcher campusId={campusId} termId={termId} /><CsvExportButton filename="analytics-overview.csv" headers={['指标', '值', '说明']} rows={data.metrics.map((item) => [item.label, item.value, item.hint])} /></>} /><MetricGrid items={data.metrics} /><div className="grid-2">{data.charts.map((chart) => <ChartPanel key={chart.title} title={chart.title} description={chart.description} items={chart.items} />)}</div><div className="grid-2"><SummaryPanel title="经营趋势摘要" items={data.chartCards} /><SummaryPanel title="运营摘要" items={data.tableCards} /></div><div className="grid-2"><TimelinePanel title="治理提示" items={data.governance.map((item) => ({ title: item.name, detail: item.detail }))} /><TimelinePanel title="全校待办" items={[{ title: '今日需复核总数', detail: '24 份' }, { title: '逾期未缴费', detail: '¥12,400' }]} /></div></div>;
+
+  return (
+    <div className="stack">
+      <PageHeader
+        title="经营总览"
+        description="查看校区核心指标和运营状况"
+        actions={<><TermSwitcher campusId={campusId} termId={termId} /><CsvExportButton filename="analytics-overview.csv" headers={['指标', '值', '说明']} rows={data.metrics.map((item) => [item.label, item.value, item.hint])} /></>}
+      />
+
+      <MetricGrid items={data.metrics} />
+
+      {/* Memphis-style stat highlights */}
+      <div className="grid-3">
+        {statCardColors.map((color, index) => {
+          const highlights = [
+            { icon: 'check_circle', tag: '今日实时', value: data.metrics[0]?.value ?? '—', label: data.metrics[0]?.label ?? '核心指标' },
+            { icon: 'receipt_long', tag: '待处理', value: data.metrics[1]?.value ?? '—', label: data.metrics[1]?.label ?? '待办事项' },
+            { icon: 'event_upcoming', tag: '急件', value: data.metrics[2]?.value ?? '—', label: data.metrics[2]?.label ?? '关注项' },
+          ];
+          const item = highlights[index];
+          return (
+            <div key={index} style={{
+              background: color.bg,
+              color: color.text,
+              border: '3px solid #000',
+              boxShadow: '4px 4px 0px 0px #000',
+              padding: 24,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              minHeight: 160,
+              transition: 'all 0.2s ease',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 36 }}>{item.icon}</span>
+                <span style={{
+                  background: color.text === '#fff' ? 'white' : 'black',
+                  color: color.text === '#fff' ? 'black' : 'white',
+                  padding: '2px 10px',
+                  fontSize: 10,
+                  fontWeight: 900,
+                }}>{item.tag}</span>
+              </div>
+              <div>
+                <div style={{ fontSize: '2.5rem', fontWeight: 900, fontFamily: "'Space Grotesk', sans-serif" }}>{item.value}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, marginTop: 4 }}>{item.label}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="grid-2">
+        {data.charts.map((chart) => <ChartPanel key={chart.title} title={chart.title} description={chart.description} items={chart.items} />)}
+      </div>
+      <div className="grid-2">
+        <SummaryPanel title="经营趋势摘要" items={data.chartCards} />
+        <SummaryPanel title="运营摘要" items={data.tableCards} />
+      </div>
+      <div className="grid-2">
+        <TimelinePanel title="治理提示" items={data.governance.map((item) => ({ title: item.name, detail: item.detail }))} />
+        <TimelinePanel title="全校待办" items={[{ title: '今日需复核总数', detail: '24 份' }, { title: '逾期未缴费', detail: '¥12,400' }]} />
+      </div>
+    </div>
+  );
 }

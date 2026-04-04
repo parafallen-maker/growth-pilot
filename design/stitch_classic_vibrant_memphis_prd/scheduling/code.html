@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Noto+Sans+SC:wght@400;500;700;900&amp;family=Be+Vietnam+Pro:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary-fixed-dim": "#f0d760",
+              "surface-variant": "#dbdde0",
+              "surface-dim": "#d2d4d8",
+              "outline-variant": "#acadaf",
+              "on-background": "#2d2f31",
+              "surface-tint": "#aa2c32",
+              "surface-container-highest": "#dbdde0",
+              "background": "#f6f6f8",
+              "inverse-on-surface": "#9c9d9f",
+              "secondary-container": "#7cf6ec",
+              "on-secondary-fixed-variant": "#006761",
+              "on-tertiary-fixed-variant": "#6c5d00",
+              "on-primary-fixed-variant": "#60000d",
+              "error": "#b02500",
+              "primary": "#aa2c32",
+              "on-surface": "#2d2f31",
+              "inverse-surface": "#0c0e10",
+              "surface-container-high": "#e1e2e5",
+              "tertiary": "#6a5b00",
+              "secondary-fixed-dim": "#6ce8de",
+              "on-error": "#ffefec",
+              "surface-container-low": "#f0f1f3",
+              "primary-fixed-dim": "#f56364",
+              "primary-fixed": "#ff7574",
+              "primary-dim": "#992027",
+              "on-secondary-container": "#005c57",
+              "secondary": "#006761",
+              "on-surface-variant": "#5a5c5d",
+              "surface-container": "#e7e8ea",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary": "#fff3c5",
+              "tertiary-fixed": "#fee56c",
+              "tertiary-dim": "#5c4f00",
+              "outline": "#757779",
+              "tertiary-container": "#fee56c",
+              "on-error-container": "#520c00",
+              "on-tertiary-fixed": "#4c4100",
+              "surface": "#f6f6f8",
+              "on-secondary-fixed": "#004844",
+              "on-primary-container": "#4e0009",
+              "primary-container": "#ff7574",
+              "inverse-primary": "#ff6b6b",
+              "on-primary-fixed": "#000000",
+              "on-secondary": "#befff8",
+              "error-dim": "#b92902",
+              "secondary-fixed": "#7cf6ec",
+              "surface-bright": "#f6f6f8",
+              "on-primary": "#ffefee",
+              "secondary-dim": "#005a55",
+              "error-container": "#f95630",
+              "on-tertiary-container": "#615300"
+            },
+            fontFamily: {
+              "headline": ["Space Grotesk"],
+              "body": ["Be Vietnam Pro"],
+              "label": ["Be Vietnam Pro"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .neo-shadow { shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] }
+        .neo-border { border: 3px solid #000000; }
+        .course-math { background-color: #FF6B6B; color: white; }
+        .course-science { background-color: #4ECDC4; color: black; }
+        .course-english { background-color: #DCD6F7; color: black; } /* Lavender representation */
+    </style>
+</head>
+<body class="bg-background font-body text-on-surface">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 border-b-3 border-black bg-[#F4F4F6] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex justify-between items-center h-16 px-6 w-full">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-black text-black tracking-tighter font-headline">Growth-Pilot</span>
+<div class="hidden md:flex items-center bg-white border-3 border-black px-3 py-1 ml-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+<span class="material-symbols-outlined mr-2">search</span>
+<input class="border-none focus:ring-0 text-sm bg-transparent w-64" placeholder="搜索课程或学员..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="relative hover:bg-[#FFE66D] transition-all p-1 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-[#FF6B6B] rounded-full border-2 border-black"></span>
+</button>
+<button class="hover:bg-[#FFE66D] transition-all p-1 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="flex items-center gap-3 border-l-3 border-black pl-6">
+<span class="text-sm font-bold">管理员</span>
+<img alt="管理员头像" class="w-10 h-10 border-3 border-black bg-white" data-alt="minimalist flat illustration avatar of a professional administrator with glasses and a friendly expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuACm1xjvP8wOphl5WDy8bwVHZtEKGwp3K5wKq1ua6oxbnoeSYRhC3FnezgUx48MeEB7dy73W_OSeKCMT4tNrQV8KiqOpdAR1Q-oz2BHkC-DiAiwwbPfQFrJ7yQITiF-a0FN9XmEqF5QvAWZY4KQk-jMJ3NOq1uzmAi6CaS868EM8IdFiTaEu6fXP36EbPYP2BntlrQGUeldtm0uMjgZysHUlC8gdAAsW3NtPx4TW4fbWy5HjxH32P23O16wm36_bOPvDgbWlPqhrFBf"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 border-r-3 border-black bg-white flex flex-col py-4 gap-2 z-40 hidden md:flex">
+<div class="px-6 py-4 mb-4">
+<h2 class="text-xl font-black text-black font-headline">成长领航</h2>
+<p class="text-xs text-on-surface-variant font-bold opacity-70">运营管理系统</p>
+</div>
+<nav class="flex-grow flex flex-col gap-2">
+<a class="flex items-center gap-3 px-6 py-3 text-black hover:bg-[#4ECDC4]/20 mx-2 hover:translate-x-1 transition-transform font-bold text-sm" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>控制台</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-black hover:bg-[#4ECDC4]/20 mx-2 hover:translate-x-1 transition-transform font-bold text-sm" href="#">
+<span class="material-symbols-outlined">group</span>
+<span>学员管理</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 bg-[#FF6B6B] text-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none mx-2 transition-transform font-bold text-sm" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span>课程与排期</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-black hover:bg-[#4ECDC4]/20 mx-2 hover:translate-x-1 transition-transform font-bold text-sm" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span>财务统计</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-black hover:bg-[#4ECDC4]/20 mx-2 hover:translate-x-1 transition-transform font-bold text-sm" href="#">
+<span class="material-symbols-outlined">chat</span>
+<span>消息中心</span>
+</a>
+</nav>
+<div class="px-4 mt-auto">
+<button class="w-full bg-[#FFE66D] border-3 border-black py-3 px-4 font-black text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all uppercase flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">add_box</span>
+                新建排期
+            </button>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="ml-0 md:ml-64 mt-16 p-8 min-h-screen">
+<div class="max-w-[1400px] mx-auto grid grid-cols-12 gap-8">
+<!-- Calendar View (7 columns) -->
+<div class="col-span-12 lg:col-span-9">
+<div class="flex justify-between items-end mb-8">
+<div>
+<h1 class="text-4xl font-black font-headline tracking-tight text-black">课程周历</h1>
+<p class="text-on-surface-variant font-bold mt-1">2024年3月 第3周 (03.11 - 03.17)</p>
+</div>
+<div class="flex gap-4">
+<div class="flex bg-white border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+<button class="px-4 py-2 border-r-3 border-black hover:bg-[#FFE66D] transition-colors"><span class="material-symbols-outlined">chevron_left</span></button>
+<button class="px-6 py-2 font-bold hover:bg-[#FFE66D] transition-colors">今天</button>
+<button class="px-4 py-2 border-l-3 border-black hover:bg-[#FFE66D] transition-colors"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+</div>
+</div>
+<!-- Calendar Grid -->
+<div class="bg-white border-3 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+<!-- Day Headers -->
+<div class="grid grid-cols-7 border-b-3 border-black bg-surface-container-low">
+<div class="p-4 text-center border-r-3 border-black last:border-r-0">
+<div class="text-xs font-black text-on-surface-variant">周一</div>
+<div class="text-xl font-black">11</div>
+</div>
+<div class="p-4 text-center border-r-3 border-black last:border-r-0">
+<div class="text-xs font-black text-on-surface-variant">周二</div>
+<div class="text-xl font-black">12</div>
+</div>
+<div class="p-4 text-center border-r-3 border-black last:border-r-0">
+<div class="text-xs font-black text-on-surface-variant">周三</div>
+<div class="text-xl font-black">13</div>
+</div>
+<div class="p-4 text-center border-r-3 border-black last:border-r-0">
+<div class="text-xs font-black text-[#FF6B6B]">周四</div>
+<div class="text-xl font-black text-[#FF6B6B]">14</div>
+</div>
+<div class="p-4 text-center border-r-3 border-black last:border-r-0">
+<div class="text-xs font-black text-on-surface-variant">周五</div>
+<div class="text-xl font-black">15</div>
+</div>
+<div class="p-4 text-center border-r-3 border-black last:border-r-0">
+<div class="text-xs font-black text-on-surface-variant">周六</div>
+<div class="text-xl font-black">16</div>
+</div>
+<div class="p-4 text-center border-r-3 border-black last:border-r-0">
+<div class="text-xs font-black text-on-surface-variant">周日</div>
+<div class="text-xl font-black">17</div>
+</div>
+</div>
+<!-- Calendar Body -->
+<div class="grid grid-cols-7 min-h-[600px] relative">
+<!-- Monday -->
+<div class="border-r-3 border-black p-2 space-y-4">
+<div class="course-math border-3 border-black p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative">
+<div class="text-[10px] font-black uppercase opacity-80 mb-1">09:00 - 10:30</div>
+<div class="text-sm font-black">奥数精英班</div>
+<div class="text-[11px] font-bold mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">person</span> 张老师
+                                </div>
+</div>
+</div>
+<!-- Tuesday -->
+<div class="border-r-3 border-black p-2 space-y-4">
+<div class="course-science border-3 border-black p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+<div class="text-[10px] font-black uppercase opacity-80 mb-1">10:00 - 11:30</div>
+<div class="text-sm font-black">趣味物理实验</div>
+<div class="text-[11px] font-bold mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">person</span> 李老师
+                                </div>
+</div>
+<div class="course-english border-3 border-black p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+<div class="text-[10px] font-black uppercase opacity-80 mb-1">14:00 - 15:30</div>
+<div class="text-sm font-black">剑桥少儿英语</div>
+<div class="text-[11px] font-bold mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">person</span> Sarah W.
+                                </div>
+</div>
+</div>
+<!-- Wednesday -->
+<div class="border-r-3 border-black p-2 space-y-4">
+<div class="course-math border-3 border-black p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+<div class="text-[10px] font-black uppercase opacity-80 mb-1">15:30 - 17:00</div>
+<div class="text-sm font-black">初中数学强化</div>
+<div class="text-[11px] font-bold mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">person</span> 王老师
+                                </div>
+</div>
+</div>
+<!-- Thursday (Active/Today Highlight) -->
+<div class="border-r-3 border-black p-2 space-y-4 bg-[#FFE66D]/10">
+<div class="course-english border-3 border-black p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+<div class="text-[10px] font-black uppercase opacity-80 mb-1">09:00 - 10:30</div>
+<div class="text-sm font-black">托福词汇突击</div>
+<div class="text-[11px] font-bold mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">person</span> David L.
+                                </div>
+</div>
+<div class="course-science border-3 border-black p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+<div class="text-[10px] font-black uppercase opacity-80 mb-1">13:30 - 15:00</div>
+<div class="text-sm font-black">机器人编程</div>
+<div class="text-[11px] font-bold mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">person</span> 赵老师
+                                </div>
+</div>
+</div>
+<!-- Friday -->
+<div class="border-r-3 border-black p-2 space-y-4">
+<div class="course-math border-3 border-black p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+<div class="text-[10px] font-black uppercase opacity-80 mb-1">14:00 - 15:30</div>
+<div class="text-sm font-black">逻辑思维训练</div>
+<div class="text-[11px] font-bold mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">person</span> 陈老师
+                                </div>
+</div>
+</div>
+<!-- Saturday -->
+<div class="border-r-3 border-black p-2 space-y-4 bg-surface-container-low">
+<div class="course-english border-3 border-black p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+<div class="text-[10px] font-black uppercase opacity-80 mb-1">10:00 - 12:00</div>
+<div class="text-sm font-black">全外教口语</div>
+<div class="text-[11px] font-bold mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">person</span> Emma S.
+                                </div>
+</div>
+</div>
+<!-- Sunday -->
+<div class="p-2 space-y-4 bg-surface-container-low">
+<!-- Empty day -->
+<div class="h-full border-2 border-dashed border-outline-variant flex items-center justify-center p-8 opacity-40">
+<span class="material-symbols-outlined text-4xl">event_busy</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Sidebar -->
+<div class="col-span-12 lg:col-span-3 space-y-8">
+<!-- Quick Schedule Box -->
+<div class="bg-white border-3 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6">
+<h3 class="text-xl font-black mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined">bolt</span>
+                        快速排课
+                    </h3>
+<div class="space-y-4">
+<div class="space-y-1">
+<label class="text-xs font-black uppercase">课程类型</label>
+<select class="w-full border-3 border-black focus:ring-0 focus:border-black font-bold p-2">
+<option>数学课程</option>
+<option>科学课程</option>
+<option>英语课程</option>
+</select>
+</div>
+<div class="space-y-1">
+<label class="text-xs font-black uppercase">讲师</label>
+<select class="w-full border-3 border-black focus:ring-0 focus:border-black font-bold p-2">
+<option>请选择讲师</option>
+<option>张老师 (数学)</option>
+<option>Sarah W. (英语)</option>
+</select>
+</div>
+<button class="w-full bg-[#4ECDC4] border-3 border-black py-3 font-black text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all mt-2">
+                            检查冲突并保存
+                        </button>
+</div>
+</div>
+<!-- Pending Assignments (Bento Style) -->
+<div class="bg-white border-3 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6">
+<div class="flex justify-between items-center mb-4">
+<h3 class="text-xl font-black flex items-center gap-2">
+<span class="material-symbols-outlined">assignment_late</span>
+                            待分配作业
+                        </h3>
+<span class="bg-[#FF6B6B] text-white text-[10px] font-black px-2 py-0.5 border-2 border-black">4条</span>
+</div>
+<div class="space-y-4">
+<div class="bg-surface-container-low border-3 border-black p-4 hover:translate-x-1 transition-transform cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="bg-[#FFE66D] text-[10px] font-black px-2 py-0.5 border-2 border-black">高优先级</span>
+<span class="text-[10px] font-bold text-on-surface-variant">2小时前</span>
+</div>
+<p class="text-sm font-black leading-tight">初二几何同步练习题库更新</p>
+<p class="text-xs font-bold text-on-surface-variant mt-2">待审核: 张老师</p>
+</div>
+<div class="bg-surface-container-low border-3 border-black p-4 hover:translate-x-1 transition-transform cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="bg-surface-variant text-[10px] font-black px-2 py-0.5 border-2 border-black">常规</span>
+<span class="text-[10px] font-bold text-on-surface-variant">5小时前</span>
+</div>
+<p class="text-sm font-black leading-tight">托福核心词汇测试卷 (Unit 4-6)</p>
+<p class="text-xs font-bold text-on-surface-variant mt-2">待审核: Emma S.</p>
+</div>
+<div class="bg-surface-container-low border-3 border-black p-4 hover:translate-x-1 transition-transform cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="bg-surface-variant text-[10px] font-black px-2 py-0.5 border-2 border-black">常规</span>
+<span class="text-[10px] font-bold text-on-surface-variant">10小时前</span>
+</div>
+<p class="text-sm font-black leading-tight">物理：光学实验报告模版</p>
+<p class="text-xs font-bold text-on-surface-variant mt-2">待审核: 李老师</p>
+</div>
+</div>
+<button class="w-full mt-6 text-sm font-black underline underline-offset-4 hover:text-[#FF6B6B] transition-colors">查看全部待办事项</button>
+</div>
+<!-- Status Summary -->
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-[#FF6B6B] border-3 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-white">
+<div class="text-[10px] font-black uppercase opacity-80">本周课程</div>
+<div class="text-2xl font-black font-headline">42</div>
+</div>
+<div class="bg-[#4ECDC4] border-3 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+<div class="text-[10px] font-black uppercase opacity-80">已完成</div>
+<div class="text-2xl font-black font-headline">18</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB for quick action (only on primary screens) -->
+<button class="fixed bottom-8 right-8 w-16 h-16 bg-[#FFE66D] border-4 border-black rounded-full shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50">
+<span class="material-symbols-outlined text-3xl font-black">add</span>
+</button>
+
+```</body></html>

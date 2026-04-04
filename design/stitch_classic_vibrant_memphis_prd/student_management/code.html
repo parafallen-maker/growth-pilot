@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>学员管理 - Growth-Pilot</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&amp;family=Be+Vietnam+Pro:wght@100..900&amp;family=Noto+Sans+SC:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary-fixed-dim": "#f0d760",
+                        "surface-variant": "#dbdde0",
+                        "surface-dim": "#d2d4d8",
+                        "outline-variant": "#acadaf",
+                        "on-background": "#2d2f31",
+                        "surface-tint": "#aa2c32",
+                        "surface-container-highest": "#dbdde0",
+                        "background": "#f6f6f8",
+                        "inverse-on-surface": "#9c9d9f",
+                        "secondary-container": "#7cf6ec",
+                        "on-secondary-fixed-variant": "#006761",
+                        "on-tertiary-fixed-variant": "#6c5d00",
+                        "on-primary-fixed-variant": "#60000d",
+                        "error": "#b02500",
+                        "primary": "#aa2c32",
+                        "on-surface": "#2d2f31",
+                        "inverse-surface": "#0c0e10",
+                        "surface-container-high": "#e1e2e5",
+                        "tertiary": "#6a5b00",
+                        "secondary-fixed-dim": "#6ce8de",
+                        "on-error": "#ffefec",
+                        "surface-container-low": "#f0f1f3",
+                        "primary-fixed-dim": "#f56364",
+                        "primary-fixed": "#ff7574",
+                        "primary-dim": "#992027",
+                        "on-secondary-container": "#005c57",
+                        "secondary": "#006761",
+                        "on-surface-variant": "#5a5c5d",
+                        "surface-container": "#e7e8ea",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary": "#fff3c5",
+                        "tertiary-fixed": "#fee56c",
+                        "tertiary-dim": "#5c4f00",
+                        "outline": "#757779",
+                        "tertiary-container": "#fee56c",
+                        "on-error-container": "#520c00",
+                        "on-tertiary-fixed": "#4c4100",
+                        "surface": "#f6f6f8",
+                        "on-secondary-fixed": "#004844",
+                        "on-primary-container": "#4e0009",
+                        "primary-container": "#ff7574",
+                        "inverse-primary": "#ff6b6b",
+                        "on-primary-fixed": "#000000",
+                        "on-secondary": "#befff8",
+                        "error-dim": "#b92902",
+                        "secondary-fixed": "#7cf6ec",
+                        "surface-bright": "#f6f6f8",
+                        "on-primary": "#ffefee",
+                        "secondary-dim": "#005a55",
+                        "error-container": "#f95630",
+                        "on-tertiary-container": "#615300"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Be Vietnam Pro"],
+                        "label": ["Be Vietnam Pro"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .neo-shadow {
+            box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+        }
+        .neo-shadow-sm {
+            box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+        }
+        .neo-border {
+            border: 3px solid #000000;
+        }
+        .neo-active-shadow {
+            box-shadow: none;
+            transform: translate(2px, 2px);
+        }
+    </style>
+</head>
+<body class="bg-[#F4F4F6] font-['Noto_Sans_SC'] text-on-background">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 border-b-3 border-black bg-[#F4F4F6] dark:bg-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex justify-between items-center h-16 px-6 w-full neo-border">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-black text-black dark:text-white tracking-tighter font-['Space_Grotesk']">Growth-Pilot</span>
+<div class="hidden md:flex items-center bg-white neo-border px-3 py-1 neo-shadow-sm">
+<span class="material-symbols-outlined text-black mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-64" placeholder="搜索学员姓名或ID" type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-[#FFE66D] transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 hover:bg-[#FFE66D] transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<img alt="管理员头像" class="w-10 h-10 neo-border bg-[#4ECDC4]" data-alt="minimalist cartoon avatar of a professional administrator with glasses and a friendly expression on a teal background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA70dWGMM7iEf--ICweZI8R8xpZMzHbwcUXpby79f2MSddOa9YAsRexyseyfHHWykQ6m9MAyIk4oQ0kkxoOuIt7q2Broq6BYZSoCm_NrU2Kw4uEenj_1zbimg76gYHq3imOIy414d_O0l1V7fQXvHdpGMsZ9M68uu7gFgTYjiEs9XwJPfMbtbWCmAiye1ZI3xJbCtJ9tAqartM25z5KHXDBYI22I9d1787AzdT4zqBcIpc8sEopYLhgnJcvLUjsOQ0irSh1P18CBuQn"/>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 border-r-3 border-black bg-white dark:bg-slate-800 flex flex-col py-4 gap-2 neo-border">
+<div class="px-6 mb-6">
+<h2 class="text-xl font-black text-black dark:text-white">成长领航</h2>
+<p class="text-xs font-bold text-on-surface-variant">运营管理系统</p>
+</div>
+<nav class="flex flex-col gap-2 font-['Noto_Sans_SC'] font-bold text-sm">
+<a class="flex items-center gap-3 px-4 py-3 text-black dark:text-slate-300 hover:bg-[#4ECDC4]/20 mx-2 hover:translate-x-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>控制台</span>
+</a>
+<!-- Active Tab: 学员管理 -->
+<a class="flex items-center gap-3 px-4 py-3 bg-[#FF6B6B] text-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none mx-2 active:scale-95" href="#">
+<span class="material-symbols-outlined">group</span>
+<span>学员管理</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-black dark:text-slate-300 hover:bg-[#4ECDC4]/20 mx-2 hover:translate-x-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span>课程与排期</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-black dark:text-slate-300 hover:bg-[#4ECDC4]/20 mx-2 hover:translate-x-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span>财务统计</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-black dark:text-slate-300 hover:bg-[#4ECDC4]/20 mx-2 hover:translate-x-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">chat</span>
+<span>消息中心</span>
+</a>
+</nav>
+<div class="mt-auto px-4 pb-4">
+<button class="w-full bg-[#FFE66D] neo-border py-3 px-4 font-black flex items-center justify-center gap-2 neo-shadow hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all">
+<span class="material-symbols-outlined">add</span>
+<span>新建排期</span>
+</button>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="ml-64 mt-16 p-8 min-h-screen">
+<!-- Page Header & Filter Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6">
+<div>
+<h1 class="font-['Space_Grotesk'] text-5xl font-black tracking-tighter mb-2">学员管理 <span class="text-[#FF6B6B]">STUDENTS</span></h1>
+<p class="text-on-surface-variant font-bold">共有 128 位活跃学员正在航行</p>
+</div>
+<div class="flex flex-wrap gap-3">
+<button class="bg-[#FF6B6B] text-white neo-border px-6 py-2 rounded-full font-bold neo-shadow-sm active:translate-y-px active:shadow-none transition-all">全部</button>
+<button class="bg-white text-black neo-border px-6 py-2 rounded-full font-bold hover:bg-[#4ECDC4]/20 transition-all">五年级</button>
+<button class="bg-[#FFE66D] text-black neo-border px-6 py-2 rounded-full font-bold neo-shadow-sm hover:translate-y-[-2px] transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">warning</span> 欠费
+                </button>
+<button class="bg-white text-black neo-border px-6 py-2 rounded-full font-bold hover:bg-error/10 transition-all">缺勤</button>
+</div>
+</div>
+<!-- Student Grid (Bento Style Variation) -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+<!-- Student Card 1 -->
+<div class="bg-white neo-border p-6 neo-shadow hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all relative group">
+<div class="absolute -top-4 -right-4 w-12 h-12 bg-[#4ECDC4] neo-border flex items-center justify-center rotate-12 group-hover:rotate-0 transition-transform">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<div class="flex items-center gap-4 mb-6">
+<div class="w-16 h-16 neo-border bg-[#FFE66D] flex items-center justify-center overflow-hidden">
+<img alt="学员头像" class="w-12 h-12" data-alt="abstract geometric shape avatar with bold yellow and black colors on a white background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjvz_PR-TVlq1uey6hqmA0aho2gZZc6ZRy8i0l9gKl1mkQmEIPGvpo_Nqxc3J9AxZNypoWmQ_RwyAjMIwyAi2xU5GimX1aGBEy-N-8z1okl9fwYRQqtbzrrKHo-ruOHXWantpxB3heuhbtwGBGZqsP8SVzYARtdAQLHm9LyY-cqZJtYhKLbebxWxZlwpE4ug3sdVAoqRYI-f6CMx6GIf-VuVAQuzQp1YDkOUJz8VSzwwPh4mhe1axUDZk02wMLz9-UoYM2guqLuA3F"/>
+</div>
+<div>
+<h3 class="text-xl font-black">张小凡</h3>
+<p class="text-xs font-bold text-on-surface-variant">ID: GP-2024001</p>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="bg-[#4ECDC4]/20 text-secondary neo-border px-3 py-1 text-xs font-black rounded-full">在校</span>
+<span class="font-bold">五年级 (2) 班</span>
+</div>
+</div>
+<!-- Student Card 2 -->
+<div class="bg-white neo-border p-6 neo-shadow hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all relative group">
+<div class="flex items-center gap-4 mb-6">
+<div class="w-16 h-16 neo-border bg-[#FF6B6B] flex items-center justify-center overflow-hidden">
+<img alt="学员头像" class="w-12 h-12" data-alt="abstract geometric shape avatar with bold coral and black colors on a white background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCN3rDyYWTm3dr_sM7scN45dCljr_cwGWeQzJUQvLiSVFJhkMpGTmYfGAMxk7hU6jooXA94yB1bjEa3D-OFISxXFvQju9MGudEXOFgW_FGY62hPbXhyJUjyaLHp2YpMXa1UH0oPzkCzl7tzBhHO0AUeh1QrDOi-6foXn4aOBN-WH_iTTzkTMGUQDDxr1JTdnjmuCCTv35cWagnCxO_z_kSvWuqH8dvWzBPedvihV81BCIcoVbWpNvFvLCi-M9qAeE0ItBTNDrucB7ED"/>
+</div>
+<div>
+<h3 class="text-xl font-black">李沐秋</h3>
+<p class="text-xs font-bold text-on-surface-variant">ID: GP-2024023</p>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="bg-surface-variant text-on-surface-variant neo-border px-3 py-1 text-xs font-black rounded-full">请假</span>
+<span class="font-bold">三年级 (1) 班</span>
+</div>
+</div>
+<!-- Student Card 3: Alert State -->
+<div class="bg-[#FFE66D] neo-border p-6 neo-shadow hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all relative">
+<div class="flex items-center gap-4 mb-6">
+<div class="w-16 h-16 neo-border bg-white flex items-center justify-center overflow-hidden">
+<img alt="学员头像" class="w-12 h-12" data-alt="abstract geometric shape avatar with bold black and white colors on a yellow background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDViwhmLFYlCRwzlp4lPqO-qICp8PjFql_ReW2V00gtknmvBbY_lQjusQS64r9vM_sSkGyZeSurWvLhJRmW6XqerhF9Z1Eh8coOh0NlUnpLhIRvx5WPe96FRMVeI9_RPrs2lQcsuvJsoEEgrrBMnFqoJYF00YSDnMK0uQXnZqiDQ_oR9rN5Yd_YmqazozE1b8j23XFD9_P_5tnYNYMkF1A0ySVFOY3iu5jFfBnB82Mnh2GrAmtbQ24JDnBhcySGDHVRQufwCE14jnYu"/>
+</div>
+<div>
+<h3 class="text-xl font-black">王大锤</h3>
+<p class="text-xs font-bold text-on-surface-variant">ID: GP-2024045</p>
+</div>
+</div>
+<div class="flex justify-between items-center mb-4">
+<span class="bg-white text-black neo-border px-3 py-1 text-xs font-black rounded-full">在校</span>
+<span class="font-bold">五年级 (2) 班</span>
+</div>
+<div class="bg-black text-[#FFE66D] text-[10px] font-black px-2 py-1 text-center">
+                    欠费提醒：待缴 ￥1,200
+                </div>
+</div>
+<!-- Student Card 4 -->
+<div class="bg-white neo-border p-6 neo-shadow hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all relative group">
+<div class="flex items-center gap-4 mb-6">
+<div class="w-16 h-16 neo-border bg-[#4ECDC4] flex items-center justify-center overflow-hidden">
+<img alt="学员头像" class="w-12 h-12" data-alt="abstract geometric shape avatar with bold turquoise and black colors on a white background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPOZChU3oe3Y_7LQCjepGgQ3d6JjEw2p6GpBGkBClKWOYiRvCyZW-SeBPSF9I2d0kn6Xr_HwSi9B27O9LU2gw_XCjvRAOulZd48UaftMhIS9cA8ULEYh48MVBlcMgoB4hhCU84xhZq6VJWc0BtG3O3mAgF_cvm33fT-qi4zfCCVbe-WlmoP21JSK1wRVqI2JfB-wFArjAj9XfWRYR4ELPFHMyvnU-gH2aD0l9kmj0ll1bwyvrrSr37xk-UsA1GeE0vcd3SClgsdJuh"/>
+</div>
+<div>
+<h3 class="text-xl font-black">陈皮皮</h3>
+<p class="text-xs font-bold text-on-surface-variant">ID: GP-2024089</p>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="bg-[#4ECDC4]/20 text-secondary neo-border px-3 py-1 text-xs font-black rounded-full">在校</span>
+<span class="font-bold">四年级 (3) 班</span>
+</div>
+</div>
+<!-- Student Card 5 -->
+<div class="bg-white neo-border p-6 neo-shadow hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all relative group">
+<div class="flex items-center gap-4 mb-6">
+<div class="w-16 h-16 neo-border bg-[#FF7574] flex items-center justify-center overflow-hidden">
+<img alt="学员头像" class="w-12 h-12" data-alt="abstract geometric shape avatar with vibrant red and black colors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB65iWbr1bxUF94fKM6nJNg3jofpHbq-lqnMtM7C59msx3KlyQDP0LVXUwfClIvu18GKpFMlgn8o8XHcKVQFTbSnU43WZsiHw1xUU27fthtPGJERtq6rgE3vbbwSvD_OFROxx22d7l3chq85i_LGF9uJdVqL3JdFErWkVyxSvpDnio5ZWIPHAs7xyJQ4unA-WaSFPAQovrrtIDv_H0tYukU0zGkj-VYWgRVrXhpWC0H5n_nnZVOVHJ1yj07mMdZ_o18d8wmAzkklca2"/>
+</div>
+<div>
+<h3 class="text-xl font-black">周苏苏</h3>
+<p class="text-xs font-bold text-on-surface-variant">ID: GP-2024102</p>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="bg-[#4ECDC4]/20 text-secondary neo-border px-3 py-1 text-xs font-black rounded-full">在校</span>
+<span class="font-bold">六年级 (1) 班</span>
+</div>
+</div>
+<!-- Student Card 6 -->
+<div class="bg-white neo-border p-6 neo-shadow hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all relative group">
+<div class="flex items-center gap-4 mb-6">
+<div class="w-16 h-16 neo-border bg-black flex items-center justify-center overflow-hidden">
+<img alt="学员头像" class="w-12 h-12" data-alt="abstract geometric shape avatar with black and white high contrast patterns" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGzEfDbCURuDXPyCoLoThDFlkYdNy073ol-9Ayqaz9a-lIeEmp0UBNKOkb6VnUEwYTiYl1n0sAWOGRWUX4RA622aCSlQp88R1C3Mb5WD-FcxvO750yHqs2vMVwXYOsmZ6ga5RzTSHbp6gcx40kyjRitlhy0ssAcNBkMzaz6pfszMjUnMWv33dWUwH1gEj5wkfQH99j2_WwhcPExxi0bySQO3shaNpKEwO922dl6wvKgu_TZMsy1TOaCmD7bSBi5WAkxvQmNODK5bp7"/>
+</div>
+<div>
+<h3 class="text-xl font-black">吴所谓</h3>
+<p class="text-xs font-bold text-on-surface-variant">ID: GP-2024115</p>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="bg-[#4ECDC4]/20 text-secondary neo-border px-3 py-1 text-xs font-black rounded-full">在校</span>
+<span class="font-bold">二年级 (4) 班</span>
+</div>
+</div>
+<!-- Student Card 7 -->
+<div class="bg-white neo-border p-6 neo-shadow hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all relative group border-dashed opacity-60">
+<div class="flex flex-col items-center justify-center h-full py-4 text-on-surface-variant">
+<span class="material-symbols-outlined text-4xl mb-2">person_add</span>
+<span class="font-black">快速添加</span>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB: 新增学员 -->
+<button class="fixed bottom-10 right-10 w-20 h-20 bg-[#FF6B6B] rounded-full neo-border neo-shadow flex items-center justify-center text-white hover:translate-x-1 hover:translate-y-1 hover:shadow-none active:scale-90 transition-all z-[100]">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'wght' 700;">add</span>
+</button>
+</body></html>

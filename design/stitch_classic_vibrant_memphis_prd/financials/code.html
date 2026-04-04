@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Noto+Sans+SC:wght@400;500;700;900&amp;family=Archivo:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary-fixed-dim": "#f0d760",
+              "surface-variant": "#dbdde0",
+              "surface-dim": "#d2d4d8",
+              "outline-variant": "#acadaf",
+              "on-background": "#2d2f31",
+              "surface-tint": "#aa2c32",
+              "surface-container-highest": "#dbdde0",
+              "background": "#f6f6f8",
+              "inverse-on-surface": "#9c9d9f",
+              "secondary-container": "#7cf6ec",
+              "on-secondary-fixed-variant": "#006761",
+              "on-tertiary-fixed-variant": "#6c5d00",
+              "on-primary-fixed-variant": "#60000d",
+              "error": "#b02500",
+              "primary": "#aa2c32",
+              "on-surface": "#2d2f31",
+              "inverse-surface": "#0c0e10",
+              "surface-container-high": "#e1e2e5",
+              "tertiary": "#6a5b00",
+              "secondary-fixed-dim": "#6ce8de",
+              "on-error": "#ffefec",
+              "surface-container-low": "#f0f1f3",
+              "primary-fixed-dim": "#f56364",
+              "primary-fixed": "#ff7574",
+              "primary-dim": "#992027",
+              "on-secondary-container": "#005c57",
+              "secondary": "#006761",
+              "on-surface-variant": "#5a5c5d",
+              "surface-container": "#e7e8ea",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary": "#fff3c5",
+              "tertiary-fixed": "#fee56c",
+              "tertiary-dim": "#5c4f00",
+              "outline": "#757779",
+              "tertiary-container": "#fee56c",
+              "on-error-container": "#520c00",
+              "on-tertiary-fixed": "#4c4100",
+              "surface": "#f6f6f8",
+              "on-secondary-fixed": "#004844",
+              "on-primary-container": "#4e0009",
+              "primary-container": "#ff7574",
+              "inverse-primary": "#ff6b6b",
+              "on-primary-fixed": "#000000",
+              "on-secondary": "#befff8",
+              "error-dim": "#b92902",
+              "secondary-fixed": "#7cf6ec",
+              "surface-bright": "#f6f6f8",
+              "on-primary": "#ffefee",
+              "secondary-dim": "#005a55",
+              "error-container": "#f95630",
+              "on-tertiary-container": "#615300"
+            },
+            fontFamily: {
+              "headline": ["Space Grotesk"],
+              "body": ["Archivo", "Noto Sans SC"],
+              "label": ["Archivo", "Noto Sans SC"]
+            },
+            borderRadius: {"DEFAULT": "0px", "lg": "0px", "xl": "0px", "pill": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Noto Sans SC', sans-serif; }
+        .memphis-shadow { box-shadow: 4px 4px 0px 0px rgba(0,0,0,1); }
+        .memphis-shadow-sm { box-shadow: 2px 2px 0px 0px rgba(0,0,0,1); }
+        .memphis-border { border: 3px solid #000000; }
+        .active-nav-shadow { box-shadow: 2px 2px 0px 0px rgba(0,0,0,1); }
+    </style>
+</head>
+<body class="bg-[#F4F4F6] text-on-background">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 border-b-3 border-black bg-[#F4F4F6] dark:bg-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex justify-between items-center h-16 px-6 w-full">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-black text-black dark:text-white tracking-tighter font-['Space_Grotesk']">Growth-Pilot</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex items-center bg-white border-3 border-black px-3 py-1 memphis-shadow-sm">
+<span class="material-symbols-outlined text-black mr-2">search</span>
+<input class="border-none focus:ring-0 text-sm bg-transparent" placeholder="搜索财务记录..." type="text"/>
+</div>
+<div class="flex gap-4">
+<button class="w-10 h-10 flex items-center justify-center border-3 border-black bg-white hover:bg-[#FFE66D] transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none memphis-shadow-sm">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center border-3 border-black bg-white hover:bg-[#FFE66D] transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none memphis-shadow-sm">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-10 h-10 border-3 border-black overflow-hidden memphis-shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Close-up portrait of a professional male administrator with a clean workspace background, bright studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-m1PScoQ-ZryRJU_brv1Xz_670pfYCCwjpwlT48qLxH4s5HojvftbJqyOZQlC79huZ04QhsQhhz-6mBImwymHT11pJWUYnrPeuJvSb0ASP9VxwybtfB0M4bTznySQoosJ6-Qx3Iz81NuE67hjnFXtJdHDJMmqTBvzcj5FFVowtwOD1vMUKBtheZuBmk5Lrh506yaZjoXuWClPw_xzUKNT9Njuc4tetZaDQciWqftkoufYVZb6aDnaFSGplyZ6ggWNdROz9zJ16dAu"/>
+</div>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 border-r-3 border-black bg-white dark:bg-slate-800 flex flex-col py-4 gap-2 font-['Noto_Sans_SC'] font-bold text-sm">
+<div class="px-6 mb-6">
+<h2 class="text-xl font-black text-black dark:text-white">成长领航</h2>
+<p class="text-[10px] text-outline uppercase tracking-widest">运营管理系统</p>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 py-3 px-4 mx-2 text-black dark:text-slate-300 hover:bg-[#4ECDC4]/20 hover:translate-x-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>控制台</span>
+</a>
+<a class="flex items-center gap-3 py-3 px-4 mx-2 text-black dark:text-slate-300 hover:bg-[#4ECDC4]/20 hover:translate-x-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">group</span>
+<span>学员管理</span>
+</a>
+<a class="flex items-center gap-3 py-3 px-4 mx-2 text-black dark:text-slate-300 hover:bg-[#4ECDC4]/20 hover:translate-x-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span>课程与排期</span>
+</a>
+<a class="flex items-center gap-3 py-3 px-4 mx-2 bg-[#FF6B6B] text-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span>财务统计</span>
+</a>
+<a class="flex items-center gap-3 py-3 px-4 mx-2 text-black dark:text-slate-300 hover:bg-[#4ECDC4]/20 hover:translate-x-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">chat</span>
+<span>消息中心</span>
+</a>
+</nav>
+<div class="px-4 mt-auto">
+<button class="w-full py-4 border-3 border-black bg-[#FFE66D] text-black font-black uppercase tracking-tight memphis-shadow hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all active:scale-95">
+                新建排期
+            </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-24 p-8 min-h-screen">
+<!-- Header Section -->
+<div class="flex justify-between items-end mb-10">
+<div>
+<h1 class="text-5xl font-black font-headline tracking-tighter text-black mb-2">财务统计 <span class="text-[#FF6B6B]">.</span></h1>
+<p class="text-lg font-medium text-outline">实时监控您的机构营收与账单状态</p>
+</div>
+<div class="flex gap-4">
+<button class="px-6 py-3 rounded-full border-3 border-black bg-white font-bold memphis-shadow-sm hover:bg-[#4ECDC4]/20 transition-colors">
+                    导出报表
+                </button>
+<button class="px-6 py-3 rounded-full border-3 border-black bg-[#FF6B6B] text-white font-bold memphis-shadow hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    发送缴费提醒
+                </button>
+</div>
+</div>
+<!-- Summary Cards: Bento Layout -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+<!-- Total Revenue -->
+<div class="bg-white border-3 border-black p-6 memphis-shadow flex flex-col justify-between relative overflow-hidden">
+<div class="z-10">
+<span class="bg-[#FFE66D] border-2 border-black px-2 py-0.5 text-[10px] font-black uppercase mb-4 inline-block">Revenue</span>
+<h3 class="text-sm font-bold text-outline-variant mb-1">总营收金额</h3>
+<p class="text-4xl font-black font-headline">¥ 128,430</p>
+</div>
+<div class="mt-4 flex items-center text-[#006761] font-bold text-sm">
+<span class="material-symbols-outlined mr-1">trending_up</span>
+<span>较上月 +12.5%</span>
+</div>
+<div class="absolute -right-4 -bottom-4 opacity-10">
+<span class="material-symbols-outlined text-8xl" style="font-variation-settings: 'FILL' 1;">payments</span>
+</div>
+</div>
+<!-- Pending Accounts -->
+<div class="bg-[#FFE66D] border-3 border-black p-6 memphis-shadow flex flex-col justify-between relative overflow-hidden">
+<div class="z-10">
+<span class="bg-black text-white px-2 py-0.5 text-[10px] font-black uppercase mb-4 inline-block">Pending</span>
+<h3 class="text-sm font-bold text-black/60 mb-1">待回收账款</h3>
+<p class="text-4xl font-black font-headline text-black">¥ 45,200</p>
+</div>
+<div class="mt-4 flex items-center text-black font-bold text-sm">
+<span class="material-symbols-outlined mr-1">schedule</span>
+<span>14 笔逾期未付</span>
+</div>
+<div class="absolute -right-2 -top-2 opacity-20">
+<div class="w-24 h-24 border-8 border-black rounded-full"></div>
+</div>
+</div>
+<!-- Paid Amount -->
+<div class="bg-[#4ECDC4] border-3 border-black p-6 memphis-shadow flex flex-col justify-between relative overflow-hidden">
+<div class="z-10">
+<span class="bg-white border-2 border-black px-2 py-0.5 text-[10px] font-black uppercase mb-4 inline-block">Settled</span>
+<h3 class="text-sm font-bold text-black/60 mb-1">已付总额</h3>
+<p class="text-4xl font-black font-headline text-black">¥ 83,230</p>
+</div>
+<div class="mt-4 flex items-center text-black font-bold text-sm">
+<span class="material-symbols-outlined mr-1">verified</span>
+<span>结算率 64.8%</span>
+</div>
+<div class="absolute right-0 bottom-0 opacity-20 translate-x-1/4 translate-y-1/4">
+<svg fill="none" height="120" viewbox="0 0 100 100" width="120">
+<path d="M0 100 L50 0 L100 100 Z" fill="black"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- Revenue Trend: Wave Chart Section -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+<div class="lg:col-span-2 bg-white border-3 border-black p-8 memphis-shadow">
+<div class="flex justify-between items-center mb-8">
+<h2 class="text-2xl font-black font-headline">营收趋势概览</h2>
+<div class="flex gap-2">
+<button class="px-3 py-1 text-xs font-black border-2 border-black bg-[#FFE66D]">周</button>
+<button class="px-3 py-1 text-xs font-black border-2 border-black hover:bg-surface-container transition-colors">月</button>
+<button class="px-3 py-1 text-xs font-black border-2 border-black hover:bg-surface-container transition-colors">年</button>
+</div>
+</div>
+<!-- Geometric Wave Chart Illustration -->
+<div class="h-64 relative w-full flex items-end gap-1">
+<div class="absolute inset-0 flex flex-col justify-between py-2 border-l-2 border-black/10 pointer-events-none">
+<span class="text-[10px] text-outline">50k</span>
+<span class="text-[10px] text-outline">25k</span>
+<span class="text-[10px] text-outline">0</span>
+</div>
+<!-- SVG Wave Path -->
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 800 200">
+<!-- Grid Lines -->
+<line stroke="#eee" stroke-width="1" x1="0" x2="800" y1="50" y2="50"></line>
+<line stroke="#eee" stroke-width="1" x1="0" x2="800" y1="100" y2="100"></line>
+<line stroke="#eee" stroke-width="1" x1="0" x2="800" y1="150" y2="150"></line>
+<!-- Area Fill -->
+<path d="M0 200 C 100 180, 150 50, 250 80 C 350 110, 450 160, 550 120 C 650 80, 750 40, 800 60 V 200 H 0 Z" fill="#4ECDC4" fill-opacity="0.2"></path>
+<!-- Wave Line -->
+<path d="M0 200 C 100 180, 150 50, 250 80 C 350 110, 450 160, 550 120 C 650 80, 750 40, 800 60" fill="none" stroke="#4ECDC4" stroke-width="6"></path>
+<!-- Highlighting Points -->
+<circle cx="250" cy="80" fill="black" r="6" stroke="white" stroke-width="3"></circle>
+<circle cx="550" cy="120" fill="black" r="6" stroke="white" stroke-width="3"></circle>
+<circle cx="800" cy="60" fill="#FF6B6B" r="6" stroke="black" stroke-width="3"></circle>
+</svg>
+</div>
+<div class="flex justify-between mt-4 px-2">
+<span class="text-xs font-bold font-headline">MON</span>
+<span class="text-xs font-bold font-headline">TUE</span>
+<span class="text-xs font-bold font-headline">WED</span>
+<span class="text-xs font-bold font-headline">THU</span>
+<span class="text-xs font-bold font-headline">FRI</span>
+<span class="text-xs font-bold font-headline">SAT</span>
+<span class="text-xs font-bold font-headline">SUN</span>
+</div>
+</div>
+<!-- Quick Action Card -->
+<div class="bg-black text-white border-3 border-black p-8 memphis-shadow flex flex-col justify-center text-center">
+<span class="material-symbols-outlined text-6xl text-[#FFE66D] mb-4" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<h3 class="text-2xl font-black mb-4">智能提醒已就绪</h3>
+<p class="text-sm text-slate-400 mb-6">目前有 8 位家长尚未支付本周课费。点击下方按钮批量发送提醒。</p>
+<button class="w-full py-4 bg-[#FF6B6B] border-2 border-white text-white font-black hover:bg-white hover:text-black transition-all memphis-shadow-sm">
+                    立即发送 (8)
+                </button>
+</div>
+</div>
+<!-- Billing Table Section -->
+<div class="bg-white border-3 border-black memphis-shadow overflow-hidden">
+<div class="p-6 border-b-3 border-black flex justify-between items-center bg-[#F4F4F6]">
+<h2 class="text-2xl font-black font-headline">近期账单明细</h2>
+<div class="flex gap-4">
+<select class="border-3 border-black bg-white px-4 py-2 text-sm font-bold focus:ring-0">
+<option>全部状态</option>
+<option>已支付</option>
+<option>逾期</option>
+<option>草稿</option>
+</select>
+</div>
+</div>
+<table class="w-full text-left">
+<thead class="bg-surface-container-low border-b-3 border-black">
+<tr>
+<th class="px-6 py-4 text-sm font-black uppercase tracking-wider">账单编号</th>
+<th class="px-6 py-4 text-sm font-black uppercase tracking-wider">家长姓名</th>
+<th class="px-6 py-4 text-sm font-black uppercase tracking-wider">课程项目</th>
+<th class="px-6 py-4 text-sm font-black uppercase tracking-wider">金额</th>
+<th class="px-6 py-4 text-sm font-black uppercase tracking-wider">日期</th>
+<th class="px-6 py-4 text-sm font-black uppercase tracking-wider">状态</th>
+<th class="px-6 py-4 text-sm font-black uppercase tracking-wider">操作</th>
+</tr>
+</thead>
+<tbody class="divide-y-2 divide-black/5">
+<!-- Row 1 -->
+<tr class="hover:bg-[#4ECDC4]/5 transition-colors">
+<td class="px-6 py-4 font-headline font-bold">INV-2023-089</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-[#FFE66D] border-2 border-black flex items-center justify-center font-black text-xs">张</div>
+<span class="font-bold">张美玲</span>
+</div>
+</td>
+<td class="px-6 py-4 font-medium">创意绘画基础班</td>
+<td class="px-6 py-4 font-black">¥ 1,200</td>
+<td class="px-6 py-4 text-outline-variant text-sm">2023-10-24</td>
+<td class="px-6 py-4">
+<span class="px-4 py-1 border-2 border-black bg-[#4ECDC4] text-black text-[10px] font-black uppercase rounded-full">已支付</span>
+</td>
+<td class="px-6 py-4">
+<button class="material-symbols-outlined text-black hover:text-[#FF6B6B]">more_horiz</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-[#4ECDC4]/5 transition-colors">
+<td class="px-6 py-4 font-headline font-bold">INV-2023-090</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-[#FF6B6B] border-2 border-black flex items-center justify-center font-black text-xs text-white">李</div>
+<span class="font-bold">李建国</span>
+</div>
+</td>
+<td class="px-6 py-4 font-medium">逻辑数学思维课</td>
+<td class="px-6 py-4 font-black">¥ 2,800</td>
+<td class="px-6 py-4 text-outline-variant text-sm">2023-10-22</td>
+<td class="px-6 py-4">
+<span class="px-4 py-1 border-2 border-black bg-[#FF6B6B] text-white text-[10px] font-black uppercase rounded-full">逾期</span>
+</td>
+<td class="px-6 py-4">
+<button class="material-symbols-outlined text-black hover:text-[#FF6B6B]">more_horiz</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-[#4ECDC4]/5 transition-colors">
+<td class="px-6 py-4 font-headline font-bold">INV-2023-091</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-[#4ECDC4] border-2 border-black flex items-center justify-center font-black text-xs">王</div>
+<span class="font-bold">王志刚</span>
+</div>
+</td>
+<td class="px-6 py-4 font-medium">少儿编程进阶</td>
+<td class="px-6 py-4 font-black">¥ 3,500</td>
+<td class="px-6 py-4 text-outline-variant text-sm">2023-10-25</td>
+<td class="px-6 py-4">
+<span class="px-4 py-1 border-2 border-black bg-white text-black text-[10px] font-black uppercase rounded-full">草稿</span>
+</td>
+<td class="px-6 py-4">
+<button class="material-symbols-outlined text-black hover:text-[#FF6B6B]">more_horiz</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-[#4ECDC4]/5 transition-colors">
+<td class="px-6 py-4 font-headline font-bold">INV-2023-092</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-[#FFE66D] border-2 border-black flex items-center justify-center font-black text-xs">周</div>
+<span class="font-bold">周晓燕</span>
+</div>
+</td>
+<td class="px-6 py-4 font-medium">钢琴私教课 (10课时)</td>
+<td class="px-6 py-4 font-black">¥ 4,000</td>
+<td class="px-6 py-4 text-outline-variant text-sm">2023-10-25</td>
+<td class="px-6 py-4">
+<span class="px-4 py-1 border-2 border-black bg-[#4ECDC4] text-black text-[10px] font-black uppercase rounded-full">已支付</span>
+</td>
+<td class="px-6 py-4">
+<button class="material-symbols-outlined text-black hover:text-[#FF6B6B]">more_horiz</button>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="p-6 bg-[#F4F4F6] border-t-3 border-black flex justify-between items-center">
+<span class="text-sm font-bold">显示 1-4 条，共 156 条记录</span>
+<div class="flex gap-2">
+<button class="w-10 h-10 border-3 border-black bg-white flex items-center justify-center font-black hover:bg-[#FFE66D]">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-10 h-10 border-3 border-black bg-[#FF6B6B] text-white flex items-center justify-center font-black">1</button>
+<button class="w-10 h-10 border-3 border-black bg-white flex items-center justify-center font-black hover:bg-[#FFE66D]">2</button>
+<button class="w-10 h-10 border-3 border-black bg-white flex items-center justify-center font-black hover:bg-[#FFE66D]">3</button>
+<button class="w-10 h-10 border-3 border-black bg-white flex items-center justify-center font-black hover:bg-[#FFE66D]">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

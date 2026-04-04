@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>消息中心 - Growth-Pilot</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;900&amp;family=Noto+Sans+SC:wght@400;700;900&amp;family=Be+Vietnam+Pro:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary-fixed-dim": "#f0d760",
+                        "surface-variant": "#dbdde0",
+                        "surface-dim": "#d2d4d8",
+                        "outline-variant": "#acadaf",
+                        "on-background": "#2d2f31",
+                        "surface-tint": "#aa2c32",
+                        "surface-container-highest": "#dbdde0",
+                        "background": "#f6f6f8",
+                        "inverse-on-surface": "#9c9d9f",
+                        "secondary-container": "#7cf6ec",
+                        "on-secondary-fixed-variant": "#006761",
+                        "on-tertiary-fixed-variant": "#6c5d00",
+                        "on-primary-fixed-variant": "#60000d",
+                        "error": "#b02500",
+                        "primary": "#aa2c32",
+                        "on-surface": "#2d2f31",
+                        "inverse-surface": "#0c0e10",
+                        "surface-container-high": "#e1e2e5",
+                        "tertiary": "#6a5b00",
+                        "secondary-fixed-dim": "#6ce8de",
+                        "on-error": "#ffefec",
+                        "surface-container-low": "#f0f1f3",
+                        "primary-fixed-dim": "#f56364",
+                        "primary-fixed": "#ff7574",
+                        "primary-dim": "#992027",
+                        "on-secondary-container": "#005c57",
+                        "secondary": "#006761",
+                        "on-surface-variant": "#5a5c5d",
+                        "surface-container": "#e7e8ea",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary": "#fff3c5",
+                        "tertiary-fixed": "#fee56c",
+                        "tertiary-dim": "#5c4f00",
+                        "outline": "#757779",
+                        "tertiary-container": "#fee56c",
+                        "on-error-container": "#520c00",
+                        "on-tertiary-fixed": "#4c4100",
+                        "surface": "#f6f6f8",
+                        "on-secondary-fixed": "#004844",
+                        "on-primary-container": "#4e0009",
+                        "primary-container": "#ff7574",
+                        "inverse-primary": "#ff6b6b",
+                        "on-primary-fixed": "#000000",
+                        "on-secondary": "#befff8",
+                        "error-dim": "#b92902",
+                        "secondary-fixed": "#7cf6ec",
+                        "surface-bright": "#f6f6f8",
+                        "on-primary": "#ffefee",
+                        "secondary-dim": "#005a55",
+                        "error-container": "#f95630",
+                        "on-tertiary-container": "#615300"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Be Vietnam Pro"],
+                        "label": ["Be Vietnam Pro"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #F4F4F6;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #000;
+            border: 2px solid #F4F4F6;
+        }
+    </style>
+</head>
+<body class="bg-[#F4F4F6] font-['Noto_Sans_SC'] text-black selection:bg-[#FFE66D]">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 border-b-3 border-black bg-[#F4F4F6] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex justify-between items-center h-16 px-6 w-full">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-black text-black tracking-tighter font-['Space_Grotesk']">Growth-Pilot</span>
+<div class="hidden md:flex ml-8 gap-6 font-['Space_Grotesk'] font-bold">
+<a class="text-black hover:bg-[#FFE66D] transition-all px-2 py-1" href="#">Dashboard</a>
+<a class="text-black hover:bg-[#FFE66D] transition-all px-2 py-1" href="#">Students</a>
+<a class="text-[#FF6B6B] hover:bg-[#FFE66D] transition-all px-2 py-1" href="#">Messages</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-black hover:bg-[#FFE66D] p-1 transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">notifications</button>
+<button class="material-symbols-outlined text-black hover:bg-[#FFE66D] p-1 transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">settings</button>
+<img alt="管理员头像" class="w-8 h-8 border-2 border-black" data-alt="close-up portrait of a professional administrator avatar with clean lines and high contrast lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdHHuTuVvuEHLKr2f5-AxzkzyLdgr8yr9fqu3zSj0CE5ItizLzhETT8aU2aMwzNQd92HYZkN4Wvx0-SDubADHKV3rZy2QUWKOLIBavcEc8YQBDi_9EnVxQr9tK1R652VI-LsX-dckC0c2Z3YZMc1Kq8IGXGlYik4ac6qb3qjTOuja9a3Q-N9iIyKie6X5N4dJFnkwhDUr9aZ1-w80LW31MbFxT7btwKLqIb8UsEaU12POlX7hNWqMD2_J2_8hRN1XKhG9NYf2sAWFz"/>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 border-r-3 border-black bg-white flex flex-col py-4 gap-2 font-['Noto_Sans_SC'] font-bold text-sm">
+<div class="px-6 mb-6">
+<h2 class="text-xl font-black text-black">成长领航</h2>
+<p class="text-[10px] text-gray-500 tracking-widest">运营管理系统</p>
+</div>
+<nav class="flex-1 flex flex-col gap-2">
+<a class="flex items-center gap-3 py-3 px-4 text-black hover:bg-[#4ECDC4]/20 mx-2 hover:translate-x-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">dashboard</span>控制台
+            </a>
+<a class="flex items-center gap-3 py-3 px-4 text-black hover:bg-[#4ECDC4]/20 mx-2 hover:translate-x-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">group</span>学员管理
+            </a>
+<a class="flex items-center gap-3 py-3 px-4 text-black hover:bg-[#4ECDC4]/20 mx-2 hover:translate-x-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">calendar_month</span>课程与排期
+            </a>
+<a class="flex items-center gap-3 py-3 px-4 text-black hover:bg-[#4ECDC4]/20 mx-2 hover:translate-x-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">payments</span>财务统计
+            </a>
+<a class="flex items-center gap-3 py-3 px-4 bg-[#FF6B6B] text-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none mx-2 active:scale-95" href="#">
+<span class="material-symbols-outlined">chat</span>消息中心
+            </a>
+</nav>
+<div class="px-4 mt-auto">
+<button class="w-full bg-[#FFE66D] border-3 border-black py-3 font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all active:translate-x-[0px] active:translate-y-[0px] active:shadow-none">
+                新建排期
+            </button>
+</div>
+</aside>
+<!-- Main Content: Message Center -->
+<main class="ml-64 mt-16 h-[calc(100vh-64px)] flex overflow-hidden">
+<!-- Column 1: Categories -->
+<section class="w-20 lg:w-48 border-r-3 border-black bg-white flex flex-col items-center lg:items-stretch py-6 overflow-y-auto">
+<div class="flex flex-col gap-4 px-3">
+<button class="group flex flex-col lg:flex-row items-center gap-3 p-3 bg-[#4ECDC4] border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">notifications_active</span>
+<span class="hidden lg:block font-black text-sm">系统通知</span>
+</button>
+<button class="group flex flex-col lg:flex-row items-center gap-3 p-3 hover:bg-[#F4F4F6] border-3 border-transparent hover:border-black transition-all">
+<span class="material-symbols-outlined text-2xl">groups</span>
+<span class="hidden lg:block font-black text-sm">家长群组</span>
+</button>
+<button class="group flex flex-col lg:flex-row items-center gap-3 p-3 hover:bg-[#F4F4F6] border-3 border-transparent hover:border-black transition-all">
+<span class="material-symbols-outlined text-2xl">school</span>
+<span class="hidden lg:block font-black text-sm">教师团队</span>
+</button>
+<button class="group flex flex-col lg:flex-row items-center gap-3 p-3 hover:bg-[#F4F4F6] border-3 border-transparent hover:border-black transition-all">
+<span class="material-symbols-outlined text-2xl">person</span>
+<span class="hidden lg:block font-black text-sm">个人私聊</span>
+</button>
+</div>
+<div class="mt-auto px-3 py-6">
+<button class="w-full bg-[#FFE66D] border-3 border-black p-3 flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all">
+<span class="material-symbols-outlined">campaign</span>
+<span class="hidden lg:block font-black">群发助手</span>
+</button>
+</div>
+</section>
+<!-- Column 2: Message List -->
+<section class="w-80 lg:w-96 border-r-3 border-black bg-white flex flex-col overflow-hidden">
+<div class="p-6 border-b-3 border-black flex justify-between items-center">
+<h3 class="text-xl font-black">消息列表</h3>
+<span class="bg-[#FF6B6B] text-white px-2 py-0.5 text-xs font-black border-2 border-black">12 未读</span>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar">
+<!-- Message Item Active -->
+<div class="p-6 bg-[#FFE66D]/20 border-b-3 border-black cursor-pointer relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-2 bg-[#FF6B6B]"></div>
+<div class="flex justify-between items-start mb-2">
+<span class="font-black text-base">三年级(2)班家长群</span>
+<span class="text-[10px] text-gray-500">14:20</span>
+</div>
+<p class="text-sm text-black font-bold truncate">王小明的妈妈：老师，请问明天的户外课...</p>
+<div class="mt-3 flex gap-2">
+<span class="bg-[#4ECDC4] border-2 border-black text-[10px] px-2 py-0.5 font-black">紧急</span>
+</div>
+</div>
+<!-- Message Item -->
+<div class="p-6 border-b-3 border-black hover:bg-[#F4F4F6] cursor-pointer transition-all">
+<div class="flex justify-between items-start mb-2">
+<span class="font-black text-base">数学组教学研讨</span>
+<span class="text-[10px] text-gray-500">12:05</span>
+</div>
+<p class="text-sm text-gray-600 truncate">张老师：课件已经上传到共享目录了。</p>
+</div>
+<!-- Message Item with Unread Dot -->
+<div class="p-6 border-b-3 border-black hover:bg-[#F4F4F6] cursor-pointer transition-all">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 bg-[#FF6B6B] border-2 border-black"></div>
+<span class="font-black text-base">系统：缴费提醒</span>
+</div>
+<span class="text-[10px] text-gray-500">昨天</span>
+</div>
+<p class="text-sm text-gray-600 truncate">您的本月运营费用账单已出，请及时查看。</p>
+</div>
+<!-- More items... -->
+<div class="p-6 border-b-3 border-black hover:bg-[#F4F4F6] cursor-pointer transition-all" v-for="i in 5">
+<div class="flex justify-between items-start mb-2">
+<span class="font-black text-base">李雷老师</span>
+<span class="text-[10px] text-gray-500">周三</span>
+</div>
+<p class="text-sm text-gray-600 truncate">收到了，谢谢您的反馈！</p>
+</div>
+</div>
+</section>
+<!-- Column 3: Chat Window -->
+<section class="flex-1 bg-[#F4F4F6] flex flex-col overflow-hidden relative">
+<!-- Chat Header -->
+<div class="h-20 border-b-3 border-black bg-white flex items-center justify-between px-8">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 border-3 border-black bg-[#FFE66D] flex items-center justify-center font-black">家</div>
+<div>
+<h4 class="font-black text-lg">三年级(2)班家长群</h4>
+<p class="text-xs text-[#4ECDC4] font-bold">● 45 位成员在线</p>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="material-symbols-outlined text-black font-black">search</button>
+<button class="material-symbols-outlined text-black font-black">more_horiz</button>
+</div>
+</div>
+<!-- Messages Area -->
+<div class="flex-1 overflow-y-auto p-8 flex flex-col gap-8 custom-scrollbar">
+<!-- Date Separator -->
+<div class="flex justify-center">
+<span class="bg-black text-white px-4 py-1 text-[10px] font-black uppercase tracking-widest">2023年10月24日</span>
+</div>
+<!-- Received Message -->
+<div class="flex items-start gap-4 max-w-[80%]">
+<img alt="User Avatar" class="w-10 h-10 border-3 border-black" data-alt="vibrant character illustration of a parent avatar in corporate memphis style with bold outlines" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMPLXGGQqGHxoc3f-csaQjqFgFyzy8awVSfYTLkz-n55XM501PDBRDyo1ZPi4KC-OC_MVcJBQGiDYQkISBpHqgQT64beU6Or3ZhqZoAS9y_hQsra1j8Bc4imBbkaiDDQWDnWMNDgeBkCPHxELmN-frD1PLmb97oTedmC68ggZiF5XmxZz5MGBBLyt9OoFIPPZjuAkPUdD5uMq_-WUJZMQYvspGdCPsLkhRZVFB-FC-XJJhpKOsY54VZdrs_3PzbCPbHrs4LwSSkhf8"/>
+<div class="flex flex-col gap-1">
+<span class="text-xs font-black text-gray-500">王小明的妈妈</span>
+<div class="bg-white border-3 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative">
+<p class="font-bold">老师，请问明天的户外课需要给孩子带额外的防晒霜吗？</p>
+</div>
+</div>
+</div>
+<!-- Sent Message -->
+<div class="flex items-start gap-4 max-w-[80%] self-end flex-row-reverse">
+<img alt="Admin Avatar" class="w-10 h-10 border-3 border-black" data-alt="stylized professional teacher avatar with bright colors and geometric shapes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiWJH2UazNOKsoMgQVN3Zuyo1NcHWa3CASwHd5LU5n31jaBfzSyiFbn9llmEZtYHZV7Uf6iIXNgCmM8Ci7P1NhTdnIXbiRNOyauLOmC8qlv-6gEzaTiV9iRwt_-Oao61VIVUm2lEAKI4Tvr34CUMlzzqibkkjhX8C9xdNGGZmERbnpA1_Edq9swS4_Z9ygtwk42hlFL2PjmSw7OSRypG8J_Gisa_rqIyCOPyAR96aLZKjZRbaOA7pooSbWDh6T5CzxsizR3PRraueC"/>
+<div class="flex flex-col gap-1 items-end">
+<span class="text-xs font-black text-gray-500">我 (管理员)</span>
+<div class="bg-[#FFE66D] border-3 border-black p-4 shadow-[-4px_4px_0px_0px_rgba(0,0,0,1)]">
+<p class="font-bold">建议带一份哦，明天预报天气晴朗，户外活动时间大约为 2 小时。</p>
+</div>
+</div>
+</div>
+<!-- Received Message (Image) -->
+<div class="flex items-start gap-4 max-w-[80%]">
+<img alt="User Avatar" class="w-10 h-10 border-3 border-black" data-alt="flat design avatar of a father figure with bright blue and yellow accents" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWo4lKQ5638UDbqZ7DGi7SP339YTWbBaNnohmA638p8yPyt_EmfCOmueYGlQthD7lezvyqXbEVfM6fDxpoXYZrR-_5s905yK6xqHmmp7vc79EQ4nnzitm3TA5fgNxGeFUwSEQgOdLoV7wy-TX79ckudNVgNqjNhbht6lOIWFn98WAvWB1oRHUmP2X-ELxqqhdrgehIOaXKD8QQ1-1FRIDPCuPrJJf5bx0ma1W5W-eJnG_W_-RHkig961Q8Ypsf0s8b-6IKn_eXOv1C"/>
+<div class="flex flex-col gap-1">
+<span class="text-xs font-black text-gray-500">李华的爸爸</span>
+<div class="bg-white border-3 border-black p-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+<img alt="Content Image" class="border-2 border-black" data-alt="a playful flat design illustration of outdoor activities equipment like backpacks and water bottles on a grid background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHs9MJYSRsxQT-okhGyeQEUUftVoydtPvcn5Ws__GnpFN7tg3CTr-G57fu29xmCvFDeeZlXDWn0SikcWm0ojQoXvnPAFH7oGpKYJQg0b-BGJtzHyxPr0O2Cj8Bi_lIy925qulXDEvDawpd_WNd1BVnF5s6myf1wtj_QK-D0-lw1YHA_1XmBju6vigrFsV6qLWq3cxUxVbdEF_4RPEqqWFYKeBi69qnQXzHXVZ2CpMjr6n_vHwkCroIVSp9uQpp2xnLz4H3Cu4tBio4"/>
+<p class="mt-2 text-xs font-bold text-gray-500">收到，谢谢老师！</p>
+</div>
+</div>
+</div>
+<!-- Sent Message -->
+<div class="flex items-start gap-4 max-w-[80%] self-end flex-row-reverse">
+<img alt="Admin Avatar" class="w-10 h-10 border-3 border-black" data-alt="vibrant character illustration of an administrator with bold outlines and modern aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsEBN452xVsyUZ7S2ZhN_4NqzqkRGNGT-wdZBV4TwSum-2VVwFMEvlDyK7MnphcyNxYxoVKK9hrj5DiVVMZNDj7of0g_mIGzILY4Z7N7YgHSMiVz4HZcUu1TTZjqmhDuFGmPH6Di8skZpMBSmaQVG_F42Mf9xww5iN21Fpd1Nd4uKW-GXH_DeHiy8mSVG7-Uk19o5628IfEhu6AgL4RfFuDzIYRoRzVvDiCzT5pc8re7k49Sr7kOpT95Xvwl3lPTGWMwV1FS8jwvQc"/>
+<div class="flex flex-col gap-1 items-end">
+<span class="text-xs font-black text-gray-500">我 (管理员)</span>
+<div class="bg-[#FFE66D] border-3 border-black p-4 shadow-[-4px_4px_0px_0px_rgba(0,0,0,1)]">
+<p class="font-bold">不客气！祝孩子们明天玩得愉快。如果有其他需要，请随时联系。</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Chat Input Area -->
+<div class="p-8 bg-white border-t-3 border-black">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-black hover:bg-[#FFE66D] p-2 transition-all">add_circle</button>
+<button class="material-symbols-outlined text-black hover:bg-[#FFE66D] p-2 transition-all">mood</button>
+<div class="flex-1 relative">
+<input class="w-full h-14 bg-white border-3 border-black rounded-full px-6 font-bold focus:outline-none focus:ring-0 focus:border-[#FF6B6B] focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all" placeholder="输入消息..." type="text"/>
+<button class="absolute right-2 top-2 bottom-2 bg-[#FF6B6B] text-white px-6 rounded-full font-black border-2 border-black hover:bg-[#ff7574] active:scale-95 transition-all">
+                            发送
+                        </button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Contextual FAB (Only on relevant screens) -->
+<button class="fixed bottom-8 right-8 w-16 h-16 bg-[#FFE66D] border-3 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all active:translate-x-[0px] active:translate-y-[0px] active:shadow-none z-50">
+<span class="material-symbols-outlined text-3xl font-black">edit</span>
+</button>
+</body></html>

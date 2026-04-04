@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Growth-Pilot | 控制台</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800&amp;family=Noto+Sans+SC:wght@400;700;900&amp;family=Be+Vietnam+Pro:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary-fixed-dim": "#f0d760",
+              "surface-variant": "#dbdde0",
+              "surface-dim": "#d2d4d8",
+              "outline-variant": "#acadaf",
+              "on-background": "#2d2f31",
+              "surface-tint": "#aa2c32",
+              "surface-container-highest": "#dbdde0",
+              "background": "#f6f6f8",
+              "inverse-on-surface": "#9c9d9f",
+              "secondary-container": "#7cf6ec",
+              "on-secondary-fixed-variant": "#006761",
+              "on-tertiary-fixed-variant": "#6c5d00",
+              "on-primary-fixed-variant": "#60000d",
+              "error": "#b02500",
+              "primary": "#aa2c32",
+              "on-surface": "#2d2f31",
+              "inverse-surface": "#0c0e10",
+              "surface-container-high": "#e1e2e5",
+              "tertiary": "#6a5b00",
+              "secondary-fixed-dim": "#6ce8de",
+              "on-error": "#ffefec",
+              "surface-container-low": "#f0f1f3",
+              "primary-fixed-dim": "#f56364",
+              "primary-fixed": "#ff7574",
+              "primary-dim": "#992027",
+              "on-secondary-container": "#005c57",
+              "secondary": "#006761",
+              "on-surface-variant": "#5a5c5d",
+              "surface-container": "#e7e8ea",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary": "#fff3c5",
+              "tertiary-fixed": "#fee56c",
+              "tertiary-dim": "#5c4f00",
+              "outline": "#757779",
+              "tertiary-container": "#fee56c",
+              "on-error-container": "#520c00",
+              "on-tertiary-fixed": "#4c4100",
+              "surface": "#f6f6f8",
+              "on-secondary-fixed": "#004844",
+              "on-primary-container": "#4e0009",
+              "primary-container": "#ff7574",
+              "inverse-primary": "#ff6b6b",
+              "on-primary-fixed": "#000000",
+              "on-secondary": "#befff8",
+              "error-dim": "#b92902",
+              "secondary-fixed": "#7cf6ec",
+              "surface-bright": "#f6f6f8",
+              "on-primary": "#ffefee",
+              "secondary-dim": "#005a55",
+              "error-container": "#f95630",
+              "on-tertiary-container": "#615300"
+            },
+            fontFamily: {
+              "headline": ["Space Grotesk"],
+              "body": ["Be Vietnam Pro"],
+              "label": ["Be Vietnam Pro"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .neo-brutalism-card {
+            border: 3px solid #000000;
+            box-shadow: 4px 4px 0px 0px #000000;
+            transition: all 0.2s ease;
+        }
+        .neo-brutalism-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px 0px #000000;
+        }
+        .neo-brutalism-button {
+            border: 3px solid #000000;
+            box-shadow: 4px 4px 0px 0px #000000;
+            transition: all 0.1s ease;
+        }
+        .neo-brutalism-button:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px 0px #000000;
+        }
+    </style>
+</head>
+<body class="bg-[#F4F4F6] font-['Noto_Sans_SC'] text-on-background">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 border-b-3 border-black bg-[#F4F4F6] dark:bg-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] h-16 px-6 flex justify-between items-center w-full">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-black text-black dark:text-white tracking-tighter font-['Space_Grotesk']">Growth-Pilot</span>
+<div class="hidden md:flex ml-8 gap-6 text-sm font-bold">
+<a class="text-[#FF6B6B]" href="#">控制台</a>
+<a class="text-black dark:text-slate-300 hover:bg-[#FFE66D] transition-all px-2" href="#">学员</a>
+<a class="text-black dark:text-slate-300 hover:bg-[#FFE66D] transition-all px-2" href="#">排期</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-black dark:text-white hover:bg-[#FFE66D] p-1 transition-all active:translate-x-[2px] active:translate-y-[2px]">notifications</button>
+<button class="material-symbols-outlined text-black dark:text-white hover:bg-[#FFE66D] p-1 transition-all active:translate-x-[2px] active:translate-y-[2px]">settings</button>
+<div class="w-10 h-10 border-2 border-black overflow-hidden shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+<img alt="管理员头像" data-alt="professional portrait of a confident education manager in a modern bright office setting with colorful geometric art in background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAn68wJ_meLMWpLWKbWLlWf_LHEYIvCvMxwwWeV8TfrTHsD3hNuyZswqEP6pnWAVu2MbXDKBMd4cDpDKQBxP5Xdj9h32H6OdmydNR_NCYGGXeo-YnSIf4mlszL8FuZRpi_oIsgxQbc8pFFdPvh6vlj7z4mx2cfPzHBnWotGk9y9UTSTHa76yGsdiIgIUH-dsz0U9-WgdLu12IWknI0J-EPwVuMWieFpY4m_5NtrXRKYjVRG7hHlRHvCmRhL9tqZptTGFz21aUvnS2RF"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 border-r-3 border-black bg-white dark:bg-slate-800 flex flex-col py-4 gap-2 font-['Noto_Sans_SC'] font-bold text-sm hidden md:flex">
+<div class="px-6 mb-6">
+<h2 class="text-xl font-black text-black dark:text-white">成长领航</h2>
+<p class="text-xs opacity-60">运营管理系统</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="bg-[#FF6B6B] text-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none mx-2 flex items-center gap-3 px-4 py-3 hover:translate-x-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>控制台</span>
+</a>
+<a class="text-black dark:text-slate-300 hover:bg-[#4ECDC4]/20 mx-2 flex items-center gap-3 px-4 py-3 hover:translate-x-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">group</span>
+<span>学员管理</span>
+</a>
+<a class="text-black dark:text-slate-300 hover:bg-[#4ECDC4]/20 mx-2 flex items-center gap-3 px-4 py-3 hover:translate-x-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span>课程与排期</span>
+</a>
+<a class="text-black dark:text-slate-300 hover:bg-[#4ECDC4]/20 mx-2 flex items-center gap-3 px-4 py-3 hover:translate-x-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span>财务统计</span>
+</a>
+<a class="text-black dark:text-slate-300 hover:bg-[#4ECDC4]/20 mx-2 flex items-center gap-3 px-4 py-3 hover:translate-x-1 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">chat</span>
+<span>消息中心</span>
+</a>
+</nav>
+<div class="px-4 pb-4">
+<button class="w-full bg-[#FFE66D] border-3 border-black py-3 font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all rounded-none">
+                新建排期
+            </button>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="md:ml-64 pt-24 px-6 pb-12 min-h-screen">
+<!-- Welcome Header -->
+<header class="mb-10">
+<h1 class="text-5xl font-black font-['Space_Grotesk'] tracking-tighter mb-2">
+                欢迎回来，<span class="text-[#FF6B6B]">园长！</span>
+</h1>
+<p class="text-lg font-bold opacity-70">今天也是充满活力的一天，让我们开始吧。</p>
+</header>
+<!-- Stats Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+<!-- Stat Card 1 -->
+<div class="neo-brutalism-card bg-[#4ECDC4] p-6 flex flex-col justify-between aspect-square md:aspect-auto">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="bg-black text-white px-3 py-1 text-xs font-black">今日实时</span>
+</div>
+<div>
+<h3 class="text-6xl font-black font-['Space_Grotesk']">98%</h3>
+<p class="text-xl font-bold mt-2">考勤率</p>
+</div>
+</div>
+<!-- Stat Card 2 -->
+<div class="neo-brutalism-card bg-[#FF6B6B] text-white p-6 flex flex-col justify-between aspect-square md:aspect-auto">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+<span class="bg-white text-black px-3 py-1 text-xs font-black">待处理</span>
+</div>
+<div>
+<h3 class="text-6xl font-black font-['Space_Grotesk']">12<span class="text-2xl ml-1">条</span></h3>
+<p class="text-xl font-bold mt-2">待处理收据</p>
+</div>
+</div>
+<!-- Stat Card 3 -->
+<div class="neo-brutalism-card bg-[#FFE66D] p-6 flex flex-col justify-between aspect-square md:aspect-auto">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">event_upcoming</span>
+<span class="bg-black text-white px-3 py-1 text-xs font-black">急件</span>
+</div>
+<div>
+<h3 class="text-6xl font-black font-['Space_Grotesk']">05<span class="text-2xl ml-1">项</span></h3>
+<p class="text-xl font-bold mt-2">今日待办</p>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Schedule Section -->
+<section class="lg:col-span-2">
+<div class="flex justify-between items-end mb-6">
+<h2 class="text-3xl font-black font-['Space_Grotesk'] flex items-center gap-3">
+<span class="w-8 h-8 bg-black"></span>
+                        今日排课表
+                    </h2>
+<a class="font-bold border-b-3 border-[#FF6B6B]" href="#">查看全部排程</a>
+</div>
+<div class="space-y-4">
+<!-- Class Row 1 -->
+<div class="neo-brutalism-card bg-white p-4 flex flex-col md:flex-row items-center gap-6">
+<div class="text-center md:text-left min-w-[100px]">
+<p class="text-sm font-black opacity-50">09:00 - 10:30</p>
+<p class="text-lg font-black text-[#FF6B6B]">进行中</p>
+</div>
+<div class="flex-1">
+<h4 class="text-xl font-black">创意美术：色彩的奥秘</h4>
+<p class="font-bold opacity-60">第2教室 · A班学员</p>
+</div>
+<div class="flex items-center gap-3">
+<div class="text-right">
+<p class="text-sm font-black">王小美</p>
+<p class="text-xs font-bold opacity-50">主讲老师</p>
+</div>
+<img alt="老师头像" class="w-12 h-12 border-2 border-black" data-alt="portrait of a young female teacher smiling with bright colorful classroom background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuRm7afRQ8iqVnDy3Gmmf9oED1zNFRWQKKB0I9XvLDStyZ9Sbhe0T-mmeCovKIPyiCzVzmOtIt0n5KGiOOozixIBdEy2NF2w5TupROlO8d979eMG5X8ByagmAubqTAZoKGTHci7T6qMcflG5zTI74IkLAqdlQLMpHZCAIYUhGdJSTSmXQFQISxOutLQtDyKIUU_UhjXYpRJmx-4g3WTIdvxhIkLM79F4MLejm7vxi-D079jLv2_KI4mauwuuHYa751DhWrkb1F4iCk"/>
+</div>
+</div>
+<!-- Class Row 2 -->
+<div class="neo-brutalism-card bg-white p-4 flex flex-col md:flex-row items-center gap-6">
+<div class="text-center md:text-left min-w-[100px]">
+<p class="text-sm font-black opacity-50">14:00 - 15:30</p>
+<p class="text-lg font-black">未开始</p>
+</div>
+<div class="flex-1">
+<h4 class="text-xl font-black">趣味乐高：小小建筑师</h4>
+<p class="font-bold opacity-60">逻辑空间 · B班学员</p>
+</div>
+<div class="flex items-center gap-3">
+<div class="text-right">
+<p class="text-sm font-black">张大伟</p>
+<p class="text-xs font-bold opacity-50">特聘讲师</p>
+</div>
+<img alt="老师头像" class="w-12 h-12 border-2 border-black" data-alt="portrait of a professional male teacher with glasses in a modern educational setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgCwGMt8sNWI9OTqJLBJ-HWZ_u3_0Xj6-I4DfD5RI9qA1vW2MiRib5yEOVEVvsUzhklm1XS4fkEeT6PoZYy6S4RF_iST9r9zAg-8Pc9RE4DbIWn5HZofD6a7HsYNe2iJvikpsoGw6yHmK83jST3KwduOKOAe-p_-cs89wPIxjHQMomrQWm4eGl-wqS9cbXwh5IW5JwgpTHGJMxBajefK9wgaZjaGJL5zoqDh4rQtA2_QH8oAyN9t0xhbKON5z71i_I6YGYYKzvdySF"/>
+</div>
+</div>
+<!-- Class Row 3 -->
+<div class="neo-brutalism-card bg-white p-4 flex flex-col md:flex-row items-center gap-6">
+<div class="text-center md:text-left min-w-[100px]">
+<p class="text-sm font-black opacity-50">16:30 - 18:00</p>
+<p class="text-lg font-black">未开始</p>
+</div>
+<div class="flex-1">
+<h4 class="text-xl font-black">少儿体适能：速度与激情</h4>
+<p class="font-bold opacity-60">户外操场 · 全体学员</p>
+</div>
+<div class="flex items-center gap-3">
+<div class="text-right">
+<p class="text-sm font-black">陈教练</p>
+<p class="text-xs font-bold opacity-50">体育总监</p>
+</div>
+<img alt="老师头像" class="w-12 h-12 border-2 border-black" data-alt="portrait of an athletic coach in sports gear with a track field in background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4JkT289QFFWH4WMZqr2aXRRj3l1HRDJ5Rj9VdTQeBNFF3qNHFqEqIMoHtatJ8nlEqMUrTWZdx33WVuGQBa_2iwB8C8VC4erNWV2sD3pADk69BoIKTYRgBNU718RJ24FLxgYpNPFx89k6W-f_oEVKr2kh2_sEkle1L_os7PR1n5EKHcMYCGT7DIME-1D8KkVy6b8XGaijGtQ4qq4YhuamM-l2T1rxOoVFMJwi8oFSPpvihRLFU_BepV-OYpRQmk8kjBGIsAHUkelTg"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Quick Actions Section -->
+<section>
+<h2 class="text-3xl font-black font-['Space_Grotesk'] mb-6 flex items-center gap-3">
+<span class="w-8 h-8 bg-[#FFE66D]"></span>
+                    快速操作
+                </h2>
+<div class="flex flex-col gap-4">
+<button class="neo-brutalism-button bg-white text-black py-6 px-6 flex items-center justify-between font-black text-lg group">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-3xl text-[#FF6B6B]">person_add</span>
+<span>添加学员</span>
+</div>
+<span class="material-symbols-outlined group-hover:translate-x-2 transition-transform">arrow_forward</span>
+</button>
+<button class="neo-brutalism-button bg-white text-black py-6 px-6 flex items-center justify-between font-black text-lg group">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-3xl text-[#4ECDC4]">payments</span>
+<span>新建账单</span>
+</div>
+<span class="material-symbols-outlined group-hover:translate-x-2 transition-transform">arrow_forward</span>
+</button>
+<button class="neo-brutalism-button bg-white text-black py-6 px-6 flex items-center justify-between font-black text-lg group">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-3xl text-[#FFE66D]">campaign</span>
+<span>发送通知</span>
+</div>
+<span class="material-symbols-outlined group-hover:translate-x-2 transition-transform">arrow_forward</span>
+</button>
+<!-- Decorative Card -->
+<div class="neo-brutalism-card bg-black text-white p-6 mt-4 relative overflow-hidden">
+<div class="relative z-10">
+<h5 class="text-2xl font-black mb-2">管理小贴士</h5>
+<p class="font-bold opacity-80 text-sm">今日已有 5 位学员完成续费，记得查收并发送感谢函。保持良好的家校互动是成功的关键！</p>
+</div>
+<span class="material-symbols-outlined absolute -bottom-4 -right-4 text-9xl opacity-20" style="font-variation-settings: 'FILL' 1;">lightbulb</span>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Mobile Navigation (BottomNavBar) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t-3 border-black z-50 flex justify-around items-center h-20 shadow-[0px_-4px_0px_0px_rgba(0,0,0,1)] px-4">
+<button class="flex flex-col items-center gap-1 text-[#FF6B6B]">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="text-[10px] font-black">控制台</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-black">
+<span class="material-symbols-outlined">group</span>
+<span class="text-[10px] font-black">学员</span>
+</button>
+<div class="relative -top-6">
+<button class="w-14 h-14 bg-[#FFE66D] border-3 border-black rounded-full flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-1">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</div>
+<button class="flex flex-col items-center gap-1 text-black">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="text-[10px] font-black">课程</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-black">
+<span class="material-symbols-outlined">chat</span>
+<span class="text-[10px] font-black">消息</span>
+</button>
+</nav>
+</body></html>
