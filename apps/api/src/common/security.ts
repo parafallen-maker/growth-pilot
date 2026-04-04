@@ -46,7 +46,11 @@ export function requireJwtSecret() {
 }
 
 export function getAllowedCorsOrigins() {
-  const declared = (process.env.CORS_ORIGINS ?? '')
+  // Read both CORS_ORIGIN (singular, used in docker-compose) and CORS_ORIGINS (plural)
+  const rawOrigins = [process.env.CORS_ORIGIN, process.env.CORS_ORIGINS]
+    .filter(Boolean)
+    .join(',');
+  const declared = rawOrigins
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);
@@ -62,7 +66,7 @@ export function getAllowedCorsOrigins() {
     'http://127.0.0.1:3101',
   ];
 
-  return [...new Set(process.env.NODE_ENV === 'production' ? declared : [...declared, ...devOrigins])];
+  return [...new Set([...declared, ...(process.env.NODE_ENV === 'production' ? [] : devOrigins)])];
 }
 
 export function createCorsOriginResolver() {
