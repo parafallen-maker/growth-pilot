@@ -30,8 +30,8 @@ services:
       minio:
         condition: service_healthy
     volumes:
-      - api-data:/app/apps/api/.data
-      - api-runtime:/app/apps/api/.runtime
+      - api-data:/app/.data
+      - api-runtime:/app/.runtime
     healthcheck:
       test:
         - CMD-SHELL
