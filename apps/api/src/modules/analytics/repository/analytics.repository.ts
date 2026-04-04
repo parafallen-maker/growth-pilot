@@ -509,7 +509,7 @@ export class AnalyticsRepository {
   }
 
   private joinScopedContracts(contractIdRef: string) {
-    return sql`left join contracts scoped_contracts on scoped_contracts.id = ${sql.raw(contractIdRef)}`;
+    return sql`left join contracts scoped_contracts on scoped_contracts.id = ${sql.raw(contractIdRef)}::uuid`;
   }
 
   private eqFilter(column: string, value?: string) {
