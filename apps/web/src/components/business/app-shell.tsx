@@ -14,6 +14,22 @@ export function AppShell({ children, currentUser }: { children: ReactNode; curre
   const [menuOpen, setMenuOpen] = useState(false);
   const sections = useMemo(() => pruneNavSections(navSections, currentUser.permissions), [currentUser.permissions]);
 
+  const activeNavHref = useMemo(() => {
+    let active = null;
+    let maxLen = -1;
+    for (const section of sections) {
+      for (const item of section.items) {
+        if (pathname === item.href || pathname.startsWith(`${item.href}/`)) {
+          if (item.href.length > maxLen) {
+            active = item.href;
+            maxLen = item.href.length;
+          }
+        }
+      }
+    }
+    return active;
+  }, [pathname, sections]);
+
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
@@ -53,13 +69,13 @@ export function AppShell({ children, currentUser }: { children: ReactNode; curre
           <nav className="sidebar-nav">
             {sections.map((section) => (
               <div key={section.title}>
-                <div className="nav-section-title">
-                  {section.icon ? `${section.icon} ` : ''}
-                  {section.title}
+                <div className="nav-section-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {section.icon && <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{section.icon}</span>}
+                  <span>{section.title}</span>
                 </div>
                 <div className="nav-group">
                   {section.items.map((item) => {
-                    const active = isNavItemActive(pathname, item.href);
+                    const active = item.href === activeNavHref;
 
                     return (
                       <Link

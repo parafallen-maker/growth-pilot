@@ -33,7 +33,7 @@ export function isNavItemActive(pathname: string, href: string) {
 export const navSections: NavSection[] = [
   {
     title: '工作台',
-    icon: '📊',
+    icon: 'dashboard',
     items: [
       { label: '首页总览', href: '/dashboard', permission: 'dashboard:view' },
       { label: '我的待办', href: '/tasks', permission: 'tasks:view' },
@@ -41,7 +41,7 @@ export const navSections: NavSection[] = [
   },
   {
     title: '学生中心',
-    icon: '👤',
+    icon: 'group',
     items: [
       { label: '学生管理', href: '/students', permission: 'students:view' },
       { label: '学生导入', href: '/students/import', permission: 'students:view' },
@@ -49,21 +49,21 @@ export const navSections: NavSection[] = [
   },
   {
     title: '家庭中心',
-    icon: '👨‍👩‍👧',
+    icon: 'family_restroom',
     items: [
       { label: '家庭管理', href: '/families', permission: 'families:view' },
     ],
   },
   {
     title: '教师中心',
-    icon: '👩‍🏫',
+    icon: 'school',
     items: [
       { label: '教师管理', href: '/teachers', permission: 'teachers:view' },
     ],
   },
   {
     title: '教学管理',
-    icon: '📝',
+    icon: 'assignment',
     items: [
       { label: '作业管理', href: '/homework/submissions', permission: 'homework:view' },
       { label: '错因标签', href: '/homework/error-taxonomies', permission: 'homework:error-taxonomies:view' },
@@ -75,7 +75,7 @@ export const navSections: NavSection[] = [
   },
   {
     title: '校务管理',
-    icon: '🏫',
+    icon: 'domain',
     items: [
       { label: '考勤看板', href: '/attendance/board', permission: 'attendance:board:view' },
       { label: '设备管理', href: '/attendance/devices', permission: 'attendance:devices:view' },
@@ -86,7 +86,7 @@ export const navSections: NavSection[] = [
   },
   {
     title: '财务中心',
-    icon: '💰',
+    icon: 'account_balance_wallet',
     items: [
       { label: '收费方案', href: '/billing/products', permission: 'billing:products:view' },
       { label: '合同管理', href: '/billing/contracts', permission: 'billing:contracts:view' },
@@ -96,7 +96,7 @@ export const navSections: NavSection[] = [
   },
   {
     title: '任务预警',
-    icon: '⚡',
+    icon: 'notifications_active',
     items: [
       { label: '任务中心', href: '/tasks/list', permission: 'tasks:view' },
       { label: '预警中心', href: '/alerts', permission: 'alerts:view' },
@@ -104,7 +104,7 @@ export const navSections: NavSection[] = [
   },
   {
     title: '数据分析',
-    icon: '📈',
+    icon: 'bar_chart',
     items: [
       { label: '经营总览', href: '/analytics/overview', permission: 'analytics:overview:view' },
       { label: '教学分析', href: '/analytics/teaching', permission: 'analytics:teaching:view' },
@@ -113,7 +113,7 @@ export const navSections: NavSection[] = [
   },
   {
     title: '系统设置',
-    icon: '⚙️',
+    icon: 'settings',
     items: [
       { label: '用户与角色', href: '/settings/users', permission: 'users:view' },
       { label: '基础字典', href: '/settings/system', permission: 'settings:view' },
