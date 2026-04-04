@@ -328,7 +328,7 @@ class DbUsersRepository implements UsersRepositoryPort {
       mobile: row.mobile ?? undefined,
       email: row.email ?? undefined,
       roles: roleRows.map((role) => role.code),
-      campusIds: [...new Set(assignments.map((assignment) => assignment.campusId).filter((campusId): campusId is string => Boolean(campusId)))],
+      campusIds: [...new Set(assignments.map((assignment: any) => assignment.campusId).filter((campusId: any): campusId is string => Boolean(campusId)))],
       status: row.status,
     } satisfies UserRecord;
   }
@@ -341,7 +341,7 @@ class DbUsersRepository implements UsersRepositoryPort {
     const uniqueCampusIds = [...new Set(campusIds)];
     const campusRows = await this.db.select({ id: dbSchema.campuses.id }).from(dbSchema.campuses).where(inArray(dbSchema.campuses.id, uniqueCampusIds));
     if (campusRows.length !== uniqueCampusIds.length) {
-      const existingCampusIds = new Set(campusRows.map((campus) => campus.id));
+      const existingCampusIds = new Set(campusRows.map((campus: any) => campus.id));
       const missingCampusIds = uniqueCampusIds.filter((campusId) => !existingCampusIds.has(campusId));
       throw new NotFoundException(`Campus ${missingCampusIds.join(', ')} not found`);
     }
@@ -355,7 +355,7 @@ export class UsersRepository {
   private readonly adapter: UsersRepositoryPort;
 
   constructor() {
-    this.adapter = isDbPersistenceEnabled() ? new DbUsersRepository() : new FileUsersRepository();
+    this.adapter = (isDbPersistenceEnabled() ? new DbUsersRepository() : new FileUsersRepository()) as UsersRepositoryPort;
   }
 
   findByUsername(username: string) {

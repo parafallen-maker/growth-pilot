@@ -31,7 +31,7 @@ export class ApiError extends Error {
 }
 
 export { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from '@/lib/auth-constants';
-const DEFAULT_API_BASE_URL = 'http://localhost:4000/api/v1';
+const DEFAULT_API_BASE_URL = typeof window !== 'undefined' ? '/api/v1' : 'http://localhost:3001/api/v1';
 
 function joinUrl(baseUrl: string, path: string) {
   return `${baseUrl.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
