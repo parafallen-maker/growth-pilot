@@ -102,7 +102,7 @@ export class AnalyticsRepository {
         sql`
           select coalesce(sum(p.paid_amount_cents), 0) as received_cents
           from payments p
-          join invoices i on i.id = p.invoice_id
+          join invoices i on i.id = p.invoice_id::uuid
           ${this.joinScopedContracts('i.contract_id')}
           where ${this.joinConditions([
             sql`p.status = 'success'`,
@@ -334,7 +334,7 @@ export class AnalyticsRepository {
           to_char(p.payment_time at time zone 'utc', 'YYYY-MM-DD') as stat_date,
           coalesce(sum(p.paid_amount_cents), 0) as amount_cents
         from payments p
-        join invoices i on i.id = p.invoice_id
+        join invoices i on i.id = p.invoice_id::uuid
         ${this.joinScopedContracts('i.contract_id')}
         where ${this.joinConditions([
           sql`p.status = 'success'`,
@@ -372,7 +372,7 @@ export class AnalyticsRepository {
       this.selectRows<{ id: string; invoice_id: string; paid_amount_cents: string | number | null }>(sql`
         select p.id, p.invoice_id, p.paid_amount_cents
         from payments p
-        join invoices i on i.id = p.invoice_id
+        join invoices i on i.id = p.invoice_id::uuid
         ${this.joinScopedContracts('i.contract_id')}
         where ${this.joinConditions([
           sql`p.status = 'success'`,
@@ -383,8 +383,8 @@ export class AnalyticsRepository {
       this.selectRows<{ payment_id: string; refund_amount_cents: string | number | null }>(sql`
         select r.payment_id, r.refund_amount_cents
         from refunds r
-        join payments p on p.id = r.payment_id
-        join invoices i on i.id = p.invoice_id
+        join payments p on p.id = r.payment_id::uuid
+        join invoices i on i.id = p.invoice_id::uuid
         ${this.joinScopedContracts('i.contract_id')}
         where ${this.joinConditions([
           ...this.invoiceScopeFilters(query, contractScope.contractIds),
