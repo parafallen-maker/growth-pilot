@@ -162,6 +162,16 @@ const FIXTURES = {
     tasks: [{ id: 'task-001', title: '续费沟通', status: 'open' }],
     communications: [{ id: 'comm-001', topic: '学习反馈', channel: 'wechat' }],
   },
+  alerts: [
+    { id: 'alert-001', alertType: 'overdue_payment', alertLevel: 'high', status: 'open', title: '学费逾期提醒', content: '李一诺存在逾期账单，需尽快联系家长。', studentId: 'student-001', familyId: 'family-001', invoiceId: 'invoice-001', createdAt: '2026-03-24T09:00:00Z', resolverUserId: null, resolvedAt: null },
+    { id: 'alert-002', alertType: 'academic_risk', alertLevel: 'medium', status: 'acknowledged', title: '作业正确率连续下滑', content: '王子安最近 3 次作业正确率下降。', studentId: 'student-002', familyId: 'family-001', invoiceId: null, createdAt: '2026-03-23T09:00:00Z', resolverUserId: 'user-admin', resolvedAt: null },
+    { id: 'alert-003', alertType: 'goal_overdue', alertLevel: 'low', status: 'resolved', title: '成长目标逾期', content: '李一诺的阶段目标已逾期，已补做跟进。', studentId: 'student-001', familyId: 'family-001', invoiceId: null, createdAt: '2026-03-20T09:00:00Z', resolverUserId: 'user-admin', resolvedAt: '2026-03-22T09:00:00Z' }
+  ],
+  tasks: [
+    { id: 'task-001', taskType: 'overdue_payment', title: '跟进李一诺续费', priority: 'high', status: 'open', ownerUserId: 'user-admin', studentId: 'student-001', familyId: 'family-001', teacherId: null, dueAt: '2026-03-26T09:00:00Z', createdAt: '2026-03-24T09:00:00Z', sourceType: 'billing', sourceId: 'invoice-001', resultNote: null, description: '联系家长确认续费计划。' },
+    { id: 'task-002', taskType: 'homework_followup', title: '复核王子安作业', priority: 'medium', status: 'in_progress', ownerUserId: 'user-admin', studentId: 'student-002', familyId: 'family-001', teacherId: 'teacher-001', dueAt: '2026-03-25T18:00:00Z', createdAt: '2026-03-24T10:00:00Z', sourceType: 'homework', sourceId: 'submission-002', resultNote: null, description: '补充复核意见并决定是否推送家长。' },
+    { id: 'task-003', taskType: 'custom', title: '整理班级周报素材', priority: 'low', status: 'done', ownerUserId: 'user-admin', studentId: null, familyId: null, teacherId: null, dueAt: '2026-03-22T18:00:00Z', createdAt: '2026-03-20T10:00:00Z', sourceType: 'manual', sourceId: null, resultNote: '已完成', description: '为周报生成准备素材。' }
+  ],
   homeworkSubmissions: [
     { id: 'submission-001', submissionNo: 'HW-001', studentId: 'student-001', teacherId: 'teacher-001', subject: 'math', uploadedAt: '2026-03-23T10:00:00Z', homeworkDate: '2026-03-23', aiStatus: 'completed', finalAccuracyPct: 96, reviewStatus: 'reviewed' },
     { id: 'submission-002', submissionNo: 'HW-002', studentId: 'student-002', teacherId: 'teacher-001', subject: 'math', uploadedAt: '2026-03-22T10:00:00Z', homeworkDate: '2026-03-22', aiStatus: 'pending', finalAccuracyPct: 88, reviewStatus: 'draft' },
@@ -409,7 +419,7 @@ async function executeCompiledRoute({ repoRoot, route, persona }) {
 
     try {
       const rootNode = await workUnitAsyncStorage.run(requestStore, () => pageModule.default(invocationProps));
-      const resolution = await resolveRenderedNode(rootNode, 0);
+      const resolution = await workUnitAsyncStorage.run(requestStore, () => resolveRenderedNode(rootNode, 0));
       return {
         route,
         sourcePage: pageModule.__sourcePage ?? null,
@@ -581,10 +591,11 @@ async function resolveRenderedNode(node, depth) {
       } catch (error) {
         if (isClientBoundaryError(error)) {
           const children = await resolveRenderedNode(node.props?.children, depth + 1);
+          const boundaryName = formatClientBoundaryName(error?.message ?? node.type.name ?? 'client-component');
           return {
             text: children.text,
-            forbidden: children.forbidden,
-            clientBoundaries: [formatClientBoundaryName(error?.message ?? node.type.name ?? 'client-component'), ...children.clientBoundaries],
+            forbidden: children.forbidden || boundaryName === 'ForbiddenState',
+            clientBoundaries: [boundaryName, ...children.clientBoundaries],
             inlineStyleDeclarations: children.inlineStyleDeclarations,
           };
         }
@@ -772,6 +783,10 @@ function resolveFixtureResponse({ pathname, searchParams, persona }) {
       return envelope(FIXTURES.analyticsTeaching);
     case '/analytics/billing':
       return envelope(FIXTURES.analyticsBilling);
+    case '/alerts':
+      return envelope(page(FIXTURES.alerts));
+    case '/tasks':
+      return envelope(page(FIXTURES.tasks));
     case '/students':
       return envelope(page(FIXTURES.students));
     case '/teachers':
@@ -787,7 +802,10 @@ function resolveFixtureResponse({ pathname, searchParams, persona }) {
     case '/settings/dictionaries':
       return envelope(page(FIXTURES.dictionaries));
     case '/jobs':
-      return persona.permissions.includes('jobs:read') ? envelope(page(FIXTURES.jobs)) : envelope({ list: [], page: { pageNo: 1, pageSize: 20, total: 0 } }, 403);
+      if (!persona.permissions.includes('jobs:read')) {
+        return envelope(searchParams.get('jobType') === 'students_import' ? [] : { list: [], page: { pageNo: 1, pageSize: 20, total: 0 } }, 403);
+      }
+      return envelope(searchParams.get('jobType') === 'students_import' ? FIXTURES.jobs : page(FIXTURES.jobs));
     case '/homework/submissions':
       return envelope(page(FIXTURES.homeworkSubmissions));
     case '/homework/error-taxonomies':
